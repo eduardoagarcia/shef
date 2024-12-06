@@ -1,4 +1,54 @@
 recipes:
+  - name: "Simple test"
+    description: "boop boop boop"
+    messages:
+      success: "Finished simple test!"
+      error: "An error happened!"
+      cancelled: "Cancelled!"
+    stages:
+      - name: "stage one"
+        type: "output_command"
+        config:
+          command: "ls -la --color=always"
+        navigation:
+          error_message: "unable to ls-la"
+      - name: "stage two"
+        type: "output_command"
+        config:
+          command: "tree"
+        navigation:
+          error_message: "unable to tree"
+      - name: "stage three"
+        type: "output_command"
+        config:
+          command: "git status"
+        navigation:
+          error_message: "unable to git status"
+      - name: "stage four"
+        type: "output_command"
+        config:
+          command: "docker ps"
+        navigation:
+          error_message: "unable to docker ps"
+      - name: "stage five"
+        type: "interactive_command"
+        config:
+          command: "docker exec -it  hello-world-python-api bash"
+        navigation:
+          error_message: "unable to shell into the docker image"
+      - name: "stage five"
+        type: "output_command"
+        config:
+          command: "docker ps"
+        navigation:
+          error_message: "unable to docker ps"
+      - name: "stage six"
+        type: "interactive_command"
+        config:
+          command: "vim"
+        navigation:
+          error_message: "unable to vim"
+
   - name: "Interactive Git Workflow"
     description: "Stage and commit changes with interactive file selection"
     messages:

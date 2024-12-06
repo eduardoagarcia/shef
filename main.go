@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"github.com/charmbracelet/huh"
 	"github.com/creack/pty"
+	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"regexp"
 	"strings"
+	"syscall"
 )
 
 type Recipe struct {
@@ -71,9 +74,9 @@ func (e *RecipeError) Error() string {
 	return e.Message
 }
 
-type CommandStage struct{}
+type OutputCommandStage struct{}
 
-func (c *CommandStage) Run(input string, config map[string]interface{}) (string, error) {
+func (c *OutputCommandStage) Run(input string, config map[string]interface{}) (string, error) {
 	command, ok := config["command"].(string)
 	if !ok {
 		return "", fmt.Errorf("command configuration missing")
@@ -82,22 +85,57 @@ func (c *CommandStage) Run(input string, config map[string]interface{}) (string,
 	command = strings.ReplaceAll(command, "{{input}}", input)
 	cmd := exec.Command("bash", "-c", command)
 
-	f, err := pty.Start(cmd)
+	ptmx, err := pty.Start(cmd)
 	if err != nil {
 		return "", fmt.Errorf("failed to start pty: %v", err)
 	}
-	defer f.Close()
+	defer ptmx.Close()
 
 	var output strings.Builder
 	go func() {
-		io.Copy(&output, f)
+		mw := io.MultiWriter(os.Stdout, &output)
+		io.Copy(mw, ptmx)
 	}()
 
-	if err := cmd.Wait(); err != nil {
-		return output.String(), err
+	return output.String(), cmd.Wait()
+}
+
+type InteractiveCommandStage struct{}
+
+func (c *InteractiveCommandStage) Run(input string, config map[string]interface{}) (string, error) {
+	command, ok := config["command"].(string)
+	if !ok {
+		return "", fmt.Errorf("command configuration missing")
 	}
 
-	return output.String(), nil
+	cmd := exec.Command("bash", "-c", strings.ReplaceAll(command, "{{input}}", input))
+	ptmx, err := pty.Start(cmd)
+	if err != nil {
+		return "", fmt.Errorf("failed to start pty: %v", err)
+	}
+	defer ptmx.Close()
+
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", err
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+
+	pty.InheritSize(os.Stdin, ptmx)
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGWINCH)
+	go func() {
+		for range ch {
+			pty.InheritSize(os.Stdin, ptmx)
+		}
+	}()
+	ch <- syscall.SIGWINCH
+	defer signal.Stop(ch)
+
+	go io.Copy(ptmx, os.Stdin)
+	go io.Copy(os.Stdout, ptmx)
+
+	return "", cmd.Wait()
 }
 
 type PromptStage struct{}
@@ -208,8 +246,10 @@ func (c *ConfirmStage) Run(input string, config map[string]interface{}) (string,
 
 func getStageRunner(stageType string) (StageRunner, error) {
 	switch stageType {
-	case "command":
-		return &CommandStage{}, nil
+	case "output_command":
+		return &OutputCommandStage{}, nil
+	case "interactive_command":
+		return &InteractiveCommandStage{}, nil
 	case "prompt":
 		return &PromptStage{}, nil
 	case "select":
