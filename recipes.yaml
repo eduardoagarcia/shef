@@ -1,0 +1,229 @@
+recipes:
+  - name: "Interactive Git Workflow"
+    description: "Stage and commit changes with interactive file selection"
+    messages:
+      success: "Changes have been committed successfully!"
+      error: "Git operation failed. Please check the error and try again."
+      cancelled: "Git operation cancelled - no changes were made."
+    stages:
+      - name: "check_status"
+        type: "command"
+        config:
+          command: "git status"
+        navigation:
+          error_message: "Unable to get git status. Are you in a git repository?"
+
+      - name: "select_add_method"
+        type: "select"
+        config:
+          message: "How would you like to add files?"
+          options:
+            - "Stage all changes"
+            - "Stage specific files"
+            - "Interactive staging"
+
+      - name: "handle_selection"
+        type: "command"
+        config:
+          command: |
+            if [ "{{input}}" = "Stage all changes" ]; then
+              git add .
+            elif [ "{{input}}" = "Stage specific files" ]; then
+              git add -p
+            else
+              git add -i
+            fi
+
+      - name: "verify_staging"
+        type: "command"
+        config:
+          command: "git status"
+
+      - name: "confirm_changes"
+        type: "confirm"
+        config:
+          message: "Are these the changes you want to commit?"
+        navigation:
+          on_no: "select_add_method"
+          cancel_message: "Okay, let's select files again"
+
+      - name: "enter_message"
+        type: "prompt"
+        config:
+          message: "Enter your commit message"
+
+      - name: "commit_changes"
+        type: "command"
+        config:
+          command: "git commit -m '{{input}}'"
+
+  - name: "File System Cleanup"
+    description: "Find and clean up large files interactively"
+    messages:
+      success: "Cleanup completed successfully!"
+      error: "Cleanup operation failed"
+      cancelled: "Cleanup cancelled - no files were deleted"
+    stages:
+      - name: "select_directory"
+        type: "prompt"
+        config:
+          message: "Enter the directory path to clean (default: current)"
+
+      - name: "find_large_files"
+        type: "command"
+        config:
+          command: |
+            cd {{input}} 2>/dev/null || cd .
+            find . -type f -size +100M -exec ls -lh {} \; | sort -rh
+
+      - name: "confirm_files"
+        type: "confirm"
+        config:
+          message: "Would you like to clean any of these files?"
+        navigation:
+          cancel_message: "No files will be deleted"
+
+      - name: "enter_pattern"
+        type: "prompt"
+        config:
+          message: "Enter a pattern to match files (e.g., *.log or specific file)"
+
+      - name: "show_matched"
+        type: "command"
+        config:
+          command: "find . -name '{{input}}' -ls"
+
+      - name: "confirm_deletion"
+        type: "confirm"
+        config:
+          message: "Are you sure you want to delete these files?"
+        navigation:
+          on_no: "enter_pattern"
+          cancel_message: "Okay, let's try a different pattern"
+
+      - name: "delete_files"
+        type: "command"
+        config:
+          command: "find . -name '{{input}}' -delete"
+
+  - name: "Docker Environment Setup"
+    description: "Interactive Docker container setup and management"
+    messages:
+      success: "Docker environment is ready and configured!"
+      error: "Failed to set up Docker environment. Please check Docker is running and you have sufficient permissions."
+      cancelled: "Docker setup was cancelled - no changes were made"
+    stages:
+      - name: "check_docker"
+        type: "command"
+        config:
+          command: "docker info"
+        navigation:
+          error_message: "Docker is not running or not installed. Please start Docker and try again."
+
+      - name: "select_image"
+        type: "select"
+        config:
+          message: "Select a base image to use"
+          options:
+            - "nginx:latest"
+            - "postgres:latest"
+            - "redis:latest"
+            - "mongodb:latest"
+            - "mysql:latest"
+            - "node:latest"
+
+      - name: "configure_port"
+        type: "prompt"
+        config:
+          message: "Enter the port to expose (default ports: nginx=80, postgres=5432, redis=6379, mongodb=27017, mysql=3306, node=3000)"
+
+      - name: "confirm_port"
+        type: "confirm"
+        config:
+          message: "Map container port to host port {{input}}?"
+        navigation:
+          on_no: "configure_port"
+          cancel_message: "Let's choose a different port"
+
+      - name: "select_volume"
+        type: "confirm"
+        config:
+          message: "Would you like to mount a volume for persistent data?"
+
+      - name: "configure_volume"
+        type: "prompt"
+        config:
+          message: "Enter the local directory path to mount"
+        navigation:
+          error_message: "Invalid directory path. Please ensure the directory exists."
+
+      - name: "select_environment"
+        type: "confirm"
+        config:
+          message: "Would you like to set environment variables?"
+
+      - name: "configure_environment"
+        type: "prompt"
+        config:
+          message: "Enter environment variables (format: KEY1=value1,KEY2=value2)"
+
+      - name: "show_config"
+        type: "command"
+        config:
+          command: |
+            echo "Container Configuration:"
+            echo "Image: {{input}}"
+            echo "Port: $(echo '{{input}}' | cut -d',' -f1)"
+            echo "Volume: $(echo '{{input}}' | cut -d',' -f2)"
+            echo "Environment: $(echo '{{input}}' | cut -d',' -f3)"
+
+      - name: "confirm_setup"
+        type: "confirm"
+        config:
+          message: "Create container with these settings?"
+        navigation:
+          on_no: "select_image"
+          cancel_message: "Let's start over with the configuration"
+
+      - name: "create_container"
+        type: "command"
+        config:
+          command: |
+            IMAGE=$(echo '{{input}}' | cut -d',' -f1)
+            PORT=$(echo '{{input}}' | cut -d',' -f2)
+            VOLUME=$(echo '{{input}}' | cut -d',' -f3)
+            ENV=$(echo '{{input}}' | cut -d',' -f4)
+
+            CMD="docker run -d --name my_$(echo $IMAGE | tr ':' '_')"
+
+            if [ ! -z "$PORT" ]; then
+              CMD="$CMD -p $PORT:$PORT"
+            fi
+
+            if [ ! -z "$VOLUME" ]; then
+              CMD="$CMD -v $VOLUME:/data"
+            fi
+
+            if [ ! -z "$ENV" ]; then
+              IFS=',' read -ra VARS <<< "$ENV"
+              for var in "${VARS[@]}"; do
+                CMD="$CMD -e $var"
+              done
+            fi
+
+            CMD="$CMD $IMAGE"
+            eval $CMD
+
+      - name: "verify_container"
+        type: "command"
+        config:
+          command: "docker ps --latest"
+        navigation:
+          error_message: "Container created but may not be running as expected"
+
+      - name: "display_logs"
+        type: "command"
+        config:
+          command: "docker logs $(docker ps -lq)"
+        navigation:
+          error_message: "Unable to fetch container logs"
