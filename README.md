@@ -1,12 +1,13 @@
 # Shef
 
-Shef is a powerful CLI tool that lets you combine shell commands into reusable recipes. Think of it as "[CyberChef](https://gchq.github.io/CyberChef) for
-your terminal" - chain commands together, add interactive prompts, and create a toolbelt of common workflows.
+Shef is a powerful CLI tool that lets you combine shell commands into reusable recipes.
+
+Think of it as "[CyberChef](https://gchq.github.io/CyberChef) for your terminal" to chain commands together, add interactive prompts, and create a toolbelt of common workflows.
 
 ## Features
 
 - **Command Piping**: Chain commands together, passing output from one to the next
-- **Transformations**: Transform command output with powerful templating
+- **Transformations**: Transform command output and input with powerful templating
 - **Interactive Prompts**: Add user input, selections, and confirmations
 - **Conditional Logic**: Use if/else branching based on command results
 - **Organized Recipes**: Categorize and share your recipes
