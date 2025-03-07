@@ -18,6 +18,42 @@ import (
 	"text/template"
 )
 
+// Define common template functions to be used across all templates
+var templateFuncs = template.FuncMap{
+	"split":      strings.Split,
+	"join":       strings.Join,
+	"trim":       strings.TrimSpace,
+	"trimPrefix": strings.TrimPrefix,
+	"trimSuffix": strings.TrimSuffix,
+	"contains":   strings.Contains,
+	"replace":    strings.ReplaceAll,
+	"filter":     filterLines,
+	"grep":       grepLines,
+	"cut":        cutFields,
+	"exec":       execCommand,
+	"atoi": func(s string) int {
+		// Simple string to int without error handling
+		var i int
+		fmt.Sscanf(s, "%d", &i)
+		return i
+	},
+	"add": func(a, b int) int {
+		return a + b
+	},
+	"sub": func(a, b int) int {
+		return a - b
+	},
+	"div": func(a, b int) int {
+		if b == 0 {
+			return 0
+		}
+		return a / b
+	},
+	"mul": func(a, b int) int {
+		return a * b
+	},
+}
+
 // Config represents the top-level configuration
 type Config struct {
 	Recipes []Recipe `yaml:"recipes"`
@@ -69,6 +105,27 @@ type ExecutionContext struct {
 	Vars             map[string]interface{} // Variables from prompts and operations
 	OperationOutputs map[string]string      // Outputs from operations with IDs
 	OperationResults map[string]bool        // Success/failure status of operations
+}
+
+// getTemplateVars creates a combined map of variables for template execution
+func (ctx *ExecutionContext) getTemplateVars() map[string]interface{} {
+	vars := make(map[string]interface{})
+
+	// Add all normal variables
+	for k, v := range ctx.Vars {
+		vars[k] = v
+	}
+
+	// Add operation outputs directly as variables
+	for opID, output := range ctx.OperationOutputs {
+		vars[opID] = output
+	}
+
+	// Add nested maps for backward compatibility
+	vars["operationOutputs"] = ctx.OperationOutputs
+	vars["operationResults"] = ctx.OperationResults
+
+	return vars
 }
 
 // LoadConfig loads the configuration from a YAML file
@@ -361,11 +418,33 @@ func extractRecipesFromZip(zipPath, destDir, repoPath string) error {
 func FindRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, error) {
 	var sources []string
 
+	// Helper function to walk directories and find YAML files
+	findYamlFiles := func(root string) ([]string, error) {
+		var files []string
+		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil // Skip this file and continue
+			}
+			// Skip directories themselves
+			if info.IsDir() {
+				return nil
+			}
+			// Check if file has .yaml or .yml extension
+			if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
+				files = append(files, path)
+			}
+			return nil
+		})
+		return files, err
+	}
+
 	// Check project-local recipes
 	if localDir {
-		localFiles, err := filepath.Glob(".shef/*.yaml")
-		if err == nil {
-			sources = append(sources, localFiles...)
+		if _, err := os.Stat(".shef"); err == nil {
+			localFiles, err := findYamlFiles(".shef")
+			if err == nil {
+				sources = append(sources, localFiles...)
+			}
 		}
 	}
 
@@ -373,9 +452,12 @@ func FindRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 	if userDir {
 		homeDir, err := os.UserHomeDir()
 		if err == nil {
-			userFiles, err := filepath.Glob(filepath.Join(homeDir, ".shef", "*.yaml"))
-			if err == nil {
-				sources = append(sources, userFiles...)
+			userDir := filepath.Join(homeDir, ".shef")
+			if _, err := os.Stat(userDir); err == nil {
+				userFiles, err := findYamlFiles(userDir)
+				if err == nil {
+					sources = append(sources, userFiles...)
+				}
 			}
 		}
 	}
@@ -385,7 +467,7 @@ func FindRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 		publicDir := filepath.Join(os.TempDir(), "shef-public")
 		recipesDir := filepath.Join(publicDir, "recipes")
 		if _, err := os.Stat(recipesDir); err == nil {
-			publicFiles, err := filepath.Glob(filepath.Join(recipesDir, "*.yaml"))
+			publicFiles, err := findYamlFiles(recipesDir)
 			if err == nil {
 				sources = append(sources, publicFiles...)
 			}
@@ -397,22 +479,17 @@ func FindRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 
 // HandlePrompt processes a prompt and returns the user's response
 func HandlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
-	// Process the message and default value through templates
-	msgTemplate, err := template.New("message").Parse(p.Message)
+	// Get combined template variables including operation outputs as direct variables
+	vars := ctx.getTemplateVars()
+
+	// Process the message template with all variables
+	msgTemplate, err := template.New("message").Funcs(templateFuncs).Parse(p.Message)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a combined data map with context variables and operation outputs
-	data := make(map[string]interface{})
-	for k, v := range ctx.Vars {
-		data[k] = v
-	}
-	data["operationOutputs"] = ctx.OperationOutputs
-	data["operationResults"] = ctx.OperationResults
-
 	var msgBuf bytes.Buffer
-	if err := msgTemplate.Execute(&msgBuf, data); err != nil {
+	if err := msgTemplate.Execute(&msgBuf, vars); err != nil {
 		return nil, err
 	}
 	message := msgBuf.String()
@@ -420,13 +497,13 @@ func HandlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 	// Process default value if present
 	var defaultValue string
 	if p.Default != "" {
-		defaultTemplate, err := template.New("default").Parse(p.Default)
+		defaultTemplate, err := template.New("default").Funcs(templateFuncs).Parse(p.Default)
 		if err != nil {
 			return nil, err
 		}
 
 		var defaultBuf bytes.Buffer
-		if err := defaultTemplate.Execute(&defaultBuf, data); err != nil {
+		if err := defaultTemplate.Execute(&defaultBuf, vars); err != nil {
 			return nil, err
 		}
 		defaultValue = defaultBuf.String()
@@ -506,57 +583,20 @@ func HandlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 
 // transformOutput applies a transformation to an output string
 func transformOutput(output, transform string, ctx *ExecutionContext) (string, error) {
-	// Create a map with the output and context variables
-	data := make(map[string]interface{})
-	data["input"] = output
-	for k, v := range ctx.Vars {
-		data[k] = v
-	}
-	data["operationOutputs"] = ctx.OperationOutputs
-	data["operationResults"] = ctx.OperationResults
+	// Get all variables including operation outputs
+	vars := ctx.getTemplateVars()
 
-	// Parse and execute the template
-	tmpl, err := template.New("transform").Funcs(template.FuncMap{
-		"split":      strings.Split,
-		"join":       strings.Join,
-		"trim":       strings.TrimSpace,
-		"filter":     filterLines,
-		"grep":       grepLines,
-		"cut":        cutFields,
-		"exec":       execCommand,
-		"trimPrefix": strings.TrimPrefix,
-		"trimSuffix": strings.TrimSuffix,
-		"contains":   strings.Contains,
-		"replace":    strings.ReplaceAll,
-		"atoi": func(s string) int {
-			// Simple string to int without error handling
-			var i int
-			fmt.Sscanf(s, "%d", &i)
-			return i
-		},
-		"add": func(a, b int) int {
-			return a + b
-		},
-		"sub": func(a, b int) int {
-			return a - b
-		},
-		"div": func(a, b int) int {
-			if b == 0 {
-				return 0
-			}
-			return a / b
-		},
-		"mul": func(a, b int) int {
-			return a * b
-		},
-	}).Parse(transform)
+	// Add input as a special variable
+	vars["input"] = output
 
+	// Parse and execute the template with all functions
+	tmpl, err := template.New("transform").Funcs(templateFuncs).Parse(transform)
 	if err != nil {
 		return "", err
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
+	if err := tmpl.Execute(&buf, vars); err != nil {
 		return "", err
 	}
 
@@ -566,12 +606,7 @@ func transformOutput(output, transform string, ctx *ExecutionContext) (string, e
 // execCommand executes a command and returns its output
 // Only used within transformations
 func execCommand(cmd string) string {
-	parts := strings.Fields(cmd)
-	if len(parts) == 0 {
-		return ""
-	}
-
-	command := exec.Command(parts[0], parts[1:]...)
+	command := exec.Command("sh", "-c", cmd)
 	output, err := command.Output()
 	if err != nil {
 		return ""
@@ -646,12 +681,12 @@ func ExecuteCommand(cmdStr string, input string) (string, error) {
 		return "", fmt.Errorf("command failed: %v\nStderr: %s", err, stderr.String())
 	}
 
-	return stdout.String(), nil
+	return strings.TrimSpace(stdout.String()), nil
 }
 
 // RenderTemplate renders a command template with variables
 func RenderTemplate(tmplStr string, vars map[string]interface{}) (string, error) {
-	tmpl, err := template.New("command").Parse(tmplStr)
+	tmpl, err := template.New("command").Funcs(templateFuncs).Parse(tmplStr)
 	if err != nil {
 		return "", err
 	}
@@ -752,10 +787,16 @@ func EvaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 		// Remove quotes if present
 		expectedValue = strings.Trim(expectedValue, "\"'")
 
+		// First check in regular variables
 		if value, exists := ctx.Vars[varName]; exists {
 			// Convert value to string for comparison
 			strValue := fmt.Sprintf("%v", value)
 			return strValue == expectedValue, nil
+		}
+
+		// Then check in operation outputs
+		if value, exists := ctx.OperationOutputs[varName]; exists {
+			return value == expectedValue, nil
 		}
 
 		return false, fmt.Errorf("variable %s not found", varName)
@@ -776,10 +817,16 @@ func EvaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 		// Remove quotes if present
 		expectedValue = strings.Trim(expectedValue, "\"'")
 
+		// First check in regular variables
 		if value, exists := ctx.Vars[varName]; exists {
 			// Convert value to string for comparison
 			strValue := fmt.Sprintf("%v", value)
 			return strValue != expectedValue, nil
+		}
+
+		// Then check in operation outputs
+		if value, exists := ctx.OperationOutputs[varName]; exists {
+			return value != expectedValue, nil
 		}
 
 		return false, fmt.Errorf("variable %s not found", varName)
@@ -853,8 +900,8 @@ func ExecuteRecipe(recipe Recipe, debug bool) error {
 			ctx.Vars[prompt.Name] = value
 		}
 
-		// Render command template
-		cmd, err := RenderTemplate(op.Command, ctx.Vars)
+		// Render command template with combined variables
+		cmd, err := RenderTemplate(op.Command, ctx.getTemplateVars())
 		if err != nil {
 			return fmt.Errorf("failed to render command template: %v", err)
 		}
@@ -900,7 +947,7 @@ func ExecuteRecipe(recipe Recipe, debug bool) error {
 		// Store operation result and output
 		if op.ID != "" {
 			ctx.OperationResults[op.ID] = operationSuccess
-			ctx.OperationOutputs[op.ID] = output
+			ctx.OperationOutputs[op.ID] = strings.TrimSpace(output)
 		}
 
 		// Update context with output
