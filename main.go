@@ -806,16 +806,10 @@ func executeRecipe(recipe Recipe, debug bool) error {
 		}
 	}
 
-	executedOps := make(map[string]bool)
-
 	var executeOp func(op Operation, depth int) error
 	executeOp = func(op Operation, depth int) error {
 		if depth > 50 {
 			return fmt.Errorf("possible infinite loop detected (max depth reached)")
-		}
-
-		if op.ID != "" {
-			executedOps[op.ID] = true
 		}
 
 		if op.Condition != "" {
@@ -834,6 +828,15 @@ func executeRecipe(recipe Recipe, debug bool) error {
 				if op.ID != "" {
 					ctx.OperationResults[op.ID] = false
 				}
+
+				if op.OnFailure != "" {
+					nextOp, exists := opMap[op.OnFailure]
+					if !exists {
+						return fmt.Errorf("on_failure operation %s not found", op.OnFailure)
+					}
+					return executeOp(nextOp, depth+1)
+				}
+
 				return nil
 			}
 		}
@@ -897,46 +900,38 @@ func executeRecipe(recipe Recipe, debug bool) error {
 			fmt.Println(output)
 		}
 
-		return handleOperationBranching(op, operationSuccess, opMap, executedOps, executeOp, depth)
+		if operationSuccess && op.OnSuccess != "" {
+			nextOp, exists := opMap[op.OnSuccess]
+			if !exists {
+				return fmt.Errorf("on_success operation %s not found", op.OnSuccess)
+			}
+			return executeOp(nextOp, depth+1)
+		} else if !operationSuccess && op.OnFailure != "" {
+			nextOp, exists := opMap[op.OnFailure]
+			if !exists {
+				return fmt.Errorf("on_failure operation %s not found", op.OnFailure)
+			}
+			return executeOp(nextOp, depth+1)
+		}
+
+		return nil
 	}
 
-	for _, op := range recipe.Operations {
-		if op.ID != "" && executedOps[op.ID] {
-			continue
+	for i, op := range recipe.Operations {
+		if debug {
+			fmt.Printf("Executing operation %d: %s\n", i+1, op.Name)
 		}
 
 		if err := executeOp(op, 0); err != nil {
 			return err
 		}
+
+		if op.OnSuccess != "" || op.OnFailure != "" {
+			break
+		}
 	}
 
 	return nil
-}
-
-func handleOperationBranching(op Operation, success bool, opMap map[string]Operation,
-	executedOps map[string]bool,
-	executeOp func(Operation, int) error, depth int) error {
-	if success && op.OnSuccess != "" {
-		return branchToOperation(op.OnSuccess, "success", opMap, executedOps, executeOp, depth)
-	} else if !success && op.OnFailure != "" {
-		return branchToOperation(op.OnFailure, "failure", opMap, executedOps, executeOp, depth)
-	}
-	return nil
-}
-
-func branchToOperation(opID, branchType string, opMap map[string]Operation,
-	executedOps map[string]bool,
-	executeOp func(Operation, int) error, depth int) error {
-	if executedOps[opID] {
-		return fmt.Errorf("operation branching would create a loop with %s", opID)
-	}
-
-	targetOp, exists := opMap[opID]
-	if !exists {
-		return fmt.Errorf("on_%s operation %s not found", branchType, opID)
-	}
-
-	return executeOp(targetOp, depth+1)
 }
 
 func listRecipes(recipes []Recipe) {

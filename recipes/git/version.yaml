@@ -6,10 +6,12 @@ recipes:
       - name: "Check Current Branch"
         id: "branch"
         command: "git rev-parse --abbrev-ref HEAD"
+        silent: true
 
       - name: "Find Latest Tag"
         id: "latest_tag"
         command: "git tag -l 'v*.*.*' --sort=-v:refname | head -n1 || echo ''"
+        silent: true
         transform: |
           {{- $tag := .input | trim -}}
           {{- if eq $tag "" -}}
@@ -36,6 +38,7 @@ recipes:
 
       - name: "Calculate New Version"
         id: "new_version"
+        silent: true
         command: |
           if [[ "{{ .latest_tag }}" == "NO_EXISTING_TAGS" ]]; then
             # First version case
@@ -121,9 +124,5 @@ recipes:
         condition: "create_tag.success && confirm_push == true"
 
       - name: "Show Result"
-        command: "echo 'Successfully created{{ if eq .confirm_push true }} and pushed{{ end }} tag {{ .new_version }}'"
-        condition: "create_tag.success"
-
-      - name: "List Tags"
-        command: "git tag -l 'v*.*.*' --sort=-v:refname | head -n5"
+        command: "echo 'Successfully created{{ if eq .confirm_push true }} and pushed{{ end }} tag {{ .new_version }} to origin'"
         condition: "create_tag.success"

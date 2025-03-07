@@ -8,10 +8,6 @@ recipes:
         command: "go version"
         transform: "{{ .input | trim }}"
 
-      - name: "Show Project Details"
-        id: "project_info"
-        command: "go list -m all | grep -E '^[^[:space:]]'"
-
       - name: "Confirm Build"
         id: "confirm_op"
         command: "echo 'Preparing to build shef...'"
