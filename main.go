@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/zip"
 	"bytes"
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
@@ -10,10 +9,10 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -93,7 +92,6 @@ type Prompt struct {
 
 // UserConfig represents the user configuration
 type UserConfig struct {
-	PublicRepo      string `yaml:"public_repo"`
 	DefaultCategory string `yaml:"default_category"`
 	Editor          string `yaml:"editor"`
 	Debug           bool   `yaml:"debug"`
@@ -147,7 +145,6 @@ func LoadConfig(filename string) (*Config, error) {
 func LoadUserConfig() (*UserConfig, error) {
 	// Default configuration
 	config := &UserConfig{
-		PublicRepo:      "https://github.com/eduardoagarcia/shef",
 		DefaultCategory: "default",
 		Editor:          "vim",
 		Debug:           false,
@@ -205,207 +202,83 @@ func LoadRecipes(sources []string, category string) ([]Recipe, error) {
 	return allRecipes, nil
 }
 
-// UpdatePublicRecipes downloads the latest recipes from the public repository
-func UpdatePublicRecipes(repoURL string) error {
-	// Create temp directory if it doesn't exist
-	publicDir := filepath.Join(os.TempDir(), "shef-public")
+// UpdatePublicRecipes copies recipes from repo to user's ~/.shef/public
+func UpdatePublicRecipes() error {
+	// Check if we're in the repo directory (has recipes folder)
+	if _, err := os.Stat("recipes"); os.IsNotExist(err) {
+		return fmt.Errorf("recipes directory not found - please run this command from the shef repository root")
+	}
+
+	// Create user's public and personal recipe directories
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to determine home directory: %v", err)
+	}
+
+	// Create the .shef base directory path
+	shefDir := filepath.Join(homeDir, ".shef")
+
+	// Create public directory
+	publicDir := filepath.Join(shefDir, "public")
 	if err := os.MkdirAll(publicDir, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create public recipes directory: %v", err)
 	}
 
-	fmt.Println("Updating public recipes from repository...")
-
-	// For GitHub repos, try using HTTPS without auth for public repos
-	// Convert SSH URL to HTTPS if needed
-	httpsURL := repoURL
-	if strings.HasPrefix(repoURL, "git@github.com:") {
-		// Convert from git@github.com:user/repo.git to https://github.com/user/repo.git
-		path := strings.TrimPrefix(repoURL, "git@github.com:")
-		httpsURL = "https://github.com/" + path
+	// Create user directory
+	userDir := filepath.Join(shefDir, "user")
+	if err := os.MkdirAll(userDir, 0755); err != nil {
+		return fmt.Errorf("failed to create user recipes directory: %v", err)
 	}
 
-	// Check if the directory already contains a git repository
-	_, err := os.Stat(filepath.Join(publicDir, ".git"))
-	isNewClone := os.IsNotExist(err)
-
-	var cmd *exec.Cmd
-
-	if isNewClone {
-		// If directory is empty, try to do a fresh clone
-		fmt.Println("Cloning repository...")
-
-		// First attempt: shallow clone with HTTPS
-		cmd = exec.Command("git", "clone", "--depth=1", httpsURL, publicDir)
-		cmd.Env = append(os.Environ(),
-			"GIT_TERMINAL_PROMPT=0", // Disable username/password prompt
-			"GIT_ASKPASS=echo",      // Force echo as the askpass program
-		)
-
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			fmt.Printf("Warning: Could not clone repository using HTTPS: %v\n", err)
-
-			// Clean up failed attempt
-			os.RemoveAll(publicDir)
-			if err := os.MkdirAll(publicDir, 0755); err != nil {
-				return err
-			}
-
-			// Second attempt: Try to download just the recipes folder as a ZIP
-			// This works for GitHub repositories without authentication
-			if strings.Contains(httpsURL, "github.com") {
-				fmt.Println("Attempting to download recipes directly...")
-
-				// Extract user/repo from URL
-				parts := strings.Split(httpsURL, "github.com/")
-				if len(parts) == 2 {
-					repoPath := strings.TrimSuffix(parts[1], ".git")
-					zipURL := fmt.Sprintf("https://github.com/%s/archive/refs/heads/main.zip", repoPath)
-
-					// Download the ZIP file
-					zipPath := filepath.Join(os.TempDir(), "shef-repo.zip")
-					if err := downloadFile(zipURL, zipPath); err != nil {
-						return fmt.Errorf("failed to download repository: %v", err)
-					}
-
-					// Extract the recipes directory
-					if err := extractRecipesFromZip(zipPath, publicDir, repoPath); err != nil {
-						return fmt.Errorf("failed to extract recipes: %v", err)
-					}
-
-					fmt.Println("Recipe repository downloaded successfully")
-					return nil
-				}
-			}
-
-			return fmt.Errorf("failed to clone repository: %v\nOutput: %s", err, string(output))
-		}
-	} else {
-		// Pull latest changes if repository already exists
-		fmt.Println("Pulling latest changes...")
-		cmd = exec.Command("git", "-C", publicDir, "pull", "origin", "main")
-		cmd.Env = append(os.Environ(),
-			"GIT_TERMINAL_PROMPT=0", // Disable username/password prompt
-			"GIT_ASKPASS=echo",      // Force echo as the askpass program
-		)
-
-		_, err := cmd.CombinedOutput()
-		if err != nil {
-			fmt.Printf("Warning: Could not pull latest changes: %v\n", err)
-
-			// Attempt to re-clone
-			os.RemoveAll(publicDir)
-			return UpdatePublicRecipes(repoURL) // Recursive call to try clone instead
-		}
+	// Copy recipes from repo to user's public directory
+	fmt.Println("Copying public recipes...")
+	err = copyDir("recipes", publicDir)
+	if err != nil {
+		return fmt.Errorf("failed to copy recipes: %v", err)
 	}
 
-	// Verify that the recipes directory exists
-	recipesDir := filepath.Join(publicDir, "recipes")
-	if _, err := os.Stat(recipesDir); os.IsNotExist(err) {
-		return fmt.Errorf("recipes directory not found in the repository")
-	}
-
-	fmt.Println("Recipe repository updated successfully")
+	fmt.Printf("Public recipes copied to %s\n", publicDir)
 	return nil
 }
 
-// Helper function to download a file from a URL
-func downloadFile(url string, filepath string) error {
-	// Create the file
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Check server response
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+// Helper function to copy a directory recursively
+func copyDir(src, dst string) error {
+	// Get properties of source dir
+	srcInfo, err := os.Stat(src)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
+	// Create destination dir
+	if err = os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		return err
+	}
 
-// Helper function to extract recipes from a zip file
-func extractRecipesFromZip(zipPath, destDir, repoPath string) error {
-	// Open the zip file
-	r, err := zip.OpenReader(zipPath)
+	// Read source directory
+	dir, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer dir.Close()
 
-	// Get repository name
-	repoParts := strings.Split(repoPath, "/")
-	repoName := ""
-	if len(repoParts) > 0 {
-		repoName = repoParts[len(repoParts)-1]
-	}
-
-	// Look for the recipes directory
-	recipesPrefix := fmt.Sprintf("%s-main/recipes/", repoName)
-
-	// Create recipes directory
-	recipesDir := filepath.Join(destDir, "recipes")
-	if err := os.MkdirAll(recipesDir, 0755); err != nil {
+	items, err := dir.Readdir(-1)
+	if err != nil {
 		return err
 	}
 
-	// Extract files from recipes directory
-	for _, f := range r.File {
-		if strings.HasPrefix(f.Name, recipesPrefix) {
-			// Extract file name from path
-			fileName := strings.TrimPrefix(f.Name, recipesPrefix)
-			if fileName == "" {
-				// Skip the directory itself
-				continue
-			}
+	// Copy each item
+	for _, item := range items {
+		srcPath := filepath.Join(src, item.Name())
+		dstPath := filepath.Join(dst, item.Name())
 
-			// Create output file path
-			fpath := filepath.Join(recipesDir, fileName)
-
-			// If it's a directory, create it
-			if f.FileInfo().IsDir() {
-				os.MkdirAll(fpath, 0755)
-				continue
-			}
-
-			// Create parent directory if needed
-			if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
+		if item.IsDir() {
+			// Recursively copy subdirectory
+			if err = copyDir(srcPath, dstPath); err != nil {
 				return err
 			}
-
-			// Open the file in the zip
-			rc, err := f.Open()
-			if err != nil {
-				return err
-			}
-
-			// Create the file on disk
-			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-			if err != nil {
-				rc.Close()
-				return err
-			}
-
-			// Copy contents
-			_, err = io.Copy(outFile, rc)
-			outFile.Close()
-			rc.Close()
-			if err != nil {
+		} else {
+			// Copy file
+			if err = copyFile(srcPath, dstPath); err != nil {
 				return err
 			}
 		}
@@ -414,7 +287,33 @@ func extractRecipesFromZip(zipPath, destDir, repoPath string) error {
 	return nil
 }
 
-// FindRecipeSourcesByType finds recipe files with more granular control over source types
+// Helper function to copy a file
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	return os.Chmod(dst, srcInfo.Mode())
+}
+
+// FindRecipeSourcesByType finds recipe files in the specified locations
 func FindRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, error) {
 	var sources []string
 
@@ -448,28 +347,16 @@ func FindRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 		}
 	}
 
-	// Check user recipes in ~/.shef
-	if userDir {
+	// Check user's home directory recipes
+	if userDir || publicRepo { // We include both when either is requested
 		homeDir, err := os.UserHomeDir()
 		if err == nil {
-			userDir := filepath.Join(homeDir, ".shef")
-			if _, err := os.Stat(userDir); err == nil {
-				userFiles, err := findYamlFiles(userDir)
+			userRoot := filepath.Join(homeDir, ".shef")
+			if _, err := os.Stat(userRoot); err == nil {
+				userFiles, err := findYamlFiles(userRoot)
 				if err == nil {
 					sources = append(sources, userFiles...)
 				}
-			}
-		}
-	}
-
-	// Check public recipes - updated to look in the recipes subdirectory
-	if publicRepo {
-		publicDir := filepath.Join(os.TempDir(), "shef-public")
-		recipesDir := filepath.Join(publicDir, "recipes")
-		if _, err := os.Stat(recipesDir); err == nil {
-			publicFiles, err := findYamlFiles(recipesDir)
-			if err == nil {
-				sources = append(sources, publicFiles...)
 			}
 		}
 	}
@@ -699,10 +586,146 @@ func RenderTemplate(tmplStr string, vars map[string]interface{}) (string, error)
 	return buf.String(), nil
 }
 
+// parseNumericComparison evaluates conditions with numeric operators (>, <, >=, <=), supporting variables and both integer and float values
+func parseNumericComparison(condition string, ctx *ExecutionContext) (bool, error) {
+	// Check for numeric comparisons (>, <, >=, <=)
+	var op string
+	var parts []string
+
+	if strings.Contains(condition, ">=") {
+		parts = strings.Split(condition, ">=")
+		op = ">="
+	} else if strings.Contains(condition, "<=") {
+		parts = strings.Split(condition, "<=")
+		op = "<="
+	} else if strings.Contains(condition, ">") {
+		parts = strings.Split(condition, ">")
+		op = ">"
+	} else if strings.Contains(condition, "<") {
+		parts = strings.Split(condition, "<")
+		op = "<"
+	} else {
+		return false, fmt.Errorf("not a numeric comparison")
+	}
+
+	if len(parts) != 2 {
+		return false, fmt.Errorf("invalid numeric comparison format: %s", condition)
+	}
+
+	leftStr := strings.TrimSpace(parts[0])
+	rightStr := strings.TrimSpace(parts[1])
+
+	// Handle variable references and template expressions on the left side
+	if strings.Contains(leftStr, "{{") && strings.Contains(leftStr, "}}") {
+		// This is a template expression, process it
+		rendered, err := RenderTemplate(leftStr, ctx.getTemplateVars())
+		if err != nil {
+			return false, fmt.Errorf("failed to render left side template: %v", err)
+		}
+		leftStr = rendered
+	} else if strings.HasPrefix(leftStr, "$") || strings.HasPrefix(leftStr, ".") {
+		// This is a variable reference
+		varName := leftStr
+		if strings.HasPrefix(varName, "$") {
+			varName = varName[1:] // Remove $ prefix
+		}
+		if strings.HasPrefix(varName, ".") {
+			varName = varName[1:] // Remove . prefix
+		}
+
+		// Check in variables and operation outputs
+		if value, exists := ctx.Vars[varName]; exists {
+			leftStr = fmt.Sprintf("%v", value)
+		} else if value, exists := ctx.OperationOutputs[varName]; exists {
+			leftStr = value
+		} else {
+			return false, fmt.Errorf("variable %s not found", varName)
+		}
+	}
+
+	// Handle variable references and template expressions on the right side
+	if strings.Contains(rightStr, "{{") && strings.Contains(rightStr, "}}") {
+		// This is a template expression, process it
+		rendered, err := RenderTemplate(rightStr, ctx.getTemplateVars())
+		if err != nil {
+			return false, fmt.Errorf("failed to render right side template: %v", err)
+		}
+		rightStr = rendered
+	} else if strings.HasPrefix(rightStr, "$") || strings.HasPrefix(rightStr, ".") {
+		// This is a variable reference
+		varName := rightStr
+		if strings.HasPrefix(varName, "$") {
+			varName = varName[1:] // Remove $ prefix
+		}
+		if strings.HasPrefix(varName, ".") {
+			varName = varName[1:] // Remove . prefix
+		}
+
+		// Check in variables and operation outputs
+		if value, exists := ctx.Vars[varName]; exists {
+			rightStr = fmt.Sprintf("%v", value)
+		} else if value, exists := ctx.OperationOutputs[varName]; exists {
+			rightStr = value
+		} else {
+			return false, fmt.Errorf("variable %s not found", varName)
+		}
+	}
+
+	// Convert to integers for comparison
+	leftVal, leftErr := strconv.Atoi(strings.TrimSpace(leftStr))
+	rightVal, rightErr := strconv.Atoi(strings.TrimSpace(rightStr))
+
+	if leftErr != nil || rightErr != nil {
+		// Try float conversion if integer conversion fails
+		leftFloat, leftErr := strconv.ParseFloat(strings.TrimSpace(leftStr), 64)
+		rightFloat, rightErr := strconv.ParseFloat(strings.TrimSpace(rightStr), 64)
+
+		if leftErr != nil || rightErr != nil {
+			return false, fmt.Errorf("numeric comparison requires numeric values, got '%s' and '%s'", leftStr, rightStr)
+		}
+
+		// Perform float comparison
+		switch op {
+		case ">":
+			return leftFloat > rightFloat, nil
+		case "<":
+			return leftFloat < rightFloat, nil
+		case ">=":
+			return leftFloat >= rightFloat, nil
+		case "<=":
+			return leftFloat <= rightFloat, nil
+		}
+	}
+
+	// Perform integer comparison
+	switch op {
+	case ">":
+		return leftVal > rightVal, nil
+	case "<":
+		return leftVal < rightVal, nil
+	case ">=":
+		return leftVal >= rightVal, nil
+	case "<=":
+		return leftVal <= rightVal, nil
+	}
+
+	return false, fmt.Errorf("unknown operator: %s", op)
+}
+
 // EvaluateCondition evaluates a condition expression against the context
 func EvaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 	if condition == "" {
 		return true, nil // Empty condition always evaluates to true
+	}
+
+	// Process templates in condition first if present
+	if strings.Contains(condition, "{{") && strings.Contains(condition, "}}") {
+		rendered, err := RenderTemplate(condition, ctx.getTemplateVars())
+		if err != nil {
+			return false, fmt.Errorf("failed to render condition template: %v", err)
+		}
+		// Recursive call to evaluate the rendered condition
+		return EvaluateCondition(rendered, ctx)
 	}
 
 	// Parse the condition
@@ -748,6 +771,12 @@ func EvaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 		return !result, nil
 	}
 
+	// Try to parse as a numeric comparison
+	numericResult, numericErr := parseNumericComparison(condition, ctx)
+	if numericErr == nil {
+		return numericResult, nil
+	}
+
 	// Check for operation result conditions
 	if strings.Contains(condition, ".success") {
 		parts := strings.Split(condition, ".")
@@ -782,6 +811,9 @@ func EvaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 		if strings.HasPrefix(varName, "$") {
 			varName = varName[1:] // Remove $ prefix
 		}
+		if strings.HasPrefix(varName, ".") {
+			varName = varName[1:] // Remove . prefix
+		}
 
 		expectedValue := strings.TrimSpace(parts[1])
 		// Remove quotes if present
@@ -812,6 +844,9 @@ func EvaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 		if strings.HasPrefix(varName, "$") {
 			varName = varName[1:] // Remove $ prefix
 		}
+		if strings.HasPrefix(varName, ".") {
+			varName = varName[1:] // Remove . prefix
+		}
 
 		expectedValue := strings.TrimSpace(parts[1])
 		// Remove quotes if present
@@ -830,6 +865,14 @@ func EvaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 		}
 
 		return false, fmt.Errorf("variable %s not found", varName)
+	}
+
+	// Handle direct boolean values
+	if condition == "true" {
+		return true, nil
+	}
+	if condition == "false" {
+		return false, nil
 	}
 
 	return false, fmt.Errorf("unsupported condition format: %s", condition)
@@ -1213,7 +1256,7 @@ func main() {
 				Name:  "update",
 				Usage: "Update public recipes",
 				Action: func(c *cli.Context) error {
-					return UpdatePublicRecipes(userConfig.PublicRepo)
+					return UpdatePublicRecipes()
 				},
 			},
 		},

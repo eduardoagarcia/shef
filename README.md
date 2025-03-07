@@ -45,8 +45,8 @@ shef update
 Shef looks for recipes in multiple locations:
 
 1. **Local Recipes**: `./.shef/*.yaml` in the current directory
-2. **User Recipes**: `~/.shef/*.yaml` in your home directory
-3. **Public Recipes**: Downloaded from the public repository
+2. **User Recipes**: `~/.shef/user/*.yaml` in your home directory
+3. **Public Recipes**: `~/.shef/public/*.yaml` in your home directory
 
 To prioritize a specific source:
 
@@ -355,10 +355,127 @@ debug: false
 
 To create your own recipes:
 
-1. Create a directory: `mkdir -p ~/.shef`
-2. Create a YAML file: `touch ~/.shef/mycategory.yaml`
+1. Create a directory: `mkdir -p ~/.shef/user` (if it does not already exist)
+2. Create a new YAML file: `touch ~/.shef/user/my-recipes.yaml`
 3. Add your recipes following the format above
 4. Run `shef -l` to see your new recipes
+
+## AI-Assisted Recipe Creation
+
+Generate powerful Shef recipes quickly using AI tools like ChatGPT, Claude, or other large language models.
+
+### Using AI to Create Recipes
+
+1. Copy the prompt below
+2. Paste it into your AI assistant of choice
+3. Replace `[DESCRIBE YOUR WORKFLOW IN DETAIL]` with a detailed description of what you want your recipe to do
+4. The AI will generate a complete Shef recipe based on your description
+5. Test and iterate
+
+### Example Usage
+
+Here's an example of how to fill in your workflow description:
+
+```
+I need a Docker management workflow that helps me clean up unused containers and images to free up disk space.
+
+The workflow should:
+1. Show the current Docker disk usage
+2. List all stopped containers and allow me to select which ones to remove
+3. Confirm before removing the selected containers
+4. List dangling images (unused) and allow me to select which ones to remove
+5. Offer an option to perform a more aggressive cleanup (removing all unused images)
+6. Show before/after disk usage comparison
+7. Include error handling in case any operation fails
+
+The recipe should be interactive and safe, requiring confirmation before any destructive operations.
+```
+
+### Tips for Better Results
+
+- Be specific about what commands should be executed at each step
+- Mention if you need interactive prompts, conditions, or transformations
+- For complex workflows, break down your requirements into clear, logical steps
+- Include any specific error handling or conditional branches you need
+- Request comments in the generated recipe to explain complex sections
+
+The AI-generated recipes provide an excellent starting point that you can further customize to fit your exact needs.
+
+### The Prompt
+
+```text
+I need help creating a Shef recipe. Shef is a CLI tool that combines shell commands into reusable recipes defined in YAML.
+
+[DESCRIBE YOUR WORKFLOW IN DETAIL]
+
+A Shef recipe is defined in YAML with this structure:
+recipes:
+  - name: "short-name"
+    description: "Human-readable description"
+    category: "optional-category" 
+    operations:
+      - name: "Operation Name"
+        id: "unique_id"
+        command: "shell command"
+        condition: "optional condition"
+        on_success: "next_op_id"
+        on_failure: "fallback_op_id"
+        transform: "{{ .input | transformation }}"
+        prompts:
+          - name: "variable_name"
+            type: "input|select|confirm"
+            message: "Prompt message"
+            default: "Default value"
+            options: ["option1", "option2"]  # For select type
+            source_operation: "operation_id"  # For dynamic options
+            source_transform: "{{ .input | transform }}"  # For processing source options
+
+RECIPE MECHANICS:
+1. Operations execute in sequence unless redirected by on_success/on_failure
+2. Each operation's output becomes input to the next operation
+3. Variables from prompts are accessible as {{ .variable_name }}
+4. Operation outputs are accessible as {{ .operation_id }}
+5. You can combine variables and operation outputs in command templates
+
+INTERACTIVE PROMPTS:
+- input: Free text input (default: string)
+- select: Choose from options (static or dynamic from previous operation)
+- confirm: Yes/no boolean question
+
+TRANSFORMATION EXAMPLES:
+- Trim whitespace: {{ .input | trim }}
+- Split by delimiter: {{ .input | split "," }}
+- Join array: {{ .input | join "\n" }}
+- Filter lines: {{ .input | filter "pattern" }} or {{ .input | grep "pattern" }}
+- Extract field: {{ .input | cut ":" 1 }}
+- Remove prefix/suffix: {{ .input | trimPrefix "foo" }} {{ .input | trimSuffix "bar" }}
+- Check content: {{ if contains .input "pattern" }}yes{{ end }}
+- Replace text: {{ .input | replace "old" "new" }}
+- Math operations: {{ .input | atoi | add 5 | mul 2 | div 3 | sub 1 }}
+- Execute command: {{ exec "date" }}
+
+CONDITIONAL LOGIC:
+- Variable equality: variable == "value" or variable != "value"
+- Operation success/failure: operation_id.success or operation_id.failure
+- Boolean operators: condition1 && condition2, condition1 || condition2, !condition
+- Complex example: (check_files.success && has_tests == true) || skip_tests == true
+
+ADVANCED FEATURES:
+- Dynamic selection options from previous commands
+- Conditional branching based on operation results
+- Multi-step workflows with error handling
+- Custom error messages and recovery steps
+- Transforming outputs between operations
+
+EXAMPLE RECIPE PATTERNS:
+1. Get input → Process → Show result
+2. List options → Select one → Take action
+3. Check condition → Branch based on result → Handle each case
+4. Execute command → Transform output → Use in next command
+5. Try operation → Handle success/failure differently
+
+Please create a complete Shef recipe that accomplishes my goal, with proper indentation and comments explaining complex parts.
+```
 
 ## Troubleshooting
 
