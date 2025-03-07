@@ -1,0 +1,25 @@
+recipes:
+  - name: "shell"
+    description: "Shell into a Docker container"
+    category: "docker"
+    operations:
+      - name: "List Containers"
+        id: "list_containers"
+        command: "docker ps --format '{{`{{.Names}}`}}'"
+        silent: true
+
+      - name: "Select Container"
+        id: "select_container"
+        command: "echo 'Shelling into {{ .container }}...'"
+        prompts:
+          - name: "container"
+            type: "select"
+            message: "Select a container"
+            source_operation: "list_containers"
+
+      - name: "Execute Shell"
+        command: "docker exec -it {{ .container }} sh"
+        execution_mode: "interactive"
+
+      - name: "Show Message After Shell Exit"
+        command: "echo 'Welcome back! Shell session completed.'"

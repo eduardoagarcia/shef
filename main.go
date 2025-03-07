@@ -11,10 +11,14 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"text/template"
+	"time"
 )
 
 // Define common template functions to be used across all templates
@@ -69,14 +73,16 @@ type Recipe struct {
 
 // Operation represents a single step in a recipe
 type Operation struct {
-	Name      string   `yaml:"name"`
-	ID        string   `yaml:"id,omitempty"` // Unique identifier for referencing operation output
-	Command   string   `yaml:"command"`
-	Condition string   `yaml:"condition,omitempty"`  // Conditional expression for if/else branching
-	OnSuccess string   `yaml:"on_success,omitempty"` // Operation ID to execute on success
-	OnFailure string   `yaml:"on_failure,omitempty"` // Operation ID to execute on failure
-	Transform string   `yaml:"transform,omitempty"`  // Template to transform output before storing
-	Prompts   []Prompt `yaml:"prompts,omitempty"`
+	Name          string   `yaml:"name"`
+	ID            string   `yaml:"id,omitempty"` // Unique identifier for referencing operation output
+	Command       string   `yaml:"command"`
+	ExecutionMode string   `yaml:"execution_mode,omitempty"` // "standard" [default], "interactive", or "stream"
+	Silent        bool     `yaml:"silent,omitempty"`         // When true, output is not displayed but still stored
+	Condition     string   `yaml:"condition,omitempty"`      // Conditional expression for if/else branching
+	OnSuccess     string   `yaml:"on_success,omitempty"`     // Operation ID to execute on success
+	OnFailure     string   `yaml:"on_failure,omitempty"`     // Operation ID to execute on failure
+	Transform     string   `yaml:"transform,omitempty"`      // Template to transform output before storing
+	Prompts       []Prompt `yaml:"prompts,omitempty"`
 }
 
 // Prompt represents an interactive user prompt
@@ -441,6 +447,11 @@ func HandlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 			return nil, fmt.Errorf("no options available for select prompt")
 		}
 
+		// If no default is provided, use the first option as default
+		if defaultValue == "" && len(options) > 0 {
+			defaultValue = options[0]
+		}
+
 		var answer string
 		prompt := &survey.Select{
 			Message: message,
@@ -546,29 +557,88 @@ func parseOptionsFromOutput(output string) []string {
 	return options
 }
 
-// ExecuteCommand runs a shell command with the given input
-func ExecuteCommand(cmdStr string, input string) (string, error) {
-	// Always use a shell to execute commands for consistent behavior
+// ExecuteCommand runs a shell command with the given input and execution mode
+// Execution modes: "standard", "interactive", "stream"
+func ExecuteCommand(cmdStr string, input string, executionMode string) (string, error) {
+	// Default to standard mode if not specified
+	if executionMode == "" {
+		executionMode = "standard"
+	}
+
+	// For standard commands that capture output
+	if executionMode == "standard" {
+		// Always use a shell to execute commands for consistent behavior
+		cmd := exec.Command("sh", "-c", cmdStr)
+
+		// Set up input if provided
+		if input != "" {
+			cmd.Stdin = strings.NewReader(input)
+		}
+
+		// Capture output
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+
+		// Run the command
+		err := cmd.Run()
+		if err != nil {
+			return "", fmt.Errorf("command failed: %v\nStderr: %s", err, stderr.String())
+		}
+
+		return strings.TrimSpace(stdout.String()), nil
+	}
+
+	// Create command
 	cmd := exec.Command("sh", "-c", cmdStr)
 
-	// Set up input if provided
-	if input != "" {
-		cmd.Stdin = strings.NewReader(input)
+	// Connect directly to the terminal
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// For streaming commands, we need to properly handle signals
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		// This ensures the process receives signals properly
+		Setpgid: false,
 	}
 
-	// Capture output
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	// Run the command
-	err := cmd.Run()
+	// Start the command
+	err := cmd.Start()
 	if err != nil {
-		return "", fmt.Errorf("command failed: %v\nStderr: %s", err, stderr.String())
+		return "", fmt.Errorf("failed to start command: %v", err)
 	}
 
-	return strings.TrimSpace(stdout.String()), nil
+	// Handle graceful termination on SIGINT (Ctrl+C)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+
+	// Create a channel for command completion
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+
+	// Wait for either command completion or interrupt
+	select {
+	case <-sigChan:
+		// User pressed Ctrl+C, try to terminate gracefully
+		cmd.Process.Signal(os.Interrupt)
+
+		// Give it a moment to clean up
+		select {
+		case <-done:
+			// Command exited after signal
+		case <-time.After(2 * time.Second):
+			// Force kill if it doesn't exit quickly
+			cmd.Process.Kill()
+		}
+		return "", nil
+
+	case err := <-done:
+		return "", err
+	}
 }
 
 // RenderTemplate renders a command template with variables
@@ -954,7 +1024,7 @@ func ExecuteRecipe(recipe Recipe, debug bool) error {
 		}
 
 		// Execute the command
-		output, err := ExecuteCommand(cmd, ctx.Data)
+		output, err := ExecuteCommand(cmd, ctx.Data, op.ExecutionMode)
 		operationSuccess := err == nil
 
 		if err != nil {
@@ -997,7 +1067,7 @@ func ExecuteRecipe(recipe Recipe, debug bool) error {
 		ctx.Data = output
 
 		// Only print output if there's something to show
-		if output != "" {
+		if output != "" && !op.Silent {
 			fmt.Println(output)
 		}
 
@@ -1085,11 +1155,25 @@ func ListRecipes(recipes []Recipe) {
 		categories[cat] = append(categories[cat], recipe)
 	}
 
+	// Get sorted category names
+	var categoryNames []string
+	for category := range categories {
+		categoryNames = append(categoryNames, category)
+	}
+	sort.Strings(categoryNames)
+
 	// Print recipes by category
-	for category, catRecipes := range categories {
+	for _, category := range categoryNames {
+		catRecipes := categories[category]
+
+		// Sort recipes by name within each category
+		sort.Slice(catRecipes, func(i, j int) bool {
+			return catRecipes[i].Name < catRecipes[j].Name
+		})
+
 		fmt.Printf("\n[%s]\n", category)
 		for i, recipe := range catRecipes {
-			fmt.Printf("%d. %s - %s\n", i+1, recipe.Name, recipe.Description)
+			fmt.Printf("%d. %s: %s\n", i+1, recipe.Name, recipe.Description)
 		}
 	}
 }

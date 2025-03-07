@@ -24,3 +24,4 @@ go.work.sum
 # idea
 .idea
 /shef
+/.shef/tools/debug.yaml

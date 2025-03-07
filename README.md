@@ -27,6 +27,9 @@ go build -o shef
 ## Quick Start
 
 ```bash
+# Download (or update) all public recipes
+shef update
+
 # Run a recipe
 shef git version
 
@@ -35,9 +38,6 @@ shef -l
 
 # List recipes in a category
 shef -l git
-
-# Update public recipes
-shef update
 ```
 
 ## Recipe Sources
@@ -289,7 +289,6 @@ Example config file:
 
 ```yaml
 # ~/.shef/config.yaml
-public_repo: https://github.com/yourusername/shef-recipes
 default_category: git
 debug: false
 ```
@@ -355,7 +354,7 @@ debug: false
 
 To create your own recipes:
 
-1. Create a directory: `mkdir -p ~/.shef/user` (if it does not already exist)
+1. Create your user directory: `mkdir -p ~/.shef/user` (if it does not already exist)
 2. Create a new YAML file: `touch ~/.shef/user/my-recipes.yaml`
 3. Add your recipes following the format above
 4. Run `shef -l` to see your new recipes
@@ -492,27 +491,3 @@ Please create a complete Shef recipe that accomplishes my goal, with proper inde
 - Remember all commands run through a shell, so shell syntax applies
 - Escape special characters in command strings
 - Use the `transform` field to format output
-
-## License
-
-MIT License
-
-Copyright (c) 2025 Eduardo A. Garcia
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.

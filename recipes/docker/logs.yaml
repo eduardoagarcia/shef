@@ -1,0 +1,25 @@
+recipes:
+  - name: "logs"
+    description: "Stream logs from a Docker container"
+    category: "docker"
+    operations:
+      - name: "List Containers"
+        id: "list_containers"
+        command: "docker ps --format '{{`{{.Names}}`}}'"
+        silent: true
+
+      - name: "Select Container"
+        id: "select_container"
+        command: "echo 'Streaming logs for {{ .container }}...'"
+        prompts:
+          - name: "container"
+            type: "select"
+            message: "Select a container"
+            source_operation: "list_containers"
+
+      - name: "Stream Logs"
+        command: "docker logs --follow {{ .container }}"
+        execution_mode: "stream"
+
+      - name: "Show Message After Logs Exit"
+        command: "echo 'Docker container log streaming ended.'"
