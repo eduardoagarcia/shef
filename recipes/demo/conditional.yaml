@@ -1,0 +1,25 @@
+recipes:
+  - name: "conditional"
+    description: "A simple demo of conditional operations using direct prompt values"
+    category: "demo"
+    operations:
+      - name: "Choose Fruit"
+        id: "choose"
+        command: "echo 'You selected: {{ .fruit }}'"
+        prompts:
+          - name: "fruit"
+            type: "select"
+            message: "Choose a fruit:"
+            options:
+              - "Apples"
+              - "Oranges"
+
+      - name: "Apple Operation"
+        id: "apple"
+        command: "echo 'This is the apple operation! 🍎'"
+        condition: ".fruit == 'Apples'"
+
+      - name: "Orange Operation"
+        id: "orange"
+        command: "echo 'This is the orange operation! 🍊'"
+        condition: ".fruit == 'Oranges'"

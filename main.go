@@ -47,13 +47,29 @@ type Operation struct {
 }
 
 type Prompt struct {
-	Name            string   `yaml:"name"`
-	Type            string   `yaml:"type"`
-	Message         string   `yaml:"message"`
-	Default         string   `yaml:"default,omitempty"`
-	Options         []string `yaml:"options,omitempty"`
-	SourceOp        string   `yaml:"source_operation,omitempty"`
-	SourceTransform string   `yaml:"source_transform,omitempty"`
+	Name            string            `yaml:"name"`
+	Type            string            `yaml:"type"`
+	Message         string            `yaml:"message"`
+	Default         string            `yaml:"default,omitempty"`
+	Options         []string          `yaml:"options,omitempty"`
+	SourceOp        string            `yaml:"source_operation,omitempty"`
+	SourceTransform string            `yaml:"source_transform,omitempty"`
+	MinValue        int               `yaml:"min_value,omitempty"`
+	MaxValue        int               `yaml:"max_value,omitempty"`
+	Required        bool              `yaml:"required,omitempty"`
+	FileExtensions  []string          `yaml:"file_extensions,omitempty"`
+	MultipleLimit   int               `yaml:"multiple_limit,omitempty"`
+	EditorCmd       string            `yaml:"editor_cmd,omitempty"`
+	HelpText        string            `yaml:"help_text,omitempty"`
+	Validators      []PromptValidator `yaml:"validators,omitempty"`
+}
+
+type PromptValidator struct {
+	Type    string `yaml:"type"`
+	Pattern string `yaml:"pattern,omitempty"`
+	Message string `yaml:"message,omitempty"`
+	Min     int    `yaml:"min,omitempty"`
+	Max     int    `yaml:"max,omitempty"`
 }
 
 type ExecutionContext struct {
@@ -83,13 +99,14 @@ func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 var templateFuncs = template.FuncMap{
 	"split":      strings.Split,
 	"join":       strings.Join,
+	"joinArray":  JoinArray,
 	"trim":       strings.TrimSpace,
 	"trimPrefix": strings.TrimPrefix,
 	"trimSuffix": strings.TrimSuffix,
 	"contains":   strings.Contains,
 	"replace":    strings.ReplaceAll,
 	"filter":     filterLines,
-	"grep":       filterLines, // alias for filterLines
+	"grep":       filterLines,
 	"cut":        cutFields,
 	"exec":       execCommand,
 	"atoi": func(s string) int {
@@ -109,6 +126,21 @@ var templateFuncs = template.FuncMap{
 		return a / b
 	},
 	"mul": func(a, b int) int { return a * b },
+}
+
+func JoinArray(arr interface{}, sep string) string {
+	switch v := arr.(type) {
+	case []string:
+		return strings.Join(v, sep)
+	case []interface{}:
+		strs := make([]string, len(v))
+		for i, val := range v {
+			strs[i] = fmt.Sprintf("%v", val)
+		}
+		return strings.Join(strs, sep)
+	default:
+		return fmt.Sprintf("%v", arr)
+	}
 }
 
 func filterLines(input, pattern string) string {
@@ -378,12 +410,27 @@ func handlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 		defaultValue = defaultBuf.String()
 	}
 
+	helpText := ""
+	if p.HelpText != "" {
+		helpTemplate, err := template.New("help").Funcs(templateFuncs).Parse(p.HelpText)
+		if err != nil {
+			return nil, err
+		}
+
+		var helpBuf bytes.Buffer
+		if err := helpTemplate.Execute(&helpBuf, vars); err != nil {
+			return nil, err
+		}
+		helpText = helpBuf.String()
+	}
+
 	switch p.Type {
 	case "input":
 		var answer string
 		prompt := &survey.Input{
 			Message: message,
 			Default: defaultValue,
+			Help:    helpText,
 		}
 		if err := survey.AskOne(prompt, &answer); err != nil {
 			return nil, err
@@ -396,7 +443,17 @@ func handlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 			return nil, err
 		}
 
-		if defaultValue == "" && len(options) > 0 {
+		defaultExists := false
+		if defaultValue != "" {
+			for _, opt := range options {
+				if opt == defaultValue {
+					defaultExists = true
+					break
+				}
+			}
+		}
+
+		if !defaultExists && len(options) > 0 {
 			defaultValue = options[0]
 		}
 
@@ -405,6 +462,7 @@ func handlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 			Message: message,
 			Options: options,
 			Default: defaultValue,
+			Help:    helpText,
 		}
 		if err := survey.AskOne(prompt, &answer); err != nil {
 			return nil, err
@@ -416,6 +474,208 @@ func handlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 		prompt := &survey.Confirm{
 			Message: message,
 			Default: defaultValue == "true",
+			Help:    helpText,
+		}
+		if err := survey.AskOne(prompt, &answer); err != nil {
+			return nil, err
+		}
+		return answer, nil
+
+	case "password":
+		var answer string
+		prompt := &survey.Password{
+			Message: message,
+			Help:    helpText,
+		}
+		if err := survey.AskOne(prompt, &answer); err != nil {
+			return nil, err
+		}
+		return answer, nil
+
+	case "multiselect":
+		options, err := getPromptOptions(p, ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		var defaultOptions []string
+		if defaultValue != "" {
+			defaultOptions = strings.Split(defaultValue, ",")
+			for i, opt := range defaultOptions {
+				defaultOptions[i] = strings.TrimSpace(opt)
+			}
+		}
+
+		var validDefaults []string
+		for _, def := range defaultOptions {
+			for _, opt := range options {
+				if def == opt {
+					validDefaults = append(validDefaults, def)
+					break
+				}
+			}
+		}
+
+		var answer []string
+		prompt := &survey.MultiSelect{
+			Message: message,
+			Options: options,
+			Default: validDefaults,
+			Help:    helpText,
+		}
+		if err := survey.AskOne(prompt, &answer); err != nil {
+			return nil, err
+		}
+		return answer, nil
+
+	case "number":
+		var answer int
+		prompt := &survey.Input{
+			Message: message,
+			Default: defaultValue,
+			Help:    helpText,
+		}
+
+		validator := survey.ComposeValidators(
+			survey.Required,
+			func(val interface{}) error {
+				str, ok := val.(string)
+				if !ok {
+					return fmt.Errorf("expected string value")
+				}
+				num, err := strconv.Atoi(str)
+				if err != nil {
+					return fmt.Errorf("please enter a valid number")
+				}
+
+				if p.MinValue != 0 || p.MaxValue != 0 {
+					if p.MinValue != 0 && num < p.MinValue {
+						return fmt.Errorf("value must be at least %d", p.MinValue)
+					}
+					if p.MaxValue != 0 && num > p.MaxValue {
+						return fmt.Errorf("value must be at most %d", p.MaxValue)
+					}
+				}
+				return nil
+			},
+		)
+
+		if err := survey.AskOne(prompt, &answer, survey.WithValidator(validator)); err != nil {
+			return nil, err
+		}
+		return answer, nil
+
+	case "editor":
+		var answer string
+		editorCmd := p.EditorCmd
+		if editorCmd == "" {
+			editorCmd = os.Getenv("EDITOR")
+			if editorCmd == "" {
+				editorCmd = "vim" // Default editor
+			}
+		}
+
+		prompt := &survey.Editor{
+			Message:       message,
+			Default:       defaultValue,
+			Help:          helpText,
+			HideDefault:   true,
+			AppendDefault: true,
+			Editor:        editorCmd,
+		}
+		if err := survey.AskOne(prompt, &answer); err != nil {
+			return nil, err
+		}
+		return answer, nil
+
+	case "path":
+		var answer string
+		prompt := &survey.Input{
+			Message: message,
+			Default: defaultValue,
+			Help:    helpText,
+		}
+
+		validator := survey.ComposeValidators(
+			func(val interface{}) error {
+				if !p.Required {
+					return nil
+				}
+				str, ok := val.(string)
+				if !ok || str == "" {
+					return fmt.Errorf("path is required")
+				}
+				return nil
+			},
+			func(val interface{}) error {
+				str, ok := val.(string)
+				if !ok || str == "" {
+					return nil
+				}
+
+				_, err := os.Stat(str)
+				if err != nil {
+					return fmt.Errorf("invalid path: %v", err)
+				}
+
+				if len(p.FileExtensions) > 0 {
+					ext := strings.ToLower(filepath.Ext(str))
+					if ext == "" {
+						return fmt.Errorf("file must have an extension")
+					}
+
+					validExt := false
+					for _, allowedExt := range p.FileExtensions {
+						if ext == strings.ToLower(allowedExt) || ext == strings.ToLower("."+allowedExt) {
+							validExt = true
+							break
+						}
+					}
+
+					if !validExt {
+						return fmt.Errorf("file must have one of these extensions: %s", strings.Join(p.FileExtensions, ", "))
+					}
+				}
+
+				return nil
+			},
+		)
+
+		if err := survey.AskOne(prompt, &answer, survey.WithValidator(validator)); err != nil {
+			return nil, err
+		}
+		return answer, nil
+
+	case "autocomplete":
+		options, err := getPromptOptions(p, ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// Ensure default value exists in options
+		defaultExists := false
+		if defaultValue != "" {
+			for _, opt := range options {
+				if opt == defaultValue {
+					defaultExists = true
+					break
+				}
+			}
+		}
+
+		if !defaultExists && len(options) > 0 {
+			defaultValue = options[0]
+		}
+
+		var answer string
+		prompt := &survey.Select{
+			Message: message,
+			Options: options,
+			Default: defaultValue,
+			Help:    helpText,
+			Filter: func(filterValue string, optValue string, idx int) bool {
+				return strings.Contains(strings.ToLower(optValue), strings.ToLower(filterValue))
+			},
 		}
 		if err := survey.AskOne(prompt, &answer); err != nil {
 			return nil, err

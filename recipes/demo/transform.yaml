@@ -1,0 +1,23 @@
+recipes:
+  - name: "transform"
+    description: "A simple demo of data transformation and pipeline flow"
+    category: "demo"
+    operations:
+      - name: "Generate a Simple List"
+        id: "generate"
+        command: |
+          echo "apple
+          banana
+          cherry
+          dragonfruit
+          eggplant"
+
+      - name: "Filter Items"
+        id: "filter"
+        command: "cat"
+        transform: "{{ filter .input \"a\" }}"
+        silent: true
+
+      - name: "Display Results"
+        id: "display"
+        command: "echo 'Items containing \"a\":\n{{ .filter }}'"

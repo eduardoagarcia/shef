@@ -1,0 +1,163 @@
+recipes:
+  - name: "prompts"
+    description: "A demo of all available prompt types and their options"
+    category: "demo"
+    operations:
+      - name: "Basic Input Types Demo"
+        id: "basic_inputs"
+        command: |
+          echo "Basic input prompts collected:"
+          echo "- Text input: {{ .text_input }}"
+          echo "- Selection: {{ .selection }}"
+          echo "- Confirmation: {{ if .confirmation }}Yes{{ else }}No{{ end }}"
+          echo "- Password: {{ .password }}"
+        prompts:
+          - name: text_input
+            type: input
+            message: "Enter some text"
+            default: "Default text value"
+            help_text: "This is a simple text input field with default value"
+
+          - name: selection
+            type: select
+            message: "Choose an option"
+            options:
+              - "Option One"
+              - "Option Two"
+              - "Option Three"
+            default: "Option Two"
+            help_text: "This is a single-selection dropdown menu"
+
+          - name: confirmation
+            type: confirm
+            message: "Do you want to proceed?"
+            default: "true"
+            help_text: "This is a yes/no confirmation prompt"
+
+          - name: password
+            type: password
+            message: "Enter a password (characters will be hidden)"
+            help_text: "This is a password input that masks what you type"
+
+      - name: "Advanced Selection Demo"
+        id: "advanced_selection"
+        command: |
+          echo "Advanced selection prompts collected:"
+          echo "- Multi-selection: $(echo "{{ range $i, $e := .multi_selection }}{{if $i}}, {{end}}{{$e}}{{end}}")"
+          echo "- Autocomplete: {{ .autocomplete }}"
+        prompts:
+          - name: multi_selection
+            type: multiselect
+            message: "Select multiple items (use space to toggle selection)"
+            options:
+              - "Apple"
+              - "Banana"
+              - "Cherry"
+              - "Date"
+              - "Elderberry"
+            default: "Apple,Cherry"
+            help_text: "Press space to select/deselect, enter to confirm"
+
+          - name: autocomplete
+            type: autocomplete
+            message: "Type to filter and select a country"
+            options:
+              - "United States"
+              - "Canada"
+              - "United Kingdom"
+              - "Australia"
+              - "Germany"
+              - "France"
+              - "Japan"
+              - "Brazil"
+              - "India"
+              - "China"
+            help_text: "This is an autocomplete selection - start typing to filter the list"
+
+      - name: "Number Input Demo"
+        id: "number_input"
+        command: |
+          echo "Number input: {{ .number_value }}"
+          
+          # Calculate simple arithmetic on the number
+          RESULT=$(( {{ .number_value }} * 2 ))
+          echo "Doubled value: $RESULT"
+        prompts:
+          - name: number_value
+            type: number
+            message: "Enter a number between 1 and 100"
+            default: "50"
+            min_value: 1
+            max_value: 100
+            help_text: "This is a numeric input with validation for range 1-100"
+
+      - name: "File Path Demo"
+        id: "file_path"
+        command: |
+          echo "Path input: {{ .file_path }}"
+          
+          if [ -f "{{ .file_path }}" ]; then
+            echo "File exists, displaying first 3 lines:"
+            head -n 3 "{{ .file_path }}" 
+          else
+            echo "Path doesn't exist or is not a file"
+          fi
+        prompts:
+          - name: file_path
+            type: path
+            message: "Enter path to a text file (.txt, .md, .json)"
+            file_extensions:
+              - "txt"
+              - "md"
+              - "json"
+            help_text: "This input validates that the file exists and has the right extension"
+
+      - name: "Editor Demo"
+        id: "editor_input"
+        command: |
+          echo "Content from editor:"
+          echo "-----------------"
+          echo "{{ .editor_content }}"
+          echo "-----------------"
+          
+          # Count lines in the content
+          LINE_COUNT=$(echo "{{ .editor_content }}" | wc -l)
+          echo "Line count: $LINE_COUNT"
+        prompts:
+          - name: editor_content
+            type: editor
+            message: "Enter multi-line text in your editor"
+            default: "# Sample Heading\n\nThis is placeholder text.\nReplace with your own content."
+            help_text: "This will open your default text editor for entering longer content"
+
+      - name: "Dynamic Options Demo"
+        id: "dynamic_options"
+        command: |
+          # First generate some options
+          echo "apple\nbanana\ncherry\ndragonfruit\nelder-berry" > /tmp/fruits.txt
+          cat /tmp/fruits.txt
+        transform: |
+          {{ input }}
+
+      - name: "Select From Dynamic Options"
+        id: "dynamic_selection"
+        command: |
+          echo "You selected: {{ .dynamic_fruit }}"
+          echo "All inputs summary:"
+          echo "--------------------"
+          echo "Text input: {{ .text_input }}"
+          echo "Selection: {{ .selection }}"
+          echo "Confirmation: {{ if .confirmation }}Yes{{ else }}No{{ end }}"
+          echo "Multi-selection: $(echo "{{ range $i, $e := .multi_selection }}{{if $i}}, {{end}}{{$e}}{{end}}")"
+          echo "Autocomplete: {{ .autocomplete }}"
+          echo "Number: {{ .number_value }}"
+          echo "File path: {{ .file_path }}"
+          echo "Dynamic selection: {{ .dynamic_fruit }}"
+          echo "--------------------"
+          echo "Demo complete!"
+        prompts:
+          - name: dynamic_fruit
+            type: select
+            message: "Select a fruit from dynamically generated options"
+            source_operation: dynamic_options
+            help_text: "These options were generated by the previous operation"
