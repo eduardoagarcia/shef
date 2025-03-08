@@ -7,7 +7,7 @@ recipes:
         command: |
           echo "Hello, {{ .name }}!"
           echo "Current time: $(date)"
-          echo "Welcome to shef, the shell recipe tool."
+          echo "Welcome to Shef, the shell recipe tool."
         prompts:
           - name: "name"
             type: "input"

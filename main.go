@@ -277,7 +277,7 @@ func findRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 
 func updatePublicRecipes() error {
 	if _, err := os.Stat("recipes"); os.IsNotExist(err) {
-		return fmt.Errorf("recipes directory not found - please run this command from the shef repository root")
+		return fmt.Errorf("recipes directory not found - please run this command from the Shef repository root")
 	}
 
 	homeDir, err := os.UserHomeDir()
