@@ -275,7 +275,7 @@ func findRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 	return sources, nil
 }
 
-func updatePublicRecipes() error {
+func syncPublicRecipes() error {
 	if _, err := os.Stat("recipes"); os.IsNotExist(err) {
 		return fmt.Errorf("recipes directory not found - please run this command from the Shef repository root")
 	}
@@ -1291,10 +1291,10 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:  "update",
-				Usage: "Update public recipes",
+				Name:  "sync",
+				Usage: "Sync public recipes locally",
 				Action: func(c *cli.Context) error {
-					return updatePublicRecipes()
+					return syncPublicRecipes()
 				},
 			},
 		},

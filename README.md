@@ -2,7 +2,7 @@
 
 Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up shell recipes without the mess.
 
-Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: pipe commands together, add interactive prompts, and build reusable workflows without complex scripting.
+Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: pipe commands together, add interactive prompts, and build reusable workflows with advanced scripting.
 
 ## Table of Contents
 
@@ -10,6 +10,7 @@ Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: 
 - [Why Shef vs. Bash Scripts?](#why-shef-vs-bash-scripts)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Shef Command Reference](#shef-command-reference)
 - [Recipe Sources](#recipe-sources)
 - [Recipe Structure](#recipe-structure)
 - [Interactive Prompts](#interactive-prompts)
@@ -17,7 +18,6 @@ Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: 
 - [Conditional Execution](#conditional-execution)
 - [Branching Workflows](#branching-workflows)
 - [Data Flow Between Operations](#data-flow-between-operations)
-- [Shef Command Reference](#shef-command-reference)
 - [Example Recipes](#example-recipes)
 - [Creating Recipes](#creating-recipes)
 - [AI-Assisted Recipe Creation](#ai-assisted-recipe-creation)
@@ -35,9 +35,9 @@ Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: 
 
 ## Why Shef vs. Bash Scripts?
 
-While many of Shef's capabilities could be implemented with bash scripts, Shef provides a structured approach that eliminates the complexity of shell scripting. It offers interactive prompts, conditional logic, and command piping through a simple YAML interface—no need to wrestle with bash syntax, error handling, or input validation.
+While many of Shef's capabilities could be implemented with bash scripts, Shef provides a structured approach that eliminates the tediousness of shell scripting. It offers interactive prompts, conditional logic, and command piping through a simple YAML interface—no need to wrestle with bash syntax, error handling, or input validation.
 
-Shef gives you the best of both worlds: the power of shell commands without the scripting headaches. Think of it as a Makefile that works everywhere—in projects, system-wide, or via shared recipes—but with better interactivity and cleaner syntax. Complex workflows become accessible, regardless of your scripting expertise.
+Shef gives you the best of both worlds: the power of advanced shell commands without the scripting headaches. Think of it as a Makefile that works everywhere—in projects, system-wide, or via shared recipes—but with better interactivity and cleaner syntax. Complex workflows become accessible, regardless of your scripting expertise.
 
 ## Installation
 
@@ -129,13 +129,31 @@ export PATH="$PATH:$HOME/bin"    # For make install-local
 
 Then reload your shell configuration: `source ~/.bashrc` (or `~/.zshrc`, `~/.bash_profile` depending on your shell)
 
+### Updating Shef
+
+To update Shef to the latest version:
+
+```bash
+# Navigate to your local repository
+cd shef
+
+# Pull the latest changes
+git pull
+
+# Update system-wide installation (requires sudo)
+make update
+
+# Or update local installation (no sudo required)
+make update-local
+```
+
 ## Quick Start
 
 Once Shef is installed, you are ready to begin using it.
 
 ```bash
-# Download (or update) all public recipes locally
-shef update
+# Download and sync all public recipes locally
+shef sync
 
 # Run the Hello World recipe
 shef demo hello-world
@@ -146,6 +164,35 @@ shef -l
 # List all recipes within a category
 shef -l demo
 ```
+
+## Shef Command Reference
+
+### Basic Shef Command Structure
+
+```
+shef [category] [recipe-name]
+```
+
+### Global Flags
+
+| Flag             | Description                |
+|------------------|----------------------------|
+| `-h, --help`     | Show help information      |
+| `-v, --version`  | Show version information   |
+| `-l, --list`     | List available recipes     |
+| `-d, --debug`    | Enable debug output        |
+| `-c, --category` | Specify a category         |
+| `-L, --local`    | Force local recipes first  |
+| `-U, --user`     | Force user recipes first   |
+| `-P, --public`   | Force public recipes first |
+
+### Utility Commands
+
+| Command       | Description           |
+|---------------|-----------------------|
+| `shef update` | Update public recipes |
+
+**Note**: make sure your Shef git repo is up to date (`git pull`) before running `shef update`
 
 ## Recipe Sources
 
@@ -451,35 +498,6 @@ by its ID:
 - name: "Show Info"
   command: "echo 'Running on {{ .hostname_op }}'"
 ```
-
-## Shef Command Reference
-
-### Basic Shef Command Structure
-
-```
-shef [category] [recipe-name]
-```
-
-### Global Flags
-
-| Flag             | Description                |
-|------------------|----------------------------|
-| `-h, --help`     | Show help information      |
-| `-v, --version`  | Show version information   |
-| `-l, --list`     | List available recipes     |
-| `-d, --debug`    | Enable debug output        |
-| `-c, --category` | Specify a category         |
-| `-L, --local`    | Force local recipes first  |
-| `-U, --user`     | Force user recipes first   |
-| `-P, --public`   | Force public recipes first |
-
-### Utility Commands
-
-| Command       | Description           |
-|---------------|-----------------------|
-| `shef update` | Update public recipes |
-
-**Note**: make sure your Shef git repo is up to date (`git pull`) before running `shef update`
 
 ## Example Recipes
 
