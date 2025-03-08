@@ -11,7 +11,7 @@ Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: 
 - **Interactive Prompts**: Add user input, selections, confirmations, and more
 - **Conditional Logic**: Use if/else branching based on command results
 - **Multiple Sources**: Use local, user, or public recipes
-- **Organized Recipes**: Categorize and share your recipes
+- **Organized Recipes**: Categorize and share your recipes with others
 
 ## Why Shef vs. Bash Scripts?
 
@@ -135,7 +135,7 @@ Shef looks for recipes in multiple locations:
 2. **User Recipes**: `~/.shef/user/*.yaml` in your home directory
 3. **Public Recipes**: `~/.shef/public/*.yaml` in your home directory
 
-To prioritize a specific source:
+If you have recipies with the same name and category in different locations, you can prioritize a specific source:
 
 ```bash
 shef -L git version  # Prioritize local recipes
@@ -336,9 +336,9 @@ transform: "{{ .input | function1 | function2 }}"
 | `replace`    | Replace text                       | `{{ .input \| replace "old" "new" }}`            |
 | `atoi`       | Convert string to int              | `{{ .input \| atoi }}`                           |
 | `add`        | Add numbers                        | `{{ .input \| atoi \| add 5 }}`                  |
-| `sub`        | Subtract numbers                   | `{{ $num \| sub 3 }}`                            |
-| `div`        | Divide numbers                     | `{{ $num \| div 2 }}`                            |
-| `mul`        | Multiply numbers                   | `{{ $num \| mul 4 }}`                            |
+| `sub`        | Subtract numbers                   | `{{ .input \| atoi \| sub 3 }}`                  |
+| `div`        | Divide numbers                     | `{{ .input \| atoi \| div 2 }}`                  |
+| `mul`        | Multiply numbers                   | `{{ .input \| atoi \| mul 4 }}`                  |
 | `exec`       | Execute command                    | `{{ exec "date" }}`                              |
 
 ### Accessing Variables
@@ -432,12 +432,12 @@ by its ID:
   command: "echo 'Running on {{ .hostname_op }}'"
 ```
 
-## Command Reference
+## Shef Command Reference
 
-### Basic Command Structure
+### Basic Shef Command Structure
 
 ```
-shef [category] recipe_name [flags]
+shef [category] recipe_name
 ```
 
 ### Global Flags
@@ -453,11 +453,13 @@ shef [category] recipe_name [flags]
 | `-U, --user`     | Force user recipes first   |
 | `-P, --public`   | Force public recipes first |
 
-### Commands
+### Utility Commands
 
 | Command       | Description           |
 |---------------|-----------------------|
 | `shef update` | Update public recipes |
+
+**Note**: make sure your Shef git repo is up to date (`git pull`) before running `shef update`
 
 ## Example Recipes
 
@@ -481,7 +483,7 @@ recipes:
             default: "World"
 ```
 
-### Conditional Operation
+### Conditional Operations
 
 ```yaml
 recipes:
@@ -545,12 +547,12 @@ To create your own recipes:
 
 1. Create your user directory: `mkdir -p ~/.shef/user` (if it does not already exist)
 2. Create a new YAML file: `touch ~/.shef/user/my-recipes.yaml`
-3. Add your recipes following the format above
+3. Build and develop your recipes following the instructions above
 4. Run `shef -l` to see your new recipes
 
 ## AI-Assisted Recipe Creation
 
-Generate powerful Shef recipes quickly using AI tools like ChatGPT, Claude, or other large language models.
+You can generate powerful Shef recipes quickly using AI tools like ChatGPT, Claude, or other large language models.
 
 ### Using AI to Create Recipes
 
@@ -558,7 +560,7 @@ Generate powerful Shef recipes quickly using AI tools like ChatGPT, Claude, or o
 2. Paste it into your AI assistant of choice
 3. Replace `[DESCRIBE YOUR WORKFLOW IN DETAIL]` with a detailed description of what you want your recipe to do
 4. The AI will generate a complete Shef recipe based on your description
-5. Test and iterate
+5. Test and iterate until it works as you expect
 
 ### Example Usage
 
@@ -590,7 +592,7 @@ The recipe should be interactive and safe, requiring confirmation before any des
 - Ask the AI to analyze and iterate on its recipe solution, considering edge cases and improvements
 - If the first recipe doesn't fully meet your needs, refine your requirements and ask for adjustments
 
-The AI-generated recipes provide an excellent starting point that you can further customize to fit your exact needs.
+Remember, the AI-generated recipes can provide an excellent starting point that you can further customize to fit your exact needs.
 
 ### The Prompt
 
@@ -709,3 +711,113 @@ Please create a complete Shef recipe that accomplishes my goal, with proper inde
 - Ensure minimum/maximum values are within range
 - Check that file paths exist and have correct extensions
 - Verify select options contain the default value
+
+## Contributing to Shef
+
+Shef thrives on community contributions, whether you're improving the core Go codebase or sharing useful recipes. Here's
+how you can contribute:
+
+### Contributing Code
+
+#### Development Setup
+
+1. **Fork the Repository**
+   ```bash
+   # Fork via GitHub UI, then clone your fork
+   git clone git@github.com:yourusername/shef.git
+   cd shef
+   ```
+
+2. **Set Up Development Environment**
+   ```bash
+   # Install development dependencies
+   go mod download
+
+   # Build the development version
+   go build -o shef
+   ```
+
+3. **Create a New Branch**
+   ```bash
+   git checkout -b my-awesome-feature
+   ```
+
+#### Development Guidelines
+
+- **Code Style**: Follow standard Go conventions and the existing style in the codebase
+- **Documentation**: Update documentation for any new features or changes
+- **Commit Messages**: Write clear, descriptive commit messages explaining your changes
+
+#### Submitting Your Changes
+
+1. **Push to Your Fork**
+   ```bash
+   git push origin my-awesome-feature
+   ```
+
+2. **Create a Pull Request**: Visit your fork on GitHub and create a pull request against the main repository
+
+3. **PR Description**: Include a clear description of what your changes do and why they should be included
+
+4. **Code Review**: Respond to any feedback during the review process
+
+### Contributing Recipes
+
+Sharing your recipes helps grow the Shef ecosystem and benefits the entire community.
+
+#### Creating Public Recipes
+
+1. **Develop and Test Your Recipe Locally**
+   ```bash
+   # Create your recipe in the user directory first
+   mkdir -p ~/.shef/user
+   vim ~/.shef/user/my-recipe.yaml
+   
+   # Test thoroughly
+   shef -U my-category my-recipe-name
+   ```
+
+2. **Recipe Quality Guidelines**
+   - Include clear descriptions for the recipe and each operation
+   - Add helpful prompts with descriptive messages and defaults
+   - Handle errors gracefully
+   - Follow YAML best practices
+   - Comment complex transformations or conditionals
+
+3. **Submitting Your Recipe**
+
+   **Option 1: Via Pull Request**
+   - Fork the Shef repository
+   - Add your recipe to the `recipes/public/` directory
+   - Create a pull request with your recipe
+
+   **Option 2: Via Issue**
+   - Create a new issue on the Shef repository
+   - Attach your recipe file or paste its contents
+   - Describe what your recipe does and why it's useful
+
+#### Recipe Documentation
+
+When submitting a recipe, include a section in your PR or issue that explains:
+
+1. **Purpose**: What problem does your recipe solve?
+2. **Usage**: How to use the recipe, including example commands
+3. **Requirements**: Any special requirements or dependencies
+4. **Examples**: Sample outputs or use cases
+
+### Community Guidelines
+
+- Be respectful of others' contributions
+- Help review pull requests and test others' recipes
+- Report bugs and suggest improvements
+- Share your Shef success stories and use cases
+
+### Getting Help
+
+If you need help with your contribution, you can:
+
+- Open an issue on GitHub
+- Ask questions in the discussions section
+- Contact the maintainers directly
+
+Thank you for contributing to Shef and helping to make shell workflows easier for everyone!
