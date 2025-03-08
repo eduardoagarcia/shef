@@ -6,7 +6,7 @@ Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: 
 
 ## Table of Contents
 
-- [Features](#features)
+- [Shef Features](#shef-features)
 - [Why Shef vs. Bash Scripts?](#why-shef-vs-bash-scripts)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -24,7 +24,7 @@ Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: 
 - [Troubleshooting](#troubleshooting)
 - [Contributing to Shef](#contributing-to-shef)
 
-## Features
+## Shef Features
 
 - **Command Piping**: Chain multiple commands together, passing output from one command to the next
 - **Transformations**: Transform command output and input with powerful templating
