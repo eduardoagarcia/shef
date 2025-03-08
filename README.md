@@ -578,9 +578,9 @@ You can generate powerful Shef recipes quickly using AI tools like ChatGPT, Clau
 
 1. Copy the prompt below
 2. Paste it into your AI assistant of choice
-3. Replace `[DESCRIBE YOUR WORKFLOW IN DETAIL]` with a detailed description of what you want your recipe to do
+3. Replace `[DESCRIBE YOUR WORKFLOW IN DETAIL]` with a detailed description of your recipe's workflow
 4. The AI will generate a complete Shef recipe based on your description
-5. Test and iterate until it works as you expect
+5. Test and iterate until the recipe works as expected
 
 ### Example Usage
 
