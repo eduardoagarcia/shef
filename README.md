@@ -1,21 +1,58 @@
 # Shef
 
-Shef is a powerful CLI tool that lets you combine shell commands into reusable recipes.
-
-Think of it as "[CyberChef](https://gchq.github.io/CyberChef) for your terminal" to chain commands together, add interactive prompts, and create a toolbelt of common workflows.
+Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up shell recipes without the mess. Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: pipe commands together, add interactive prompts, and build reusable workflows without complex scripting.
 
 ## Features
 
-- **Command Piping**: Chain commands together, passing output from one command to the next
+- **Command Piping**: Chain multiple commands, passing output from one command to the next
 - **Transformations**: Transform command output and input with powerful templating
 - **Interactive Prompts**: Add user input, selections, confirmations, and more
 - **Conditional Logic**: Use if/else branching based on command results
 - **Multiple Sources**: Use local, user, or public recipes
 - **Organized Recipes**: Categorize and share your recipes
 
-Here's just the README installation section for you to copy and paste:
+## Why Shef vs. Bash Scripts?
+
+While many of Shef's capabilities could be implemented with bash scripts, Shef provides a structured approach that eliminates the complexity of shell scripting. It offers interactive prompts, conditional logic, and command piping through a simple YAML interface—no need to wrestle with bash syntax, error handling, or input validation.
+
+Shef gives you the best of both worlds: the power of shell commands without the scripting headaches. Think of it as a Makefile that works everywhere—in projects, system-wide, or via shared recipes—but with better interactivity and cleaner syntax. Complex workflows become accessible, regardless of your scripting expertise.
 
 ## Installation
+
+### Prerequisites
+
+Before installing Shef, ensure you have Go installed and configured on your system:
+
+1. **Install Go**: If you don't have Go installed, download and install it from [golang.org](https://golang.org/dl/) or
+   use your system's package manager:
+
+   ```bash
+   # macOS (using Homebrew)
+   brew install go
+
+   # Ubuntu/Debian
+   sudo apt update
+   sudo apt install golang-go
+
+   # Fedora
+   sudo dnf install golang
+   ```
+
+2. **Configure Go Environment**: Ensure your Go environment is properly set up:
+
+   ```bash
+   # Add these to your shell configuration (.bashrc, .zshrc, etc.)
+   export GOPATH=$HOME/go
+   export PATH=$PATH:$GOPATH/bin
+   ```
+
+3. **Verify Installation**: Confirm Go is correctly installed:
+
+   ```bash
+   go version
+   ```
+
+### Quick Installation
 
 The simplest way to install Shef is with Make:
 
@@ -35,7 +72,7 @@ make install-local
 
 #### Install with Go
 
-If you have Go installed, you can install Shef directly:
+Once you have Go installed, you can install Shef directly:
 
 ```bash
 go install github.com/eduardoagarcia/shef@latest
@@ -72,18 +109,20 @@ Then reload your shell configuration: `source ~/.bashrc` (or `~/.zshrc`, `~/.bas
 
 ## Quick Start
 
+Once Shef is installed, you are ready to begin using it.
+
 ```bash
-# Download (or update) all public recipes
+# Download (or update) all public recipes locally
 shef update
+
+# Run the Hello World recipe
+shef demo hello-world
 
 # List available recipes
 shef -l
 
-# Run a recipe
-shef git version
-
-# List recipes in a category
-shef -l git
+# List all recipes within a category
+shef -l demo
 ```
 
 ## Recipe Sources
@@ -496,32 +535,6 @@ recipes:
       - name: "Display Results"
         id: "display"
         command: "echo 'Items containing \"a\":\n{{ .filter }}'"
-```
-
-### Git Workflow
-
-```yaml
-recipes:
-  - name: "feature"
-    description: "Create and push a git feature branch"
-    category: "git"
-    operations:
-      - name: "Create Branch"
-        id: "branch_op"
-        command: "git checkout -b feature/{{ .feature_name }}"
-        prompts:
-          - name: "feature_name"
-            type: "input"
-            message: "Feature name:"
-    
-      - name: "Push Branch"
-        command: "git push -u origin feature/{{ .feature_name }}"
-        condition: "confirm_push == true"
-        prompts:
-          - name: "confirm_push"
-            type: "confirm"
-            message: "Push the branch to remote?"
-            default: "true"
 ```
 
 ## Creating Recipes
