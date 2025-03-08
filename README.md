@@ -4,6 +4,26 @@ Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking u
 
 Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: pipe commands together, add interactive prompts, and build reusable workflows without complex scripting.
 
+## Table of Contents
+
+- [Features](#features)
+- [Why Shef vs. Bash Scripts?](#why-shef-vs-bash-scripts)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Recipe Sources](#recipe-sources)
+- [Recipe Structure](#recipe-structure)
+- [Interactive Prompts](#interactive-prompts)
+- [Transformations](#transformations)
+- [Conditional Execution](#conditional-execution)
+- [Branching Workflows](#branching-workflows)
+- [Data Flow Between Operations](#data-flow-between-operations)
+- [Shef Command Reference](#shef-command-reference)
+- [Example Recipes](#example-recipes)
+- [Creating Recipes](#creating-recipes)
+- [AI-Assisted Recipe Creation](#ai-assisted-recipe-creation)
+- [Troubleshooting](#troubleshooting)
+- [Contributing to Shef](#contributing-to-shef)
+
 ## Features
 
 - **Command Piping**: Chain multiple commands together, passing output from one command to the next
@@ -437,7 +457,7 @@ by its ID:
 ### Basic Shef Command Structure
 
 ```
-shef [category] recipe_name
+shef [category] [recipe-name]
 ```
 
 ### Global Flags
