@@ -3,7 +3,7 @@
 Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up shell recipes without the mess.
 
 Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: pipe commands together, add interactive
-prompts, and build reusable workflows with advanced scripting.
+prompts, and build reusable workflows with advanced logic.
 
 ## Table of Contents
 
@@ -14,7 +14,7 @@ prompts, and build reusable workflows with advanced scripting.
 - [Shef Command Reference](#shef-command-reference)
 - [Recipe Sources](#recipe-sources)
 - [Recipe Structure](#recipe-structure)
-- [Interactive Prompts](#interactive-prompts)
+- [Interactive Prompts](#interactive-user-prompts)
 - [Transformations](#transformations)
 - [Conditional Execution](#conditional-execution)
 - [Branching Workflows](#branching-workflows)
@@ -29,7 +29,7 @@ prompts, and build reusable workflows with advanced scripting.
 ## Shef Features
 
 - **Command Piping**: Chain multiple commands together, passing output from one command to the next
-- **Transformations**: Transform command output and input with powerful templating
+- **Transformations**: Transform command output with powerful templating
 - **Interactive Prompts**: Add user input, selections, confirmations, and more
 - **Conditional Logic**: Use if/else branching based on command results
 - **Control Flow**: Create dynamic workflows with loops and control structures
@@ -39,12 +39,10 @@ prompts, and build reusable workflows with advanced scripting.
 ## Why Shef vs. Bash Scripts?
 
 While many of Shef's capabilities could be implemented with bash scripts, Shef provides a structured approach that
-eliminates the tediousness of shell scripting. It offers interactive prompts, conditional logic, and command piping
-through a simple YAML interface—no need to wrestle with bash syntax, error handling, or input validation.
+eliminates the tediousness of advanced shell scripting. It offers interactive user prompts, conditional logic, and command
+piping through a simple YAML interface—no need to wrestle with bash syntax, error handling, or input validation.
 
-Shef gives you the best of both worlds: the power of advanced shell commands without the scripting headaches. Think of
-it as a Makefile that works everywhere—in projects, system-wide, or via shared recipes—but with better interactivity and
-cleaner syntax.
+Shef gives you the best of both worlds: the power of advanced shell commands without the scripting headaches.
 
 ## Installation
 
@@ -262,13 +260,41 @@ Operations are the building blocks of recipes:
      - name: "var_name"
        type: "input"
        message: "Enter value:"
-  control_flow:                      # [Optional] Control flow structure
-     type: "foreach"                 # Type of control flow (foreach)
-     collection: "Item 1\nItem 2"    # Collection to iterate over
-     as: "item"                      # Variable name for current item
-  operations:                        # [Optional] Sub-operations for when control flow structures are used
-     - name: "Sub Operation"
-       command: "echo 'Processing {{ .item }}'"
+  control_flow:                     # [Optional] Control flow structure (one of the below types)
+    type: "foreach"                 # Type of control flow (foreach, for, while)
+  operations:                       # [Optional] Sub-operations for when control flow structures are used
+    - name: "Sub Operation"
+      command: "echo 'Processing {{ .item }}'"
+```
+
+#### Control Flow Configuration
+
+Control flow structures are configured as follows:
+
+##### Foreach
+
+```yaml
+control_flow:
+  type: "foreach"               # Iterate over a collection
+  collection: "Item 1\nItem 2"  # Collection of items (newline separated)
+  as: "item"                    # Variable name for current item
+```
+
+##### For
+
+```yaml
+control_flow:
+  type: "for"    # Execute a fixed number of times
+  count: 5       # Number of iterations
+  variable: "i"  # Variable name for iteration index (optional)
+```
+
+##### While
+
+```yaml
+control_flow:
+  type: "while"                          # Execute while condition is true
+  condition: "{{ ne .status `ready` }}"  # Condition to evaluate each iteration
 ```
 
 #### Execution Modes
@@ -280,9 +306,9 @@ Operations are the building blocks of recipes:
 - **stream**: Similar to interactive mode but optimized for long-running processes that produce continuous output. The
   command's output streams to the terminal in real-time, but output cannot be captured for use in subsequent operations.
 
-## Interactive Prompts
+## Interactive User Prompts
 
-Shef supports the following types of prompts:
+Shef supports the following types of user prompts:
 
 ### Basic Input Types
 
@@ -430,7 +456,7 @@ transform: "{{ .input | function1 | function2 }}"
 You can access all context variables in transformations:
 
 ```yaml
-transform: "{{ if eq .format \"json\" }}{{ .input }}{{ else }}{{ .input | cut \" \" 0 }}{{ end }}"
+transform: "{{ if eq .format `json` }}{{ .input }}{{ else }}{{ .input | cut ` ` 0 }}{{ end }}"
 ```
 
 Variables available in templates:
@@ -448,7 +474,7 @@ Operations can be conditionally executed:
 ### Basic Conditions
 
 ```yaml
-condition: "confirm == true"  # Run only if confirm prompt is true
+condition: ".confirm == true"  # Run only if confirm prompt is true
 ```
 
 ### Operation Result Conditions
@@ -461,25 +487,25 @@ condition: "test_op.failure"   # Run if test_op failed
 ### Variable Comparison
 
 ```yaml
-condition: "environment == 'production'"  # Equality check
-condition: "count != 0"                   # Inequality check
+condition: ".environment == 'production'"  # Equality check
+condition: ".count != 0"                   # Inequality check
 ```
 
 ### Numeric Comparison
 
 ```yaml
-condition: "count > 5"
-condition: "memory <= 512"
-condition: "errors >= 10"
-condition: "progress < 100"
+condition: ".count > 5"
+condition: ".memory <= 512"
+condition: ".errors >= 10"
+condition: ".progress < 100"
 ```
 
 ### Complex Logic
 
 ```yaml
-condition: "build_op.success && confirm_deploy == true"
+condition: "build_op.success && .confirm_deploy == true"
 condition: "test_op.failure || lint_op.failure"
-condition: "!skip_validation"
+condition: "!.skip_validation"
 ```
 
 ## Branching Workflows
@@ -575,6 +601,123 @@ You can iterate over a collection of items and perform a flow of operations on e
       command: "cat {{ .file }} | wc -l"
 ```
 
+### For Loops
+
+You can execute a set of operations a fixed number of times.
+
+#### Key For Loop Components
+
+- **control_flow**
+    - **type**: for
+    - **count**: The number of iterations to execute
+    - **variable**: (Optional) The variable name to use for the current iteration index (defaults to "i")
+- **operations**: The sub-operations to perform for each iteration
+
+#### Mechanics of the For Loop
+
+1. Parse and evaluate the count value to determine the number of iterations
+2. For each iteration, set the loop variable to the current index (starting from 0)
+3. Also set the `.iteration` variable to the 1-based iteration number
+4. Execute all operations in the operations block for each iteration
+5. Clean up the loop variables when done
+
+#### Common Uses
+
+- Repeating an operation a fixed number of times
+- Creating numbered resources or items
+- Running tests multiple times
+- Implementing retry logic with a maximum attempt limit
+
+**Note**: Within a for loop, both the specified variable (zero-based index) and `.iteration` (one-based counter) are
+available.
+
+#### Example For Loop Recipes
+
+```yaml
+- name: "Run a For Loop"
+  control_flow:
+    type: "for"
+    count: 5
+    variable: "i"
+  operations:
+    - name: "Print Iteration"
+      command: "echo 'Running iteration {{ .iteration }} (zero-based index: {{ .i }})'"
+
+# You can also use a dynamic count:
+- name: "Get Count"
+  id: "count"
+  command: "echo '3'"
+  transform: "{{ trim .input }}"
+
+- name: "Dynamic For Loop"
+  control_flow:
+    type: "for"
+    count: "{{ .count }}"
+    variable: "step"
+  operations:
+    - name: "Execute Step"
+      command: "echo 'Executing step {{ .step }} of {{ .count }}'"
+```
+
+### While Loops
+
+You can repeatedly execute operations as long as a condition remains true.
+
+#### Key While Loop Components
+
+- **control_flow**
+    - **type**: while
+    - **condition**: The condition to evaluate before each iteration
+- **operations**: The sub-operations to perform for each iteration
+
+#### Mechanics of the While Loop
+
+1. Evaluate the condition before each iteration
+2. If the condition is true, execute the operations and repeat
+3. If the condition is false, exit the loop
+4. An `.iteration` variable is automatically set to track the current iteration (starting from 1)
+5. A safety limit prevents infinite loops (maximum 1000 iterations)
+
+#### Common Uses
+
+- Polling for a condition (e.g., waiting for a service to be ready)
+- Processing data until a certain state is reached
+- Implementing retry logic with conditional termination
+- Continuously monitoring resources until a specific event occurs
+
+**Note**: Within a while loop, the `.iteration` variable lets you track how many iterations have occurred.
+
+#### Example While Loop Recipes
+
+```yaml
+- name: "Initialize Status"
+  id: "status"
+  command: "echo 'running'"
+  transform: "{{ trim .input }}"
+  silent: true
+
+- name: "Wait For Completion"
+  control_flow:
+    type: "while"
+    condition: "{{ contains .status `running` }}"
+  operations:
+    - name: "Check Status"
+      command: "echo 'Checking status (iteration {{ .iteration }})...'"
+      id: "status"
+      transform: "{{ if eq .iteration 5 }}completed{{ else }}running{{ end }}"
+
+# Real-world polling example:
+- name: "Poll Service Until Ready"
+  control_flow:
+    type: "while"
+    condition: "{{ ne .status `ready` }}"
+  operations:
+    - name: "Check Service Status"
+      command: "curl -s http://service/status"
+      id: "status"
+      transform: "{{ trim .input }}"
+```
+
 ## Example Recipes
 
 ### Hello World
@@ -647,12 +790,12 @@ recipes:
       - name: "Filter Items"
         id: "filter"
         command: "cat"
-        transform: "{{ filter .input \"a\" }}"
+        transform: "{{ filter .input `a` }}"
         silent: true
 
       - name: "Display Results"
         id: "display"
-        command: "echo 'Items containing \"a\":\n{{ .filter }}'"
+        command: "echo 'Items containing `a`:\n{{ .filter }}'"
 ```
 
 ## Creating Recipes
@@ -749,12 +892,17 @@ recipes:
             multiple_limit: 3  # For multiselect type
             editor_cmd: "vim"  # For editor type
         control_flow:
-          type: "foreach"  # Type of control flow
-          collection: "item1\nitem2\nitem3"  # Items to iterate over (newline-separated)
-          as: "item"  # Variable name for current item
-        operations:  # Operations to perform for each item
+          type: "foreach|for|while"  # Type of control flow
+          collection: "Item 1\nItem 2\nItem 3"  # Items to iterate over (foreach loops)
+          as: "item"  # Variable name for current item (foreach loops)
+          count: 5  # Number of iterations (for loops)
+          variable: "i"  # Variable name for iteration index (for loops)
+          condition: "{{ lt .counter 5 }}"  # Condition to check (while loops)
+        operations:  # Operations to perform for each iteration
           - name: "Sub Operation"
-            command: "echo 'Processing {{ .item }}'"
+            # command: "echo 'Processing {{ .item }}'" # foreach loop
+            # command: "echo 'Iteration {{ .i }} of 5'" # for loop
+            # command: "echo 'While iteration {{ .iteration }}'" # while loop
 
 RECIPE MECHANICS:
 1. Operations execute in sequence unless redirected by on_success/on_failure
@@ -769,6 +917,13 @@ CONTROL FLOW STRUCTURES:
   - collection: Newline-separated list of items (can be fixed or from operation output)
   - as: Variable name to assign each item during iteration
   - operations: Operations to execute for each item (with access to the iteration variable)
+- for: Execute operations a fixed number of times
+  - count: Number of iterations to perform (can be fixed or from operation output)
+  - variable: Variable name for the current zero-based index (optional, defaults to "i")
+  - operations: Operations to execute for each iteration (with access to the index variable and .iteration)
+- while: Execute operations as long as a condition is true
+  - condition: Expression to evaluate before each iteration
+  - operations: Operations to execute while the condition is true (with access to .iteration)
 
 INTERACTIVE PROMPTS:
 - input: Free text input (default: string)
@@ -907,23 +1062,23 @@ Sharing your recipes helps grow the Shef ecosystem and benefits the entire commu
    ```
 
 2. **Recipe Quality Guidelines**
-   - Include clear descriptions for the recipe and each operation
-   - Add helpful prompts with descriptive messages and defaults
-   - Handle errors gracefully
-   - Follow YAML best practices
-   - Comment complex transformations or conditionals
+    - Include clear descriptions for the recipe and each operation
+    - Add helpful prompts with descriptive messages and defaults
+    - Handle errors gracefully
+    - Follow YAML best practices
+    - Comment complex transformations or conditionals
 
 3. **Submitting Your Recipe**
 
    **Option 1: Via Pull Request**
-   - Fork the Shef repository
-   - Add your recipe to the `recipes/public/` directory
-   - Create a pull request with your recipe
+    - Fork the Shef repository
+    - Add your recipe to the `recipes/public/` directory
+    - Create a pull request with your recipe
 
    **Option 2: Via Issue**
-   - Create a new issue on the Shef repository
-   - Attach your recipe file or paste its contents
-   - Describe what your recipe does and why it's useful
+    - Create a new issue on the Shef repository
+    - Attach your recipe file or paste its contents
+    - Describe what your recipe does and why it's useful
 
 #### Recipe Documentation
 
@@ -947,6 +1102,4 @@ If you need help with your contribution, you can:
 
 - Open an issue on GitHub
 - Ask questions in the discussions section
-- Contact the maintainers directly
-
-Thank you for contributing to Shef and helping to make shell workflows easier for everyone!
+- Contact us directly

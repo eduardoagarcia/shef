@@ -1,0 +1,18 @@
+recipes:
+  - name: "for"
+    description: "A simple demonstration of for loop control flow"
+    category: "demo"
+    operations:
+      - name: "Run a For Loop"
+        control_flow:
+          type: "for"
+          count: 5
+          variable: "i"
+        operations:
+          - name: "Print Iteration"
+            command: "echo 'Running iteration {{ .iteration }}'"
+            id: "last_iteration"
+            transform: "{{ trim .input }}"
+
+      - name: "Show Completion"
+        command: "echo 'For loop completed! Last iteration ran: {{ .last_iteration }}'"

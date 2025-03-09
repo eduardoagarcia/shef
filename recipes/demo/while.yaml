@@ -1,0 +1,23 @@
+recipes:
+  - name: "while"
+    description: "A simple demonstration of while loop control flow"
+    category: "demo"
+    operations:
+      - name: "Initialize Status"
+        id: "status"
+        command: "echo 'running'"
+        transform: "{{ trim .input }}"
+        silent: true
+
+      - name: "Loop While Status is Running"
+        control_flow:
+          type: "while"
+          condition: "{{ contains .status `running` }}"
+        operations:
+          - name: "Perform Work and Check Status"
+            command: "echo 'Service is running, performing work...' && sleep 1"
+            id: "status"
+            transform: "{{ if eq .iteration 4 }}stopped{{ else }}running{{ end }}"
+
+      - name: "Show Completion"
+        command: "echo 'While loop finished - service is no longer running!'"

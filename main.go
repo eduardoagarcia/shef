@@ -1096,6 +1096,20 @@ func executeRecipe(recipe Recipe, debug bool) error {
 				}
 				return ExecuteForEach(op, forEach, &ctx, depth, executeOp, debug)
 
+			case "while":
+				whileFlow, err := op.GetWhileFlow()
+				if err != nil {
+					return err
+				}
+				return ExecuteWhile(op, whileFlow, &ctx, depth, executeOp, debug)
+
+			case "for":
+				forFlow, err := op.GetForFlow()
+				if err != nil {
+					return err
+				}
+				return ExecuteFor(op, forFlow, &ctx, depth, executeOp, debug)
+
 			default:
 				return fmt.Errorf("unknown control_flow type: %s", typeVal)
 			}
