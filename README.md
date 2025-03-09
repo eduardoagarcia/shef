@@ -32,6 +32,7 @@ prompts, and build reusable workflows with advanced scripting.
 - **Transformations**: Transform command output and input with powerful templating
 - **Interactive Prompts**: Add user input, selections, confirmations, and more
 - **Conditional Logic**: Use if/else branching based on command results
+- **Control Flow**: Create dynamic workflows with loops and control structures
 - **Multiple Sources**: Use local, user, or public recipes
 - **Organized Recipes**: Categorize and share your recipes with others
 
