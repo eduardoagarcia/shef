@@ -7,7 +7,7 @@ recipes:
         id: "find_dirs"
         command: "find . -maxdepth 1 -type d -not -path '.' | sort -f"
         silent: true
-        transform: "{{ .input | trim | split '\n' }}"
+        transform: "{{ .output | trim | split '\n' }}"
 
       - name: "Process Directories"
         id: "process_dirs"
@@ -20,7 +20,7 @@ recipes:
             id: "check_git_repo"
             command: "ls -d '{{ .dir }}/.git' 2>/dev/null || echo ''"
             silent: true
-            transform: "{{ if .input }}is_git_repo{{ else }}not_git_repo{{ end }}"
+            transform: "{{ if .output }}is_git_repo{{ else }}not_git_repo{{ end }}"
             on_success: "handle_check_result"
 
           - name: "Handle Check Result"

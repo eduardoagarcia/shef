@@ -1,6 +1,6 @@
 recipes:
   - name: "foreach"
-    description: "A simple demonstration of foreach control flow"
+    description: "A simple demo of the foreach control flow"
     category: "demo"
     operations:
       - name: "Process Each Fruit"

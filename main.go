@@ -191,6 +191,7 @@ func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error)
 func transformOutput(output, transform string, ctx *ExecutionContext) (string, error) {
 	vars := ctx.templateVars()
 	vars["input"] = output
+	vars["output"] = output
 
 	return renderTemplate(transform, vars)
 }

@@ -13,7 +13,7 @@ recipes:
         command: "git tag -l 'v*.*.*' --sort=-v:refname | head -n1 || echo ''"
         silent: true
         transform: |
-          {{- $tag := .input | trim -}}
+          {{- $tag := .output | trim -}}
           {{- if eq $tag "" -}}
             {{- "NO_EXISTING_TAGS" -}}
           {{- else -}}

@@ -1,6 +1,6 @@
 recipes:
   - name: "for"
-    description: "A simple demonstration of for loop control flow"
+    description: "A simple demo of the for loop control flow"
     category: "demo"
     operations:
       - name: "Run a For Loop"
@@ -12,7 +12,6 @@ recipes:
           - name: "Print Iteration"
             command: "echo 'Running iteration {{ .iteration }}'"
             id: "last_iteration"
-            transform: "{{ trim .input }}"
 
       - name: "Show Completion"
         command: "echo 'For loop completed! Last iteration ran: {{ .last_iteration }}'"

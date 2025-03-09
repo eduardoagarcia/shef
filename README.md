@@ -421,47 +421,48 @@ You can generate selection options from a previous operation's output:
 
 ## Transformations
 
-Transformations let you modify command output before it's passed to the next operation or used in prompts.
+Transformations let you modify a command's output before it's passed to the next operation or used in prompts.
 
 ### Basic Syntax
 
 ```yaml
-transform: "{{ .input | function1 | function2 }}"
+transform: "{{ .output | function1 | function2 }}"
 ```
 
 ### Available Transformation Functions
 
-| Function     | Description                        | Example                                          |
-|--------------|------------------------------------|--------------------------------------------------|
-| `trim`       | Remove whitespace                  | `{{ .input \| trim }}`                           |
-| `split`      | Split string by delimiter          | `{{ .input \| split "," }}`                      |
-| `join`       | Join array with delimiter          | `{{ .input \| join "\n" }}`                      |
-| `joinArray`  | Join any array type with delimiter | `{{ .items \| joinArray "," }}`                  |
-| `filter`     | Keep lines containing a pattern    | `{{ .input \| filter "pattern" }}`               |
-| `grep`       | Alias for filter                   | `{{ .input \| grep "pattern" }}`                 |
-| `cut`        | Extract field from each line       | `{{ .input \| cut ":" 1 }}`                      |
-| `trimPrefix` | Remove prefix                      | `{{ .input \| trimPrefix "foo" }}`               |
-| `trimSuffix` | Remove suffix                      | `{{ .input \| trimSuffix "bar" }}`               |
-| `contains`   | Check if string contains pattern   | `{{ if contains .input "pattern" }}yes{{ end }}` |
-| `replace`    | Replace text                       | `{{ .input \| replace "old" "new" }}`            |
-| `atoi`       | Convert string to int              | `{{ .input \| atoi }}`                           |
-| `add`        | Add numbers                        | `{{ .input \| atoi \| add 5 }}`                  |
-| `sub`        | Subtract numbers                   | `{{ .input \| atoi \| sub 3 }}`                  |
-| `div`        | Divide numbers                     | `{{ .input \| atoi \| div 2 }}`                  |
-| `mul`        | Multiply numbers                   | `{{ .input \| atoi \| mul 4 }}`                  |
-| `exec`       | Execute command                    | `{{ exec "date" }}`                              |
+| Function     | Description                        | Example                                           |
+|--------------|------------------------------------|---------------------------------------------------|
+| `trim`       | Remove whitespace                  | `{{ .output \| trim }}`                           |
+| `split`      | Split string by delimiter          | `{{ .output \| split "," }}`                      |
+| `join`       | Join array with delimiter          | `{{ .output \| join "\n" }}`                      |
+| `joinArray`  | Join any array type with delimiter | `{{ .output \| joinArray "," }}`                  |
+| `filter`     | Keep lines containing a pattern    | `{{ .output \| filter "pattern" }}`               |
+| `grep`       | Alias for filter                   | `{{ .output \| grep "pattern" }}`                 |
+| `cut`        | Extract field from each line       | `{{ .output \| cut ":" 1 }}`                      |
+| `trimPrefix` | Remove prefix                      | `{{ .output \| trimPrefix "foo" }}`               |
+| `trimSuffix` | Remove suffix                      | `{{ .output \| trimSuffix "bar" }}`               |
+| `contains`   | Check if string contains pattern   | `{{ if contains .output "pattern" }}yes{{ end }}` |
+| `replace`    | Replace text                       | `{{ .output \| replace "old" "new" }}`            |
+| `atoi`       | Convert string to int              | `{{ .output \| atoi }}`                           |
+| `add`        | Add numbers                        | `{{ .output \| atoi \| add 5 }}`                  |
+| `sub`        | Subtract numbers                   | `{{ .output \| atoi \| sub 3 }}`                  |
+| `div`        | Divide numbers                     | `{{ .output \| atoi \| div 2 }}`                  |
+| `mul`        | Multiply numbers                   | `{{ .output \| atoi \| mul 4 }}`                  |
+| `exec`       | Execute command                    | `{{ exec "date" }}`                               |
 
 ### Accessing Variables
 
 You can access all context variables in transformations:
 
 ```yaml
-transform: "{{ if eq .format `json` }}{{ .input }}{{ else }}{{ .input | cut ` ` 0 }}{{ end }}"
+transform: "{{ if eq .format `json` }}{{ .output }}{{ else }}{{ .output | cut ` ` 0 }}{{ end }}"
 ```
 
 Variables available in templates:
 
-- `.input`: The input to the current transformation (output from previous operation)
+- `.output`: The output to the current transformation (output from the command)
+- `.input`: The input to the current command (input from previous operation)
 - `.{prompt_name}`: Any variable from defined prompts
 - `.{operation_id}`: The output of a specific operation by ID
 - `.operationOutputs`: Map of all operation outputs by ID

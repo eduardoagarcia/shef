@@ -5,12 +5,12 @@ recipes:
     operations:
       - name: "List Projects"
         id: "list_projects"
-        command: "gcloud projects list --filter=\"NOT project_id:sys-*\" --format=\"value(name,project_id)\" | awk '{print $1 \" (\" $2 \")|\" $2}'"
+        command: "gcloud projects list --filter='NOT project_id:sys-*' --format='value(name,project_id)' | awk '{print $1 \" (\" $2 \")|\" $2}'"
         silent: true
 
       - name: "Format Display Options"
         id: "display_options"
-        command: "cut -d'|' -f1 <<< \"{{ .list_projects }}\""
+        command: "cut -d'|' -f1 <<< '{{ .list_projects }}'"
         silent: true
 
       - name: "Select Project"

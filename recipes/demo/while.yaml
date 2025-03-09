@@ -1,12 +1,11 @@
 recipes:
   - name: "while"
-    description: "A simple demonstration of while loop control flow"
+    description: "A simple demo of the while loop control flow"
     category: "demo"
     operations:
       - name: "Initialize Status"
         id: "status"
         command: "echo 'running'"
-        transform: "{{ trim .input }}"
         silent: true
 
       - name: "Loop While Status is Running"

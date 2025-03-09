@@ -15,9 +15,9 @@ recipes:
       - name: "Filter Items"
         id: "filter"
         command: "cat"
-        transform: "{{ filter .input \"a\" }}"
+        transform: "{{ filter .input `a` }}"
         silent: true
 
       - name: "Display Results"
         id: "display"
-        command: "echo 'Items containing \"a\":\n{{ .filter }}'"
+        command: "echo 'Items containing `a`:\n{{ .filter }}'"
