@@ -1,0 +1,67 @@
+name: Shef Go Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+          check-latest: true
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          go mod download
+          go get github.com/agiledragon/gomonkey/v2
+
+      - name: Run tests
+        run: go test -v ./...
+
+  test-with-coverage:
+    name: Test with Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+          check-latest: true
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          go mod download
+          go get github.com/agiledragon/gomonkey/v2
+
+      - name: Run tests with coverage
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Display coverage summary
+        run: go tool cover -func=coverage.out
+
+      - name: Generate coverage report
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.html
+          retention-days: 7

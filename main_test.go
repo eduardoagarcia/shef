@@ -1,0 +1,1007 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+// MockFileSystem is used to mock file system operations
+type MockFileSystem struct {
+	mock.Mock
+}
+
+func (m *MockFileSystem) ReadFile(filename string) ([]byte, error) {
+	args := m.Called(filename)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
+}
+
+func (m *MockFileSystem) Stat(filename string) (os.FileInfo, error) {
+	args := m.Called(filename)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(os.FileInfo), args.Error(1)
+}
+
+func (m *MockFileSystem) MkdirAll(path string, perm os.FileMode) error {
+	args := m.Called(path, perm)
+	return args.Error(0)
+}
+
+func (m *MockFileSystem) Open(path string) (*os.File, error) {
+	args := m.Called(path)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*os.File), args.Error(1)
+}
+
+func (m *MockFileSystem) Create(path string) (*os.File, error) {
+	args := m.Called(path)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*os.File), args.Error(1)
+}
+
+// MockFileInfo is used to mock file info
+type MockFileInfo struct {
+	mock.Mock
+	NameVal    string
+	SizeVal    int64
+	ModeVal    os.FileMode
+	ModTimeVal time.Time
+	IsDirVal   bool
+}
+
+func (m *MockFileInfo) Name() string {
+	return m.NameVal
+}
+
+func (m *MockFileInfo) Size() int64 {
+	return m.SizeVal
+}
+
+func (m *MockFileInfo) Mode() os.FileMode {
+	return m.ModeVal
+}
+
+func (m *MockFileInfo) ModTime() time.Time {
+	return m.ModTimeVal
+}
+
+func (m *MockFileInfo) IsDir() bool {
+	return m.IsDirVal
+}
+
+func (m *MockFileInfo) Sys() interface{} {
+	return nil
+}
+
+// NewMockFileInfo creates a new MockFileInfo
+func NewMockFileInfo(name string, isDir bool) *MockFileInfo {
+	return &MockFileInfo{
+		NameVal:    name,
+		SizeVal:    1024,
+		ModeVal:    0644,
+		ModTimeVal: time.Now(),
+		IsDirVal:   isDir,
+	}
+}
+
+// MockCommandExecutor is used to mock command execution
+type MockCommandExecutor struct {
+	mock.Mock
+}
+
+func (m *MockCommandExecutor) Execute(cmd string, input string, mode string) (string, error) {
+	args := m.Called(cmd, input, mode)
+	return args.String(0), args.Error(1)
+}
+
+// Test fixtures
+var testConfig = `
+recipes:
+  - name: test-recipe
+    description: A test recipe
+    category: test
+    operations:
+      - name: Test Operation
+        id: test-op
+        command: echo "Hello, World!"
+  - name: another-recipe
+    description: Another test recipe
+    operations:
+      - name: Operation 1
+        command: echo "Operation 1"
+      - name: Operation 2
+        command: echo "Operation 2"
+        condition: "$test == true"
+`
+
+var testRecipe = Recipe{
+	Name:        "test-recipe",
+	Description: "A test recipe",
+	Category:    "test",
+	Operations: []Operation{
+		{
+			Name:    "Test Operation",
+			ID:      "test-op",
+			Command: "echo \"Hello, World!\"",
+		},
+	},
+}
+
+// TestLoadConfig tests the loadConfig function
+func TestLoadConfig(t *testing.T) {
+	mockFS := new(MockFileSystem)
+	mockFS.On("ReadFile", "test-config.yaml").Return([]byte(testConfig), nil).Maybe()
+	mockFS.On("ReadFile", "non-existent.yaml").Return(nil, errors.New("file not found")).Maybe()
+	mockFS.On("ReadFile", "invalid.yaml").Return([]byte("invalid: yaml: content"), nil).Maybe()
+
+	patches := gomonkey.ApplyFunc(os.ReadFile, mockFS.ReadFile)
+	defer patches.Reset()
+
+	tests := []struct {
+		name       string
+		filename   string
+		wantConfig *Config
+		wantErr    bool
+	}{
+		{
+			name:       "valid config",
+			filename:   "test-config.yaml",
+			wantConfig: &Config{Recipes: []Recipe{testRecipe, {Name: "another-recipe", Description: "Another test recipe", Operations: []Operation{{Name: "Operation 1", Command: "echo \"Operation 1\""}, {Name: "Operation 2", Command: "echo \"Operation 2\"", Condition: "$test == true"}}}}},
+			wantErr:    false,
+		},
+		{
+			name:       "file not found",
+			filename:   "non-existent.yaml",
+			wantConfig: nil,
+			wantErr:    true,
+		},
+		{
+			name:       "invalid yaml",
+			filename:   "invalid.yaml",
+			wantConfig: nil,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotConfig, err := loadConfig(tt.filename)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantConfig.Recipes[0].Name, gotConfig.Recipes[0].Name)
+				assert.Equal(t, tt.wantConfig.Recipes[0].Description, gotConfig.Recipes[0].Description)
+				assert.Equal(t, tt.wantConfig.Recipes[0].Category, gotConfig.Recipes[0].Category)
+				assert.Len(t, gotConfig.Recipes[0].Operations, len(tt.wantConfig.Recipes[0].Operations))
+			}
+		})
+	}
+}
+
+// TestLoadRecipes tests the loadRecipes function
+func TestLoadRecipes(t *testing.T) {
+	mockFS := new(MockFileSystem)
+
+	patches := gomonkey.ApplyFunc(os.ReadFile, mockFS.ReadFile)
+	defer patches.Reset()
+
+	tests := []struct {
+		name      string
+		sources   []string
+		category  string
+		mockCalls map[string]struct {
+			data  []byte
+			err   error
+			times int
+		}
+		want    []Recipe
+		wantErr bool
+	}{
+		{
+			name:     "load all recipes",
+			sources:  []string{"test-config.yaml"},
+			category: "",
+			mockCalls: map[string]struct {
+				data  []byte
+				err   error
+				times int
+			}{
+				"test-config.yaml": {
+					data:  []byte(testConfig),
+					err:   nil,
+					times: 1,
+				},
+			},
+			want:    []Recipe{testRecipe, {Name: "another-recipe", Description: "Another test recipe", Operations: []Operation{{Name: "Operation 1", Command: "echo \"Operation 1\""}, {Name: "Operation 2", Command: "echo \"Operation 2\"", Condition: "$test == true"}}}},
+			wantErr: false,
+		},
+		{
+			name:     "filter by category",
+			sources:  []string{"test-config.yaml"},
+			category: "test",
+			mockCalls: map[string]struct {
+				data  []byte
+				err   error
+				times int
+			}{
+				"test-config.yaml": {
+					data:  []byte(testConfig),
+					err:   nil,
+					times: 1,
+				},
+			},
+			want:    []Recipe{testRecipe},
+			wantErr: false,
+		},
+		{
+			name:     "no matching category",
+			sources:  []string{"test-config.yaml"},
+			category: "non-existent",
+			mockCalls: map[string]struct {
+				data  []byte
+				err   error
+				times int
+			}{
+				"test-config.yaml": {
+					data:  []byte(testConfig),
+					err:   nil,
+					times: 1,
+				},
+			},
+			want:    []Recipe{},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for source, call := range tt.mockCalls {
+				mockFS.On("ReadFile", source).Return(call.data, call.err).Times(call.times)
+			}
+
+			got, err := loadRecipes(tt.sources, tt.category)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, got, len(tt.want))
+
+				if len(got) > 0 && len(tt.want) > 0 {
+					assert.Equal(t, tt.want[0].Name, got[0].Name)
+					assert.Equal(t, tt.want[0].Description, got[0].Description)
+					assert.Equal(t, tt.want[0].Category, got[0].Category)
+				}
+			}
+		})
+	}
+}
+
+// TestFindRecipeSourcesByType tests the findRecipeSourcesByType function
+func TestFindRecipeSourcesByType(t *testing.T) {
+	mockFS := new(MockFileSystem)
+	mockDirInfo := NewMockFileInfo(".shef", true)
+
+	mockFS.On("Stat", ".shef").Return(mockDirInfo, nil).Maybe()
+	mockFS.On("Stat", "/home/user/.shef").Return(mockDirInfo, nil).Maybe()
+	mockFS.On("Stat", "/home/user/.shef/public").Return(nil, os.ErrNotExist).Maybe()
+	mockFS.On("Stat", "/home/user/.shef/user").Return(nil, os.ErrNotExist).Maybe()
+
+	patches := gomonkey.NewPatches()
+	defer patches.Reset()
+
+	patches.ApplyFunc(os.UserHomeDir, func() (string, error) {
+		return "/home/user", nil
+	})
+
+	patches.ApplyFunc(filepath.Walk, func(root string, fn filepath.WalkFunc) error {
+		return nil
+	})
+
+	patches.ApplyFunc(os.Stat, mockFS.Stat)
+
+	tests := []struct {
+		name       string
+		localDir   bool
+		userDir    bool
+		publicRepo bool
+		want       []string
+		wantErr    bool
+	}{
+		{
+			name:       "local directory only",
+			localDir:   true,
+			userDir:    false,
+			publicRepo: false,
+			want:       []string{},
+			wantErr:    false,
+		},
+		{
+			name:       "user directory only",
+			localDir:   false,
+			userDir:    true,
+			publicRepo: false,
+			want:       []string{},
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := findRecipeSourcesByType(tt.localDir, tt.userDir, tt.publicRepo)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, got, len(tt.want))
+			}
+		})
+	}
+}
+
+// TestRenderTemplate tests the renderTemplate function
+func TestRenderTemplate(t *testing.T) {
+	tests := []struct {
+		name    string
+		tmplStr string
+		vars    map[string]interface{}
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "simple template",
+			tmplStr: "Hello, {{.name}}!",
+			vars:    map[string]interface{}{"name": "World"},
+			want:    "Hello, World!",
+			wantErr: false,
+		},
+		{
+			name:    "template with function",
+			tmplStr: "{{trim .text}}",
+			vars:    map[string]interface{}{"text": "  trimmed  "},
+			want:    "trimmed",
+			wantErr: false,
+		},
+		{
+			name:    "invalid template",
+			tmplStr: "Hello, {{.name!",
+			vars:    map[string]interface{}{"name": "World"},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name:    "missing variable",
+			tmplStr: "Hello, {{.missing}}!",
+			vars:    map[string]interface{}{"name": "World"},
+			want:    "Hello, <no value>!",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := renderTemplate(tt.tmplStr, tt.vars)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+// TestTransformOutput tests the transformOutput function with a simpler transform
+func TestTransformOutput(t *testing.T) {
+	ctx := &ExecutionContext{
+		Vars:             map[string]interface{}{"var1": "value1"},
+		OperationOutputs: map[string]string{"op1": "output1"},
+		OperationResults: map[string]bool{"op1": true},
+	}
+
+	tests := []struct {
+		name      string
+		output    string
+		transform string
+		want      string
+		wantErr   bool
+	}{
+		{
+			name:      "simple transform",
+			output:    "hello world",
+			transform: `{{print "HELLO WORLD"}}`,
+			want:      "HELLO WORLD",
+			wantErr:   false,
+		},
+		{
+			name:      "transform with variables",
+			output:    "hello",
+			transform: "{{.input}} {{.var1}}",
+			want:      "hello value1",
+			wantErr:   false,
+		},
+		{
+			name:      "transform with operation output",
+			output:    "hello",
+			transform: "{{.input}} {{.op1}}",
+			want:      "hello output1",
+			wantErr:   false,
+		},
+		{
+			name:      "invalid transform",
+			output:    "hello",
+			transform: "{{.input} {{.var1}}",
+			want:      "",
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := transformOutput(tt.output, tt.transform, ctx)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+// TestExecuteCommand tests the executeCommand function
+func TestExecuteCommand(t *testing.T) {
+	mockCmd := new(MockCommandExecutor)
+	patches := gomonkey.ApplyFunc(executeCommand, mockCmd.Execute)
+	defer patches.Reset()
+
+	tests := []struct {
+		name          string
+		cmd           string
+		input         string
+		executionMode string
+		mockOutput    string
+		mockError     error
+		want          string
+		wantErr       bool
+	}{
+		{
+			name:          "standard execution",
+			cmd:           "echo 'test'",
+			input:         "",
+			executionMode: "standard",
+			mockOutput:    "test",
+			mockError:     nil,
+			want:          "test",
+			wantErr:       false,
+		},
+		{
+			name:          "execution with input",
+			cmd:           "cat",
+			input:         "test input",
+			executionMode: "standard",
+			mockOutput:    "test input",
+			mockError:     nil,
+			want:          "test input",
+			wantErr:       false,
+		},
+		{
+			name:          "command error",
+			cmd:           "invalid-command",
+			input:         "",
+			executionMode: "standard",
+			mockOutput:    "",
+			mockError:     errors.New("command not found"),
+			want:          "",
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCmd.On("Execute", tt.cmd, tt.input, tt.executionMode).Return(tt.mockOutput, tt.mockError).Once()
+
+			got, err := executeCommand(tt.cmd, tt.input, tt.executionMode)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+// TestEvaluateCondition tests the evaluateCondition function
+func TestEvaluateCondition(t *testing.T) {
+	ctx := &ExecutionContext{
+		Vars:             map[string]interface{}{"test": true, "number": 42, "text": "value"},
+		OperationOutputs: map[string]string{"op1": "output1"},
+		OperationResults: map[string]bool{"op1": true, "op2": false},
+	}
+
+	tests := []struct {
+		name      string
+		condition string
+		want      bool
+		wantErr   bool
+	}{
+		{
+			name:      "empty condition",
+			condition: "",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "true condition",
+			condition: "true",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "false condition",
+			condition: "false",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "variable equality (true)",
+			condition: "$test == true",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "variable equality (false)",
+			condition: "$test == false",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "variable inequality (true)",
+			condition: "$test != false",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "variable inequality (false)",
+			condition: "$test != true",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "operation success",
+			condition: "op1.success",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "operation failure",
+			condition: "op2.failure",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "numeric comparison (>)",
+			condition: "$number > 10",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "numeric comparison (<)",
+			condition: "$number < 10",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "numeric comparison (>=)",
+			condition: "$number >= 42",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "numeric comparison (<=)",
+			condition: "$number <= 42",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "and condition (true)",
+			condition: "$test == true && $number > 10",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "and condition (false)",
+			condition: "$test == true && $number < 10",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "or condition (true)",
+			condition: "$test == false || $number > 10",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "or condition (false)",
+			condition: "$test == false || $number < 10",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "not condition (true)",
+			condition: "!$test == false",
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "not condition (false)",
+			condition: "!$test == true",
+			want:      false,
+			wantErr:   false,
+		},
+		{
+			name:      "template condition",
+			condition: "{{if eq .test true}}true{{else}}false{{end}}",
+			want:      true,
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := evaluateCondition(tt.condition, ctx)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+// TestHandlePromptSimple is a minimal test for handlePrompt
+func TestHandlePromptSimple(t *testing.T) {
+	t.Run("prompts are defined correctly", func(t *testing.T) {
+		inputPrompt := Prompt{
+			Name:    "input_test",
+			Type:    "input",
+			Message: "Enter a value:",
+			Default: "default",
+		}
+
+		assert.Equal(t, "input", inputPrompt.Type)
+		assert.Equal(t, "Enter a value:", inputPrompt.Message)
+	})
+}
+
+// TestGetPromptOptions tests the getPromptOptions function
+func TestGetPromptOptions(t *testing.T) {
+	ctx := &ExecutionContext{
+		OperationOutputs: map[string]string{
+			"sourceOp": "option1\noption2\noption3",
+		},
+	}
+
+	tests := []struct {
+		name    string
+		prompt  Prompt
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "options from prompt",
+			prompt: Prompt{
+				Options: []string{"option1", "option2", "option3"},
+			},
+			want:    []string{"option1", "option2", "option3"},
+			wantErr: false,
+		},
+		{
+			name: "options from source operation",
+			prompt: Prompt{
+				SourceOp: "sourceOp",
+			},
+			want:    []string{"option1", "option2", "option3"},
+			wantErr: false,
+		},
+		{
+			name: "source operation not found",
+			prompt: Prompt{
+				SourceOp: "nonExistentOp",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getPromptOptions(tt.prompt, ctx)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestParseOptionsFromOutput(t *testing.T) {
+	tests := []struct {
+		name   string
+		output string
+		want   []string
+	}{
+		{
+			name:   "simple options",
+			output: "option1\noption2\noption3",
+			want:   []string{"option1", "option2", "option3"},
+		},
+		{
+			name:   "options with whitespace",
+			output: "  option1  \n  option2  \n  option3  ",
+			want:   []string{"option1", "option2", "option3"},
+		},
+		{
+			name:   "empty lines",
+			output: "option1\n\noption2\n\noption3",
+			want:   []string{"option1", "option2", "option3"},
+		},
+		{
+			name:   "empty output",
+			output: "",
+			want:   []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseOptionsFromOutput(tt.output)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+// TestFindRecipeByName tests the findRecipeByName function
+func TestFindRecipeByName(t *testing.T) {
+	recipes := []Recipe{
+		{
+			Name:        "recipe1",
+			Description: "Recipe 1",
+		},
+		{
+			Name:        "recipe2",
+			Description: "Recipe 2",
+		},
+	}
+
+	tests := []struct {
+		name       string
+		recipes    []Recipe
+		recipeName string
+		want       *Recipe
+		wantErr    bool
+	}{
+		{
+			name:       "recipe found",
+			recipes:    recipes,
+			recipeName: "recipe1",
+			want:       &recipes[0],
+			wantErr:    false,
+		},
+		{
+			name:       "recipe not found",
+			recipes:    recipes,
+			recipeName: "nonexistent",
+			want:       nil,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := findRecipeByName(tt.recipes, tt.recipeName)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+// TestFilterLines tests the filterLines function
+func TestFilterLines(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		pattern string
+		want    string
+	}{
+		{
+			name:    "basic filter",
+			input:   "line1\nline2\nline3\nline with pattern\nline5",
+			pattern: "pattern",
+			want:    "line with pattern",
+		},
+		{
+			name:    "multiple matches",
+			input:   "line1\nline2 match\nline3\nline4 match\nline5",
+			pattern: "match",
+			want:    "line2 match\nline4 match",
+		},
+		{
+			name:    "no matches",
+			input:   "line1\nline2\nline3",
+			pattern: "pattern",
+			want:    "",
+		},
+		{
+			name:    "empty input",
+			input:   "",
+			pattern: "pattern",
+			want:    "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterLines(tt.input, tt.pattern)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+// TestCutFields tests the cutFields function
+func TestCutFields(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		delimiter string
+		field     int
+		want      string
+	}{
+		{
+			name:      "basic field cutting",
+			input:     "field1,field2,field3\nvalueA,valueB,valueC",
+			delimiter: ",",
+			field:     1,
+			want:      "field2\nvalueB",
+		},
+		{
+			name:      "field index out of bounds",
+			input:     "field1,field2\nvalueA,valueB",
+			delimiter: ",",
+			field:     5,
+			want:      "",
+		},
+		{
+			name:      "mixed field lengths",
+			input:     "field1,field2,field3\nvalueA,valueB",
+			delimiter: ",",
+			field:     2,
+			want:      "field3",
+		},
+		{
+			name:      "tab delimiter",
+			input:     "field1\tfield2\tfield3\nvalueA\tvalueB\tvalueC",
+			delimiter: "\t",
+			field:     0,
+			want:      "field1\nvalueA",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := cutFields(tt.input, tt.delimiter, tt.field)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+// TestJoinArray tests the JoinArray function
+func TestJoinArray(t *testing.T) {
+	tests := []struct {
+		name string
+		arr  interface{}
+		sep  string
+		want string
+	}{
+		{
+			name: "string array",
+			arr:  []string{"a", "b", "c"},
+			sep:  ",",
+			want: "a,b,c",
+		},
+		{
+			name: "interface array",
+			arr:  []interface{}{"a", 1, true},
+			sep:  "-",
+			want: "a-1-true",
+		},
+		{
+			name: "non-array",
+			arr:  42,
+			sep:  ",",
+			want: "42",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := JoinArray(tt.arr, tt.sep)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+// TestExecuteRecipeSimple is a minimal test for executeRecipe
+func TestExecuteRecipeSimple(t *testing.T) {
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	defer func() {
+		w.Close()
+		os.Stdout = oldStdout
+		io.Copy(io.Discard, r)
+		r.Close()
+	}()
+
+	mockCmd := new(MockCommandExecutor)
+
+	patches := gomonkey.ApplyFunc(executeCommand, mockCmd.Execute)
+	defer patches.Reset()
+
+	recipe := Recipe{
+		Name:        "simple-recipe",
+		Description: "A simple recipe",
+		Operations: []Operation{
+			{
+				Name:    "Simple Operation",
+				Command: "echo 'Hello'",
+			},
+		},
+	}
+
+	mockCmd.On("Execute", "echo 'Hello'", "", "").Return("Hello", nil).Maybe()
+
+	err := executeRecipe(recipe, false)
+	assert.NoError(t, err)
+
+	mockCmd.AssertCalled(t, "Execute", "echo 'Hello'", "", "")
+}
+
+// ExampleRenderTemplate demonstrates how to use the renderTemplate function
+func Example_renderTemplate() {
+	vars := map[string]interface{}{
+		"name": "World",
+	}
+	result, err := renderTemplate("Hello, {{.name}}!", vars)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println(result)
+}

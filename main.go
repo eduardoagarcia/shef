@@ -714,14 +714,14 @@ func getPromptOptions(p Prompt, ctx *ExecutionContext) ([]string, error) {
 }
 
 func parseOptionsFromOutput(output string) []string {
-	var options []string
+	result := []string{}
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
 		if line != "" {
-			options = append(options, line)
+			result = append(result, line)
 		}
 	}
-	return options
+	return result
 }
 
 func executeCommand(cmdStr string, input string, executionMode string) (string, error) {
