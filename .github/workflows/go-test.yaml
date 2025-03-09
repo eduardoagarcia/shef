@@ -13,10 +13,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24'
           check-latest: true
@@ -25,6 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           go mod download
+          go mod tidy
           go get github.com/agiledragon/gomonkey/v2
 
       - name: Run tests
@@ -36,10 +37,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24'
           check-latest: true
@@ -48,6 +49,7 @@ jobs:
       - name: Install dependencies
         run: |
           go mod download
+          go mod tidy
           go get github.com/agiledragon/gomonkey/v2
 
       - name: Run tests with coverage
@@ -60,7 +62,7 @@ jobs:
         run: go tool cover -html=coverage.out -o coverage.html
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.html
