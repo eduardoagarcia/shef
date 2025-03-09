@@ -1,4 +1,4 @@
-.PHONY: install install-local update update-local
+.PHONY: install install-local update update-local test coverage
 
 install:
 	go build -o shef
@@ -27,3 +27,10 @@ update-local:
 	@echo "Updated to $(HOME)/bin/shef"
 	@echo "Make sure $(HOME)/bin is in your PATH"
 	@echo "Example: export PATH=\"\$PATH:\$HOME/bin\""
+
+test:
+	go test -v
+
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
