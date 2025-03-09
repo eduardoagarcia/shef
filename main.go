@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -1309,11 +1310,6 @@ func main() {
 				Value:   false,
 			},
 			&cli.BoolFlag{
-				Name:    "list",
-				Aliases: []string{"l"},
-				Usage:   "List available recipes",
-			},
-			&cli.BoolFlag{
 				Name:    "local",
 				Aliases: []string{"L"},
 				Usage:   "Force local recipes first",
@@ -1336,16 +1332,32 @@ func main() {
 		},
 		Action: func(c *cli.Context) error {
 			args := c.Args().Slice()
-
 			sourcePriority := getSourcePriority(c)
-
-			if c.Bool("list") {
-				return handleListCommand(c, args, sourcePriority)
-			}
-
 			return handleRunCommand(c, args, sourcePriority)
 		},
 		Commands: []*cli.Command{
+			{
+				Name:    "list",
+				Aliases: []string{"ls", "l"},
+				Usage:   "List available recipes",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "json",
+						Aliases: []string{"j"},
+						Usage:   "Output results in JSON format",
+					},
+					&cli.StringFlag{
+						Name:    "category",
+						Aliases: []string{"c"},
+						Usage:   "Filter by category",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					args := c.Args().Slice()
+					sourcePriority := getSourcePriority(c)
+					return handleListCommand(c, args, sourcePriority)
+				},
+			},
 			{
 				Name:  "sync",
 				Usage: "Sync public recipes locally",
@@ -1398,8 +1410,48 @@ func handleListCommand(c *cli.Context, args []string, sourcePriority []string) e
 		}
 	}
 
-	listRecipes(allRecipes)
+	if len(allRecipes) == 0 {
+		if c.Bool("json") {
+			fmt.Println("[]")
+			return nil
+		} else {
+			fmt.Println("No recipes found.")
+			return nil
+		}
+	}
 
+	if c.Bool("json") {
+		return outputRecipesAsJSON(allRecipes)
+	}
+
+	listRecipes(allRecipes)
+	return nil
+}
+
+func outputRecipesAsJSON(recipes []Recipe) error {
+	type recipeInfo struct {
+		Name        string `json:"name"`
+		Description string `json:"description,omitempty"`
+		Category    string `json:"category,omitempty"`
+		Author      string `json:"author,omitempty"`
+	}
+
+	result := make([]recipeInfo, len(recipes))
+	for i, r := range recipes {
+		result[i] = recipeInfo{
+			Name:        r.Name,
+			Description: r.Description,
+			Category:    r.Category,
+			Author:      r.Author,
+		}
+	}
+
+	jsonBytes, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(jsonBytes))
 	return nil
 }
 
