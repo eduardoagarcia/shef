@@ -1,0 +1,16 @@
+recipes:
+  - name: "foreach"
+    description: "A simple demonstration of foreach control flow"
+    category: "demo"
+    operations:
+      - name: "Process Each Fruit"
+        control_flow:
+          type: "foreach"
+          collection: "🍎 Apple\n🍌 Banana\n🍒 Cherry\n🍊 Orange"
+          as: "fruit"
+        operations:
+          - name: "Process Fruit"
+            command: "echo 'Processing {{ .fruit }}'"
+
+      - name: "Show Completion"
+        command: "echo 'All fruits processed!'"

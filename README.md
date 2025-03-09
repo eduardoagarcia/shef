@@ -2,7 +2,8 @@
 
 Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up shell recipes without the mess.
 
-Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: pipe commands together, add interactive prompts, and build reusable workflows with advanced scripting.
+Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: pipe commands together, add interactive
+prompts, and build reusable workflows with advanced scripting.
 
 ## Table of Contents
 
@@ -18,6 +19,7 @@ Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: 
 - [Conditional Execution](#conditional-execution)
 - [Branching Workflows](#branching-workflows)
 - [Data Flow Between Operations](#data-flow-between-operations)
+- [Control Flow Structures](#control-flow-structures)
 - [Example Recipes](#example-recipes)
 - [Creating Recipes](#creating-recipes)
 - [AI-Assisted Recipe Creation](#ai-assisted-recipe-creation)
@@ -35,9 +37,13 @@ Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: 
 
 ## Why Shef vs. Bash Scripts?
 
-While many of Shef's capabilities could be implemented with bash scripts, Shef provides a structured approach that eliminates the tediousness of shell scripting. It offers interactive prompts, conditional logic, and command piping through a simple YAML interface—no need to wrestle with bash syntax, error handling, or input validation.
+While many of Shef's capabilities could be implemented with bash scripts, Shef provides a structured approach that
+eliminates the tediousness of shell scripting. It offers interactive prompts, conditional logic, and command piping
+through a simple YAML interface—no need to wrestle with bash syntax, error handling, or input validation.
 
-Shef gives you the best of both worlds: the power of advanced shell commands without the scripting headaches. Think of it as a Makefile that works everywhere—in projects, system-wide, or via shared recipes—but with better interactivity and cleaner syntax. Complex workflows become accessible, regardless of your scripting expertise.
+Shef gives you the best of both worlds: the power of advanced shell commands without the scripting headaches. Think of
+it as a Makefile that works everywhere—in projects, system-wide, or via shared recipes—but with better interactivity and
+cleaner syntax.
 
 ## Installation
 
@@ -188,11 +194,11 @@ shef [category] [recipe-name]
 
 ### Utility Commands
 
-| Command       | Description           |
-|---------------|-----------------------|
-| `shef update` | Update public recipes |
+| Command     | Description                 |
+|-------------|-----------------------------|
+| `shef sync` | Sync public recipes locally |
 
-**Note**: make sure your Shef git repo is up to date (`git pull`) before running `shef update`
+**Note**: make sure your Shef git repo is up to date (`git pull`) before running `shef sync`
 
 ## Recipe Sources
 
@@ -202,7 +208,7 @@ Shef looks for recipes in multiple locations:
 2. **User Recipes**: `~/.shef/user/*.yaml` in your home directory
 3. **Public Recipes**: `~/.shef/public/*.yaml` in your home directory
 
-If you have recipies with the same name and category in different locations, you can prioritize a specific source:
+If you have recipes with the same name and category in different locations, you can prioritize a specific source:
 
 ```bash
 shef -L git version  # Prioritize local recipes
@@ -252,16 +258,26 @@ Operations are the building blocks of recipes:
   on_failure: "failure_op"          # [Optional] Operation to run on failure
   transform: "{{ .input | trim }}"  # [Optional] Transform output
   prompts:                          # [Optional] Interactive prompts
-    - name: "var_name"
-      type: "input"
-      message: "Enter value:"
+     - name: "var_name"
+       type: "input"
+       message: "Enter value:"
+  control_flow:                      # [Optional] Control flow structure
+     type: "foreach"                 # Type of control flow (foreach)
+     collection: "Item 1\nItem 2"    # Collection to iterate over
+     as: "item"                      # Variable name for current item
+  operations:                        # [Optional] Sub-operations for when control flow structures are used
+     - name: "Sub Operation"
+       command: "echo 'Processing {{ .item }}'"
 ```
 
 #### Execution Modes
 
-- **standard**: Default mode (used when no execution_mode is specified). Output is captured and can be used by subsequent operations.
-- **interactive**: The command has direct access to the terminal's stdin, stdout, and stderr. Useful for commands that require direct terminal interaction, but output cannot be captured for use in subsequent operations.
-- **stream**: Similar to interactive mode but optimized for long-running processes that produce continuous output. The command's output streams to the terminal in real-time, but output cannot be captured for use in subsequent operations.
+- **standard**: Default mode (used when no execution_mode is specified). Output is captured and can be used by
+  subsequent operations.
+- **interactive**: The command has direct access to the terminal's stdin, stdout, and stderr. Useful for commands that
+  require direct terminal interaction, but output cannot be captured for use in subsequent operations.
+- **stream**: Similar to interactive mode but optimized for long-running processes that produce continuous output. The
+  command's output streams to the terminal in real-time, but output cannot be captured for use in subsequent operations.
 
 ## Interactive Prompts
 
@@ -499,6 +515,65 @@ by its ID:
   command: "echo 'Running on {{ .hostname_op }}'"
 ```
 
+## Control Flow Structures
+
+Shef supports advanced control flow structures that let you create dynamic, iterative workflows.
+
+### Foreach Loops
+
+You can iterate over a collection of items and perform a flow of operations on each item.
+
+#### Key Foreach Components
+
+- **control_flow**
+    - **type**: foreach
+    - **collection**: The list of items to iterate over (string with items separated by newlines)
+    - **as**: The variable name to use for the current item in each iteration
+- **operations**: The sub-operations to perform for each item (all sub-operations have access to the `as` loop variable)
+
+#### Mechanics of the Foreach Loop
+
+1. Parse the collection into separate items (splitting by newlines)
+2. For each item, set the variable specified in "as"
+3. Execute all operations in the foreach block for each item
+4. Clean up the loop variable when done
+
+#### Common Uses
+
+- Processing multiple files
+- Handling lists of servers, containers, or resources
+- Applying the same transformation to multiple inputs
+- Building dynamic workflows based on discovered items
+
+**Note**: Within a foreach loop, you can use conditional operations, transformations, and all other Shef features.
+
+#### Example Foreach Recipes
+
+```yaml
+- name: "Process Each Item"
+  control_flow:
+     type: "foreach"
+     collection: "🍎 Apples\n🍌 Bananas\n🍒 Cherries\n🍊 Oranges"
+     as: "fruit"  # Each item will be available as .fruit
+  operations:
+     - name: "Process Fruit"
+       command: "echo 'Processing {{ .fruit }}'"
+
+# You can also generate the collection dynamically:
+- name: "List Files"
+  id: "files"
+  command: "find . -type f -name '*.txt'"
+
+- name: "Process Each File"
+  control_flow:
+    type: "foreach"
+    collection: "{{ .files }}"  # Using output from previous operation
+    as: "file"                  # Each item will be available as .file
+  operations:
+    - name: "Process File"
+      command: "cat {{ .file }} | wc -l"
+```
+
 ## Example Recipes
 
 ### Hello World
@@ -630,7 +705,8 @@ The recipe should be interactive and safe, requiring confirmation before any des
 - Ask the AI to analyze and iterate on its recipe solution, considering edge cases and improvements
 - If the first recipe doesn't fully meet your needs, refine your requirements and ask for adjustments
 
-Remember, the AI-generated recipes can provide an excellent starting point that you can further customize to fit your exact needs.
+Remember, the AI-generated recipes can provide an excellent starting point that you can further customize to fit your
+exact needs.
 
 ### The Prompt
 
@@ -671,6 +747,13 @@ recipes:
             file_extensions: ["txt", "json"]  # For path type
             multiple_limit: 3  # For multiselect type
             editor_cmd: "vim"  # For editor type
+        control_flow:
+          type: "foreach"  # Type of control flow
+          collection: "item1\nitem2\nitem3"  # Items to iterate over (newline-separated)
+          as: "item"  # Variable name for current item
+        operations:  # Operations to perform for each item
+          - name: "Sub Operation"
+            command: "echo 'Processing {{ .item }}'"
 
 RECIPE MECHANICS:
 1. Operations execute in sequence unless redirected by on_success/on_failure
@@ -678,6 +761,13 @@ RECIPE MECHANICS:
 3. Variables from prompts are accessible as {{ .variable_name }}
 4. Operation outputs are accessible as {{ .operation_id }}
 5. You can combine variables and operation outputs in command templates
+6. Control flow structures like foreach allow iterating over collections
+
+CONTROL FLOW STRUCTURES:
+- foreach: Iterate over a collection of items
+  - collection: Newline-separated list of items (can be fixed or from operation output)
+  - as: Variable name to assign each item during iteration
+  - operations: Operations to execute for each item (with access to the iteration variable)
 
 INTERACTIVE PROMPTS:
 - input: Free text input (default: string)
@@ -752,8 +842,7 @@ Please create a complete Shef recipe that accomplishes my goal, with proper inde
 
 ## Contributing to Shef
 
-Shef thrives on community contributions, whether you're improving the core Go codebase or sharing useful recipes. Here's
-how you can contribute:
+Thank you for taking an interest in contributing to Shef!
 
 ### Contributing Code
 
@@ -785,6 +874,7 @@ how you can contribute:
 - **Code Style**: Follow standard Go conventions and the existing style in the codebase
 - **Documentation**: Update documentation for any new features or changes
 - **Commit Messages**: Write clear, descriptive commit messages explaining your changes
+- **Tests**: Update tests accordingly
 
 #### Submitting Your Changes
 

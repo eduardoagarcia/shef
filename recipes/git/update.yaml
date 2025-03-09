@@ -1,0 +1,46 @@
+recipes:
+  - name: "update"
+    description: "Update all git repositories within the current directory"
+    category: "git"
+    operations:
+      - name: "Find Subdirectories"
+        id: "find_dirs"
+        command: "find . -maxdepth 1 -type d -not -path '.' | sort -f"
+        silent: true
+        transform: "{{ .input | trim | split '\n' }}"
+
+      - name: "Process Directories"
+        id: "process_dirs"
+        control_flow:
+          type: "foreach"
+          collection: "{{ .find_dirs }}"
+          as: "dir"
+        operations:
+          - name: "Check If Git Repository"
+            id: "check_git_repo"
+            command: "ls -d '{{ .dir }}/.git' 2>/dev/null || echo ''"
+            silent: true
+            transform: "{{ if .input }}is_git_repo{{ else }}not_git_repo{{ end }}"
+            on_success: "handle_check_result"
+
+          - name: "Handle Check Result"
+            id: "handle_check_result"
+            command: "echo '{{ .check_git_repo }}'"
+            silent: true
+            condition: ".check_git_repo == 'is_git_repo'"
+            on_success: "update_repo"
+            on_failure: "skip_repo"
+
+          - name: "Update Repository"
+            id: "update_repo"
+            command: |
+              printf 'Updating %s\n' '{{ .dir }}'
+              git -C '{{ .dir }}' pull
+            execution_mode: "stream"
+
+          - name: "Skip Repository"
+            id: "skip_repo"
+            command: "printf 'Skipping %s (not a git repository)\n' '{{ .dir }}'"
+
+      - name: "Display Summary"
+        command: "echo 'Complete!'"

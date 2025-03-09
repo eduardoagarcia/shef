@@ -198,100 +198,47 @@ func TestLoadConfig(t *testing.T) {
 
 // TestLoadRecipes tests the loadRecipes function
 func TestLoadRecipes(t *testing.T) {
-	mockFS := new(MockFileSystem)
-
-	patches := gomonkey.ApplyFunc(os.ReadFile, mockFS.ReadFile)
+	testConfigData := []byte(testConfig)
+	patches := gomonkey.NewPatches()
 	defer patches.Reset()
 
-	tests := []struct {
-		name      string
-		sources   []string
-		category  string
-		mockCalls map[string]struct {
-			data  []byte
-			err   error
-			times int
+	patches.ApplyFunc(os.ReadFile, func(filename string) ([]byte, error) {
+		if filename == "test-config.yaml" {
+			return testConfigData, nil
 		}
-		want    []Recipe
-		wantErr bool
-	}{
-		{
-			name:     "load all recipes",
-			sources:  []string{"test-config.yaml"},
-			category: "",
-			mockCalls: map[string]struct {
-				data  []byte
-				err   error
-				times int
-			}{
-				"test-config.yaml": {
-					data:  []byte(testConfig),
-					err:   nil,
-					times: 1,
-				},
-			},
-			want:    []Recipe{testRecipe, {Name: "another-recipe", Description: "Another test recipe", Operations: []Operation{{Name: "Operation 1", Command: "echo \"Operation 1\""}, {Name: "Operation 2", Command: "echo \"Operation 2\"", Condition: "$test == true"}}}},
-			wantErr: false,
-		},
-		{
-			name:     "filter by category",
-			sources:  []string{"test-config.yaml"},
-			category: "test",
-			mockCalls: map[string]struct {
-				data  []byte
-				err   error
-				times int
-			}{
-				"test-config.yaml": {
-					data:  []byte(testConfig),
-					err:   nil,
-					times: 1,
-				},
-			},
-			want:    []Recipe{testRecipe},
-			wantErr: false,
-		},
-		{
-			name:     "no matching category",
-			sources:  []string{"test-config.yaml"},
-			category: "non-existent",
-			mockCalls: map[string]struct {
-				data  []byte
-				err   error
-				times int
-			}{
-				"test-config.yaml": {
-					data:  []byte(testConfig),
-					err:   nil,
-					times: 1,
-				},
-			},
-			want:    []Recipe{},
-			wantErr: false,
-		},
-	}
+		return nil, fmt.Errorf("file not found: %s", filename)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			for source, call := range tt.mockCalls {
-				mockFS.On("ReadFile", source).Return(call.data, call.err).Times(call.times)
-			}
+	t.Run("load all recipes", func(t *testing.T) {
+		recipes, err := loadRecipes([]string{"test-config.yaml"}, "")
+		assert.NoError(t, err)
+		assert.Len(t, recipes, 2, "Expected 2 recipes, got %d", len(recipes))
 
-			got, err := loadRecipes(tt.sources, tt.category)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Len(t, got, len(tt.want))
+		if len(recipes) >= 2 {
+			assert.Equal(t, "test-recipe", recipes[0].Name)
+			assert.Equal(t, "A test recipe", recipes[0].Description)
+			assert.Equal(t, "test", recipes[0].Category)
 
-				if len(got) > 0 && len(tt.want) > 0 {
-					assert.Equal(t, tt.want[0].Name, got[0].Name)
-					assert.Equal(t, tt.want[0].Description, got[0].Description)
-					assert.Equal(t, tt.want[0].Category, got[0].Category)
-				}
-			}
-		})
-	}
+			assert.Equal(t, "another-recipe", recipes[1].Name)
+			assert.Equal(t, "Another test recipe", recipes[1].Description)
+		}
+	})
+
+	t.Run("filter by category", func(t *testing.T) {
+		recipes, err := loadRecipes([]string{"test-config.yaml"}, "test")
+		assert.NoError(t, err)
+		assert.Len(t, recipes, 1, "Expected 1 recipe, got %d", len(recipes))
+
+		if len(recipes) >= 1 {
+			assert.Equal(t, "test-recipe", recipes[0].Name)
+		}
+	})
+
+	t.Run("no matching category", func(t *testing.T) {
+		recipes, err := loadRecipes([]string{"test-config.yaml"}, "non-existent")
+		assert.NoError(t, err)
+		assert.Len(t, recipes, 0, "Expected 0 recipes, got %d", len(recipes))
+	})
 }
 
 // TestFindRecipeSourcesByType tests the findRecipeSourcesByType function

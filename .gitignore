@@ -25,3 +25,11 @@ go.work.sum
 .idea
 /shef
 /.shef/tools/debug.yaml
+
+# Garbage
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes

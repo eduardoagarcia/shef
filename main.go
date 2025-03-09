@@ -34,16 +34,18 @@ type Recipe struct {
 }
 
 type Operation struct {
-	Name          string   `yaml:"name"`
-	ID            string   `yaml:"id,omitempty"`
-	Command       string   `yaml:"command"`
-	ExecutionMode string   `yaml:"execution_mode,omitempty"`
-	Silent        bool     `yaml:"silent,omitempty"`
-	Condition     string   `yaml:"condition,omitempty"`
-	OnSuccess     string   `yaml:"on_success,omitempty"`
-	OnFailure     string   `yaml:"on_failure,omitempty"`
-	Transform     string   `yaml:"transform,omitempty"`
-	Prompts       []Prompt `yaml:"prompts,omitempty"`
+	Name          string      `yaml:"name"`
+	ID            string      `yaml:"id,omitempty"`
+	Command       string      `yaml:"command,omitempty"`
+	ControlFlow   interface{} `yaml:"control_flow,omitempty"`
+	Operations    []Operation `yaml:"operations,omitempty"`
+	ExecutionMode string      `yaml:"execution_mode,omitempty"`
+	Silent        bool        `yaml:"silent,omitempty"`
+	Condition     string      `yaml:"condition,omitempty"`
+	OnSuccess     string      `yaml:"on_success,omitempty"`
+	OnFailure     string      `yaml:"on_failure,omitempty"`
+	Transform     string      `yaml:"transform,omitempty"`
+	Prompts       []Prompt    `yaml:"prompts,omitempty"`
 }
 
 type Prompt struct {
@@ -652,7 +654,6 @@ func handlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 			return nil, err
 		}
 
-		// Ensure default value exists in options
 		defaultExists := false
 		if defaultValue != "" {
 			for _, opt := range options {
@@ -1060,9 +1061,12 @@ func executeRecipe(recipe Recipe, debug bool) error {
 	}
 
 	opMap := make(map[string]Operation)
-	for _, op := range recipe.Operations {
-		if op.ID != "" {
-			opMap[op.ID] = op
+	registerOperations(recipe.Operations, opMap)
+
+	if debug {
+		fmt.Println("Registered operations:")
+		for id := range opMap {
+			fmt.Printf("  - %s\n", id)
 		}
 	}
 
@@ -1070,6 +1074,31 @@ func executeRecipe(recipe Recipe, debug bool) error {
 	executeOp = func(op Operation, depth int) error {
 		if depth > 50 {
 			return fmt.Errorf("possible infinite loop detected (max depth reached)")
+		}
+
+		if op.ControlFlow != nil {
+			flowMap, ok := op.ControlFlow.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("invalid control_flow structure")
+			}
+
+			typeVal, ok := flowMap["type"].(string)
+			if !ok {
+				return fmt.Errorf("control_flow requires a 'type' field")
+			}
+
+			switch typeVal {
+
+			case "foreach":
+				forEach, err := op.GetForEachFlow()
+				if err != nil {
+					return err
+				}
+				return ExecuteForEach(op, forEach, &ctx, depth, executeOp, debug)
+
+			default:
+				return fmt.Errorf("unknown control_flow type: %s", typeVal)
+			}
 		}
 
 		if op.Condition != "" {
@@ -1160,13 +1189,13 @@ func executeRecipe(recipe Recipe, debug bool) error {
 			fmt.Println(output)
 		}
 
-		if operationSuccess && op.OnSuccess != "" {
+		if op.OnSuccess != "" && ctx.OperationResults[op.ID] {
 			nextOp, exists := opMap[op.OnSuccess]
 			if !exists {
 				return fmt.Errorf("on_success operation %s not found", op.OnSuccess)
 			}
 			return executeOp(nextOp, depth+1)
-		} else if !operationSuccess && op.OnFailure != "" {
+		} else if op.OnFailure != "" && !ctx.OperationResults[op.ID] {
 			nextOp, exists := opMap[op.OnFailure]
 			if !exists {
 				return fmt.Errorf("on_failure operation %s not found", op.OnFailure)
@@ -1192,6 +1221,18 @@ func executeRecipe(recipe Recipe, debug bool) error {
 	}
 
 	return nil
+}
+
+func registerOperations(operations []Operation, opMap map[string]Operation) {
+	for _, op := range operations {
+		if op.ID != "" {
+			opMap[op.ID] = op
+		}
+
+		if op.ControlFlow != nil && len(op.Operations) > 0 {
+			registerOperations(op.Operations, opMap)
+		}
+	}
 }
 
 func listRecipes(recipes []Recipe) {
