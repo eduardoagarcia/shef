@@ -1,0 +1,37 @@
+recipes:
+  - name: "monitor"
+    description: "Monitor a service until it returns a success status code"
+    category: "demo"
+    operations:
+      - name: "Initialize Empty Status Code"
+        id: "status_code"
+        command: echo ""
+        silent: true
+
+      - name: "Health Check"
+        control_flow:
+          type: "while"
+          condition: .status_code != "200" || .status_code == ""
+        operations:
+          - name: "Check Service Status"
+            id: "status_code"
+            command: |
+              # simulate a status change after three polling attempts
+              if [ {{ .iteration }} -gt 3 ]; then
+                curl -s -o /dev/null -w "%{http_code}" https://httpbin.org/status/200
+              else
+                curl -s -o /dev/null -w "%{http_code}" https://httpbin.org/status/500
+              fi
+            silent: true
+
+          - name: "Display Current Error Status"
+            command: echo {{ color "red" "Service unavailable! Status code:" }} {{ style "bold" (color "red" .status_code) }}
+            condition: .status_code != "200"
+
+          - name: "Throttle"
+            command: sleep 1
+            silent: true
+            condition: .status_code != "200"
+
+      - name: "Success Message"
+        command: echo {{ color "green" "Service available! Status code:" }} {{ style "bold" (color "green" .status_code) }}

@@ -5,6 +5,54 @@ Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking u
 Inspired by [CyberChef](https://gchq.github.io/CyberChef), Shef allows you to pipe commands together, add interactive
 user prompts, loop using complex control structures, and build reusable workflows with advanced conditional logic.
 
+## Quick Start Example
+
+The following example showcases a simple Shef recipe, giving you a quick glance at the syntax and functionality.
+
+The recipe polls an unavailable endpoint, displaying its status, until it returns a `200` status code.
+
+```yaml
+recipes:
+  - name: "monitor"
+    description: "Monitor a service until it returns a success status code"
+    category: "demo"
+    operations:
+      - name: "Initialize Empty Status Code"
+        id: "status_code"
+        command: echo ""
+        silent: true
+
+      - name: "Health Check"
+        control_flow:
+          type: "while"
+          condition: .status_code != "200" || .status_code == ""
+        operations:
+          - name: "Check Service Status"
+            id: "status_code"
+            command: |
+              # simulate a status change after three polling attempts
+              if [ {{ .iteration }} -gt 3 ]; then
+                curl -s -o /dev/null -w "%{http_code}" https://httpbin.org/status/200
+              else
+                curl -s -o /dev/null -w "%{http_code}" https://httpbin.org/status/500
+              fi
+            silent: true
+
+          - name: "Display Current Error Status"
+            command: echo {{ color "red" "Service unavailable! Status code:" }} {{ style "bold" (color "red" .status_code) }}
+            condition: .status_code != "200"
+
+          - name: "Throttle"
+            command: sleep 1
+            silent: true
+            condition: .status_code != "200"
+
+      - name: "Success Message"
+        command: echo {{ color "green" "Service available! Status code:" }} {{ style "bold" (color "green" .status_code) }}
+```
+
+Now that you've gotten acquainted with the basics, let's explore Shef's capabilities in depth!
+
 ## Table of Contents
 
 - [Shef Features](#shef-features)
@@ -40,9 +88,12 @@ user prompts, loop using complex control structures, and build reusable workflow
 
 While many of Shef's capabilities can be implemented with bash scripts, Shef provides a structured approach that
 eliminates the tediousness of advanced shell scripting. Shef offers interactive user prompts, conditional logic, and command
-piping through a simple YAML interface—no need to wrestle with bash syntax, error handling, or input validation.
+piping through a simple YAML interface—no need to wrestle with bash syntax, error handling, colors, or input validation.
 
 Shef gives you the best of both worlds: the power of bash scripts with advanced features in a simple YAML format.
+
+> [!TIP]
+> Entire bash scripts can be embedded within an operation for even more functionality!
 
 ## Installation
 
@@ -197,7 +248,8 @@ shef [category] [recipe-name]
 |-------------|-----------------------------|
 | `shef sync` | Sync public recipes locally |
 
-**Note**: make sure your Shef git repo is up to date (`git pull`) before running `shef sync`
+> [!IMPORTANT]
+> Make sure your Shef git repo is up to date before running `shef sync`
 
 ## Recipe Sources
 
@@ -630,7 +682,8 @@ You can iterate over a collection of items and perform a flow of operations on e
 - Applying the same transformation to multiple inputs
 - Building dynamic workflows based on discovered items
 
-**Note**: Within a foreach loop, you can use conditional operations, transformations, and all other Shef features.
+> [!TIP]
+> Within a foreach loop, you can use conditional operations, transformations, and all other Shef features.
 
 #### Example Foreach Recipes
 
@@ -686,8 +739,8 @@ You can execute a set of operations a fixed number of times.
 - Running tests multiple times
 - Implementing retry logic with a maximum attempt limit
 
-**Note**: Within a for loop, both the specified variable (zero-based index) and `.iteration` (one-based counter) are
-available.
+> [!TIP]
+> Within a for loop, both the specified variable (zero-based index) and `.iteration` (one-based counter) are available.
 
 #### Example For Loop Recipes
 
@@ -743,7 +796,8 @@ You can repeatedly execute operations as long as a condition remains true.
 - Implementing retry logic with conditional termination
 - Continuously monitoring resources until a specific event occurs
 
-**Note**: Within a while loop, the `.iteration` variable lets you track how many iterations have occurred.
+> [!TIP]
+> Within a while loop, the `.iteration` variable lets you track how many iterations have occurred.
 
 #### Example While Loop Recipes
 
