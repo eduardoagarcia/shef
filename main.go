@@ -1515,7 +1515,7 @@ func outputRecipesAsJSON(recipes []Recipe) error {
 
 func handleRunCommand(c *cli.Context, args []string, sourcePriority []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("no recipe specified. Use shef -l to list available recipes")
+		return fmt.Errorf("no recipe specified. Use shef ls to list available recipes")
 	}
 
 	var category, recipeName string

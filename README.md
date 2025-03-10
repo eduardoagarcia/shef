@@ -208,17 +208,17 @@ make update-local
 Once Shef is installed, you are ready to begin using it.
 
 ```bash
-# Download and sync all public recipes locally
+# Sync all public recipes locally
 shef sync
 
 # Run the Hello World recipe
 shef demo hello-world
 
 # List available recipes
-shef -l
+shef ls
 
 # List all recipes within a category
-shef -l demo
+shef ls demo
 ```
 
 ## Shef Command Reference
@@ -235,7 +235,6 @@ shef [category] [recipe-name]
 |------------------|----------------------------|
 | `-h, --help`     | Show help information      |
 | `-v, --version`  | Show version information   |
-| `-l, --list`     | List available recipes     |
 | `-d, --debug`    | Enable debug output        |
 | `-c, --category` | Specify a category         |
 | `-L, --local`    | Force local recipes first  |
@@ -244,9 +243,10 @@ shef [category] [recipe-name]
 
 ### Utility Commands
 
-| Command     | Description                 |
-|-------------|-----------------------------|
-| `shef sync` | Sync public recipes locally |
+| Command         | Description                 |
+|-----------------|-----------------------------|
+| `sync`          | Sync public recipes locally |
+| `list` `ls` `l` | List available recipes      |
 
 > [!IMPORTANT]
 > Make sure your Shef git repo is up to date before running `shef sync`
@@ -307,7 +307,7 @@ Operations are the building blocks of recipes:
   condition: "var == true"          # [Optional] Condition for execution
   on_success: "success_op"          # [Optional] Operation to run on success
   on_failure: "failure_op"          # [Optional] Operation to run on failure
-  transform: "{{ .input | trim }}"  # [Optional] Transform output
+  transform: "{{ .output | trim }}" # [Optional] Transform output
   prompts:                          # [Optional] Interactive prompts
      - name: "var_name"
        type: "input"
@@ -584,38 +584,38 @@ Operations can be conditionally executed:
 ### Basic Conditions
 
 ```yaml
-condition: ".confirm == true"  # Run only if confirm prompt is true
+condition: .confirm == "true"  # Run only if confirm prompt is true
 ```
 
 ### Operation Result Conditions
 
 ```yaml
-condition: "build_op.success"  # Run if build_op succeeded
-condition: "test_op.failure"   # Run if test_op failed
+condition: build_op.success  # Run if build_op succeeded
+condition: test_op.failure   # Run if test_op failed
 ```
 
 ### Variable Comparison
 
 ```yaml
-condition: ".environment == 'production'"  # Equality check
-condition: ".count != 0"                   # Inequality check
+condition: .environment == "production"  # Equality check
+condition: .count != 0                   # Inequality check
 ```
 
 ### Numeric Comparison
 
 ```yaml
-condition: ".count > 5"
-condition: ".memory <= 512"
-condition: ".errors >= 10"
-condition: ".progress < 100"
+condition: .count > 5
+condition: .memory <= 512
+condition: .errors >= 10
+condition: .progress < 100
 ```
 
 ### Complex Logic
 
 ```yaml
-condition: "build_op.success && .confirm_deploy == true"
-condition: "test_op.failure || lint_op.failure"
-condition: "!.skip_validation"
+condition: build_op.success && .confirm_deploy == "true"
+condition: test_op.failure || lint_op.failure
+condition: !.skip_validation
 ```
 
 ## Branching Workflows
@@ -696,8 +696,11 @@ You can iterate over a collection of items and perform a flow of operations on e
   operations:
      - name: "Process Fruit"
        command: "echo 'Processing {{ .fruit }}'"
+```
 
-# You can also generate the collection dynamically:
+You can also generate the collection dynamically:
+
+```yaml
 - name: "List Files"
   id: "files"
   command: "find . -type f -name '*.txt'"
@@ -753,8 +756,11 @@ You can execute a set of operations a fixed number of times.
   operations:
     - name: "Print Iteration"
       command: "echo 'Running iteration {{ .iteration }} (zero-based index: {{ .i }})'"
+```
 
-# You can also use a dynamic count:
+You can also use a dynamic count:
+
+```yaml
 - name: "Get Count"
   id: "count"
   command: "echo '3'"
@@ -817,8 +823,11 @@ You can repeatedly execute operations as long as a condition remains true.
       command: "echo 'Checking status (iteration {{ .iteration }})...'"
       id: "status"
       transform: "{{ if eq .iteration 5 }}completed{{ else }}running{{ end }}"
+```
 
-# Real-world polling example:
+Real-world polling example:
+
+```yaml
 - name: "Poll Service Until Ready"
   control_flow:
     type: "while"
@@ -857,12 +866,12 @@ recipes:
 ```yaml
 recipes:
   - name: "conditional"
-    description: "A simple demo of conditional operations"
+    description: "A simple demo of conditional operations using direct prompt values"
     category: "demo"
     operations:
       - name: "Choose Fruit"
         id: "choose"
-        command: "echo 'You selected: {{ .fruit }}'"
+        command: 'echo "You selected: {{ .fruit }}"'
         prompts:
           - name: "fruit"
             type: "select"
@@ -873,12 +882,12 @@ recipes:
 
       - name: "Apple Operation"
         id: "apple"
-        command: "echo 'This is the apple operation! 🍎'"
+        command: echo "This is the apple operation! 🍎"
         condition: ".fruit == 'Apples'"
 
       - name: "Orange Operation"
         id: "orange"
-        command: "echo 'This is the orange operation! 🍊'"
+        command: echo "This is the orange operation! 🍊"
         condition: ".fruit == 'Oranges'"
 ```
 
@@ -917,7 +926,7 @@ To create your own recipes:
 1. Create your user directory: `mkdir -p ~/.shef/user` (if it does not already exist)
 2. Create a new YAML file: `touch ~/.shef/user/my-recipes.yaml`
 3. Build and develop your recipes following the instructions above
-4. Run `shef -l` to see your new recipes
+4. Run `shef ls` to see your new recipes
 
 ## AI-Assisted Recipe Creation
 
@@ -1093,7 +1102,7 @@ Please create a complete Shef recipe that accomplishes my goal, with proper inde
 **Recipe not found**
 
 - Check if you're using the correct name and category
-- Use `shef -l` to see available recipes
+- Use `shef ls` to see available recipes
 - Check your recipe file syntax
 
 **Command fails with unexpected output**
