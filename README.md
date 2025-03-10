@@ -2,8 +2,8 @@
 
 Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up shell recipes without the mess.
 
-Think of it as [CyberChef](https://gchq.github.io/CyberChef) for your terminal: pipe commands together, add interactive
-prompts, and build reusable workflows with advanced logic.
+Inspired by [CyberChef](https://gchq.github.io/CyberChef), Shef allows you to pipe commands together, add interactive
+user prompts, loop using complex control structures, and build reusable workflows with advanced conditional logic.
 
 ## Table of Contents
 
@@ -38,11 +38,11 @@ prompts, and build reusable workflows with advanced logic.
 
 ## Why Shef vs. Bash Scripts?
 
-While many of Shef's capabilities could be implemented with bash scripts, Shef provides a structured approach that
-eliminates the tediousness of advanced shell scripting. It offers interactive user prompts, conditional logic, and command
+While many of Shef's capabilities can be implemented with bash scripts, Shef provides a structured approach that
+eliminates the tediousness of advanced shell scripting. Shef offers interactive user prompts, conditional logic, and command
 piping through a simple YAML interface—no need to wrestle with bash syntax, error handling, or input validation.
 
-Shef gives you the best of both worlds: the power of advanced shell commands without the scripting headaches.
+Shef gives you the best of both worlds: the power of bash scripts with advanced features in a simple YAML format.
 
 ## Installation
 
