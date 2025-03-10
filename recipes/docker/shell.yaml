@@ -18,8 +18,8 @@ recipes:
             source_operation: "list_containers"
 
       - name: "Execute Shell"
-        command: "docker exec -it {{ .container }} sh"
+        command: "docker exec -it {{ .container }} bash"
         execution_mode: "interactive"
 
       - name: "Show Message After Shell Exit"
-        command: "echo 'Welcome back! Shell session completed.'"
+        command: "echo 'Shell session closed. Welcome back!'"
