@@ -1,0 +1,36 @@
+recipes:
+  - name: "color"
+    description: "A simple demo of colors and styles"
+    category: "demo"
+    operations:
+      - name: "Basic color example"
+        command: echo "{{ color "green" "This text is green" }} and {{ color "red" "this is red" }}"
+
+      - name: "Style examples"
+        command: |
+          echo "{{ style "bold" "This text is bold" }}"
+          echo "{{ style "italic" "This text is italic" }}"
+          echo "{{ style "underline" "This text is underlined" }}"
+          echo "{{ style "dim" "This text is dimmed" }}"
+
+      - name: "Combined colors and styles"
+        command: |
+          echo "{{ style "bold" (color "blue" "This is bold blue text") }}"
+          echo "{{ color "black" (color "bg-yellow" "Black text on yellow background") }}"
+
+      - name: "Multiple styles"
+        command: |
+          echo "{{ style "bold" (style "underline" "This is bold and underlined") }}"
+
+      - name: "Color in command output"
+        command: echo "Running {{ color "cyan" "important ls -la" }} command..." && ls -la
+
+      - name: "Color in conditionals"
+        id: "status_check"
+        command: echo "status:ok"
+        transform: |
+          {{ if contains .output "ok" }}
+          {{ color "green" (style "bold" "✓ Status check passed") }}
+          {{ else }}
+          {{ color "red" (style "bold" "✗ Status check failed") }}
+          {{ end }}

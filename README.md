@@ -431,25 +431,82 @@ transform: "{{ .output | function1 | function2 }}"
 
 ### Available Transformation Functions
 
-| Function     | Description                        | Example                                           |
-|--------------|------------------------------------|---------------------------------------------------|
-| `trim`       | Remove whitespace                  | `{{ .output \| trim }}`                           |
-| `split`      | Split string by delimiter          | `{{ .output \| split "," }}`                      |
-| `join`       | Join array with delimiter          | `{{ .output \| join "\n" }}`                      |
-| `joinArray`  | Join any array type with delimiter | `{{ .output \| joinArray "," }}`                  |
-| `filter`     | Keep lines containing a pattern    | `{{ .output \| filter "pattern" }}`               |
-| `grep`       | Alias for filter                   | `{{ .output \| grep "pattern" }}`                 |
-| `cut`        | Extract field from each line       | `{{ .output \| cut ":" 1 }}`                      |
-| `trimPrefix` | Remove prefix                      | `{{ .output \| trimPrefix "foo" }}`               |
-| `trimSuffix` | Remove suffix                      | `{{ .output \| trimSuffix "bar" }}`               |
-| `contains`   | Check if string contains pattern   | `{{ if contains .output "pattern" }}yes{{ end }}` |
-| `replace`    | Replace text                       | `{{ .output \| replace "old" "new" }}`            |
-| `atoi`       | Convert string to int              | `{{ .output \| atoi }}`                           |
-| `add`        | Add numbers                        | `{{ .output \| atoi \| add 5 }}`                  |
-| `sub`        | Subtract numbers                   | `{{ .output \| atoi \| sub 3 }}`                  |
-| `div`        | Divide numbers                     | `{{ .output \| atoi \| div 2 }}`                  |
-| `mul`        | Multiply numbers                   | `{{ .output \| atoi \| mul 4 }}`                  |
-| `exec`       | Execute command                    | `{{ exec "date" }}`                               |
+| Function      | Description                        | Example                                           |
+|---------------|------------------------------------|---------------------------------------------------|
+| `trim`        | Remove whitespace                  | `{{ .output \| trim }}`                           |
+| `split`       | Split string by delimiter          | `{{ .output \| split "," }}`                      |
+| `join`        | Join array with delimiter          | `{{ .output \| join "\n" }}`                      |
+| `joinArray`   | Join any array type with delimiter | `{{ .output \| joinArray "," }}`                  |
+| `filter`      | Keep lines containing a pattern    | `{{ .output \| filter "pattern" }}`               |
+| `grep`        | Alias for filter                   | `{{ .output \| grep "pattern" }}`                 |
+| `cut`         | Extract field from each line       | `{{ .output \| cut ":" 1 }}`                      |
+| `trimPrefix`  | Remove prefix                      | `{{ .output \| trimPrefix "foo" }}`               |
+| `trimSuffix`  | Remove suffix                      | `{{ .output \| trimSuffix "bar" }}`               |
+| `contains`    | Check if string contains pattern   | `{{ if contains .output "pattern" }}yes{{ end }}` |
+| `replace`     | Replace text                       | `{{ .output \| replace "old" "new" }}`            |
+| `atoi`        | Convert string to int              | `{{ .output \| atoi }}`                           |
+| `add`         | Add numbers                        | `{{ .output \| atoi \| add 5 }}`                  |
+| `sub`         | Subtract numbers                   | `{{ .output \| atoi \| sub 3 }}`                  |
+| `div`         | Divide numbers                     | `{{ .output \| atoi \| div 2 }}`                  |
+| `mul`         | Multiply numbers                   | `{{ .output \| atoi \| mul 4 }}`                  |
+| `exec`        | Execute command                    | `{{ exec "date" }}`                               |
+| `color`       | Add color to text                  | `{{ color "green" "Success!" }}`                  |
+| `style`       | Add styling to text                | `{{ style "bold" "Important!" }}`                 |
+| `resetFormat` | Reset all colors and styles        | `{{ resetFormat }}`                               |
+
+### Terminal Colors and Styles
+
+You can make your recipe outputs more readable by adding colors and styles. These are automatically disabled when using
+the `NO_COLOR` environment variable.
+
+#### Available Colors
+
+| Color Type        | Available Colors                                                                              |
+|-------------------|-----------------------------------------------------------------------------------------------|
+| Text Colors       | `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`                         |
+| Background Colors | `bg-black`, `bg-red`, `bg-green`, `bg-yellow`, `bg-blue`, `bg-magenta`, `bg-cyan`, `bg-white` |
+
+#### Available Styles
+
+| Style       | Description     |
+|-------------|-----------------|
+| `bold`      | Bold text       |
+| `dim`       | Dimmed text     |
+| `italic`    | Italic text     |
+| `underline` | Underlined text |
+
+#### Using Colors and Styles
+
+Colors and styles can be used in commands, transformations, and anywhere templates are rendered:
+
+##### Basic Color Usage
+
+```yaml
+command: echo "{{ color "green" "Success!" }}"
+```
+
+##### Basic Style Usage
+
+```yaml
+command: echo "{{ style "bold" "Important!" }}"
+```
+
+##### Combine Color and Style
+
+```yaml
+command: echo "{{ style "bold" (color "red" "Error!") }}"
+ ```
+
+##### Transformations
+
+```yaml
+transform: |
+  {{ if contains .output "error" }}
+  {{ color "red" (style "bold" "✗ Operation failed") }}
+  {{ else }}
+  {{ color "green" (style "bold" "✓ Operation succeeded") }}
+  {{ end }}
+```
 
 ### Accessing Variables
 

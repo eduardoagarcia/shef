@@ -99,6 +99,34 @@ func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 	return vars
 }
 
+var colorCodes = map[string]string{
+	"black":      "\033[30m",
+	"red":        "\033[31m",
+	"green":      "\033[32m",
+	"yellow":     "\033[33m",
+	"blue":       "\033[34m",
+	"magenta":    "\033[35m",
+	"cyan":       "\033[36m",
+	"white":      "\033[37m",
+	"bg-black":   "\033[40m",
+	"bg-red":     "\033[41m",
+	"bg-green":   "\033[42m",
+	"bg-yellow":  "\033[43m",
+	"bg-blue":    "\033[44m",
+	"bg-magenta": "\033[45m",
+	"bg-cyan":    "\033[46m",
+	"bg-white":   "\033[47m",
+	"reset":      "\033[0m",
+}
+
+var styleCodes = map[string]string{
+	"bold":      "\033[1m",
+	"dim":       "\033[2m",
+	"italic":    "\033[3m",
+	"underline": "\033[4m",
+	"reset":     "\033[0m",
+}
+
 var templateFuncs = template.FuncMap{
 	"split":      strings.Split,
 	"join":       strings.Join,
@@ -129,6 +157,36 @@ var templateFuncs = template.FuncMap{
 		return a / b
 	},
 	"mul": func(a, b int) int { return a * b },
+	"color": func(color string, text interface{}) string {
+		if os.Getenv("NO_COLOR") != "" {
+			return fmt.Sprintf("%v", text)
+		}
+
+		code, ok := colorCodes[strings.ToLower(color)]
+		if !ok {
+			return fmt.Sprintf("%v", text)
+		}
+
+		return code + fmt.Sprintf("%v", text) + colorCodes["reset"]
+	},
+	"style": func(styleType string, text interface{}) string {
+		if os.Getenv("NO_COLOR") != "" {
+			return fmt.Sprintf("%v", text)
+		}
+
+		code, ok := styleCodes[strings.ToLower(styleType)]
+		if !ok {
+			return fmt.Sprintf("%v", text)
+		}
+
+		return code + fmt.Sprintf("%v", text) + styleCodes["reset"]
+	},
+	"resetFormat": func() string {
+		if os.Getenv("NO_COLOR") != "" {
+			return ""
+		}
+		return colorCodes["reset"]
+	},
 }
 
 func JoinArray(arr interface{}, sep string) string {
