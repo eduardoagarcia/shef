@@ -71,8 +71,8 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 		ctx.Vars[forFlow.Variable] = i
 		ctx.Vars["iteration"] = i + 1
 
-		if len(op.Operations) > 0 {
-			if err := executeOp(op.Operations[0], depth+1); err != nil {
+		for _, subOp := range op.Operations {
+			if err := executeOp(subOp, depth+1); err != nil {
 				return err
 			}
 		}

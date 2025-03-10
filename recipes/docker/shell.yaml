@@ -5,12 +5,12 @@ recipes:
     operations:
       - name: "List Containers"
         id: "list_containers"
-        command: "docker ps --format '{{`{{.Names}}`}}'"
+        command: docker ps --format "{{ `{{ .Names }}` }}"
         silent: true
 
       - name: "Select Container"
         id: "select_container"
-        command: "echo 'Shelling into {{ .container }}...'"
+        command: echo "Shelling into {{ .container }}..."
         prompts:
           - name: "container"
             type: "select"
@@ -18,8 +18,8 @@ recipes:
             source_operation: "list_containers"
 
       - name: "Execute Shell"
-        command: "docker exec -it {{ .container }} bash"
+        command: docker exec -it {{ .container }} bash
         execution_mode: "interactive"
 
       - name: "Show Message After Shell Exit"
-        command: "echo 'Shell session closed. Welcome back!'"
+        command: echo {{ color "green" "Shell session closed. Welcome back!" }}

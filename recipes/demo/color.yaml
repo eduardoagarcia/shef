@@ -8,19 +8,18 @@ recipes:
 
       - name: "Style examples"
         command: |
-          echo "{{ style "bold" "This text is bold" }}"
-          echo "{{ style "italic" "This text is italic" }}"
-          echo "{{ style "underline" "This text is underlined" }}"
-          echo "{{ style "dim" "This text is dimmed" }}"
+          echo {{ style "bold" "This text is bold" }}
+          echo {{ style "italic" "This text is italic" }}
+          echo {{ style "underline" "This text is underlined" }}
+          echo {{ style "dim" "This text is dimmed" }}
 
       - name: "Combined colors and styles"
         command: |
-          echo "{{ style "bold" (color "blue" "This is bold blue text") }}"
-          echo "{{ color "black" (color "bg-yellow" "Black text on yellow background") }}"
+          echo {{ style "bold" (color "blue" "This is bold blue text") }}
+          echo {{ color "black" (color "bg-yellow" "Black text on yellow background") }}
 
       - name: "Multiple styles"
-        command: |
-          echo "{{ style "bold" (style "underline" "This is bold and underlined") }}"
+        command: echo {{ style "bold" (style "underline" "This is bold and underlined") }}
 
       - name: "Color in command output"
         command: echo "Running {{ color "cyan" "important ls -la" }} command..." && ls -la

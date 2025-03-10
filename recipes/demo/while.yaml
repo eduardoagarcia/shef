@@ -5,18 +5,23 @@ recipes:
     operations:
       - name: "Initialize Status"
         id: "status"
-        command: "echo 'running'"
+        command: echo "running"
         silent: true
 
       - name: "Loop While Status is Running"
         control_flow:
           type: "while"
-          condition: "{{ contains .status `running` }}"
+          condition: '{{ contains .status "running" }}'
         operations:
-          - name: "Perform Work and Check Status"
-            command: "echo 'Service is running, performing work...' && sleep 1"
+          - name: "Perform Work"
+            id: "perform_work"
+            command: echo {{ color "yellow" "Service is running, performing work..." }}
+
+          - name: "Check Status"
             id: "status"
-            transform: "{{ if eq .iteration 4 }}stopped{{ else }}running{{ end }}"
+            command: sleep 1
+            transform: "{{ if eq .iteration 3 }}stopped{{ else }}running{{ end }}"
+            silent: true
 
       - name: "Show Completion"
-        command: "echo 'While loop finished - service is no longer running!'"
+        command: echo {{ color "green" "While loop finished - service is no longer running!" }}

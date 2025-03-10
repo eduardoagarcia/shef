@@ -120,7 +120,6 @@ recipes:
           echo "{{ .editor_content }}"
           echo "-----------------"
           
-          # Count lines in the content
           LINE_COUNT=$(echo "{{ .editor_content }}" | wc -l)
           echo "Line count: $LINE_COUNT"
         prompts:
@@ -133,7 +132,6 @@ recipes:
       - name: "Dynamic Options Demo"
         id: "dynamic_options"
         command: |
-          # First generate some options
           echo "apple\nbanana\ncherry\ndragonfruit\nelder-berry" > /tmp/fruits.txt
           cat /tmp/fruits.txt
         transform: |

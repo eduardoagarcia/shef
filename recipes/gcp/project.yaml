@@ -5,17 +5,17 @@ recipes:
     operations:
       - name: "List Projects"
         id: "list_projects"
-        command: "gcloud projects list --filter='NOT project_id:sys-*' --format='value(name,project_id)' | awk '{print $1 \" (\" $2 \")|\" $2}'"
+        command: gcloud projects list --filter="NOT project_id:sys-*" --format="value(name,project_id)" | awk '{print $1 " (" $2 ")|" $2}'
         silent: true
 
       - name: "Format Display Options"
         id: "display_options"
-        command: "cut -d'|' -f1 <<< '{{ .list_projects }}'"
+        command: cut -d'|' -f1 <<< "{{ .list_projects }}"
         silent: true
 
       - name: "Select Project"
         id: "selected_display"
-        command: "echo '{{ .project_display }}'"
+        command: echo "{{ .project_display }}"
         silent: true
         prompts:
           - name: "project_display"
@@ -38,13 +38,13 @@ recipes:
         silent: true
 
       - name: "Set Project"
-        command: "gcloud config set project {{ .project_id }}"
+        command: gcloud config set project {{ .project_id }}
         silent: true
 
       - name: "Get Selected Project"
         id: "selected_project"
-        command: "gcloud config get-value project"
+        command: gcloud config get-value project
         silent: true
 
       - name: "Show Selected Project"
-        command: "echo 'Selected project: {{ .selected_project }}'"
+        command: echo "Selected project:" {{ style "bold" (color "green" .selected_project) }}

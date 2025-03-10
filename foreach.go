@@ -63,8 +63,8 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 
 		ctx.Vars[forEach.As] = item
 
-		if len(op.Operations) > 0 {
-			if err := executeOp(op.Operations[0], depth+1); err != nil {
+		for _, subOp := range op.Operations {
+			if err := executeOp(subOp, depth+1); err != nil {
 				return err
 			}
 		}

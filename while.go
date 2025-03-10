@@ -67,8 +67,8 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 
 		ctx.Vars["iteration"] = iterations
 
-		if len(op.Operations) > 0 {
-			if err := executeOp(op.Operations[0], depth+1); err != nil {
+		for _, subOp := range op.Operations {
+			if err := executeOp(subOp, depth+1); err != nil {
 				return err
 			}
 		}

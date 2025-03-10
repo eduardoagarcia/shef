@@ -5,7 +5,7 @@ recipes:
     operations:
       - name: "Choose Fruit"
         id: "choose"
-        command: "echo 'You selected: {{ .fruit }}'"
+        command: 'echo "You selected: {{ .fruit }}"'
         prompts:
           - name: "fruit"
             type: "select"
@@ -16,10 +16,10 @@ recipes:
 
       - name: "Apple Operation"
         id: "apple"
-        command: "echo 'This is the apple operation! 🍎'"
+        command: echo "This is the apple operation! 🍎"
         condition: ".fruit == 'Apples'"
 
       - name: "Orange Operation"
         id: "orange"
-        command: "echo 'This is the orange operation! 🍊'"
+        command: echo "This is the orange operation! 🍊"
         condition: ".fruit == 'Oranges'"

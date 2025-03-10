@@ -12,12 +12,22 @@ recipes:
           dragonfruit
           eggplant"
 
-      - name: "Filter Items"
-        id: "filter"
-        command: "cat"
-        transform: "{{ filter .input `a` }}"
+      - name: "Filter 'a' Items"
+        id: "filter_a"
+        command: cat
+        transform: '{{ filter .generate "a" }}'
         silent: true
 
-      - name: "Display Results"
-        id: "display"
-        command: "echo 'Items containing `a`:\n{{ .filter }}'"
+      - name: "Display 'a' Results"
+        id: "display_a"
+        command: echo "Items containing 'a':\n{{ color "green" .filter_a }}"
+
+      - name: "Filter 'her' Items"
+        id: "filter_her"
+        command: cat
+        transform: '{{ filter .generate "her" }}'
+        silent: true
+
+      - name: "Display 'her' Results"
+        id: "display_her"
+        command: echo "Items containing 'her':\n{{ color "yellow" .filter_her }}"

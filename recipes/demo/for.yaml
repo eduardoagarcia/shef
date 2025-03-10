@@ -10,8 +10,8 @@ recipes:
           variable: "i"
         operations:
           - name: "Print Iteration"
-            command: "echo 'Running iteration {{ .iteration }}'"
+            command: echo "Running iteration {{ color "yellow" .iteration }}"
             id: "last_iteration"
 
       - name: "Show Completion"
-        command: "echo 'For loop completed! Last iteration ran: {{ .last_iteration }}'"
+        command: 'echo "{{ color "green" "For loop completed!" }} Last iteration ran: {{ .last_iteration }}"'

@@ -1,40 +1,48 @@
 recipes:
   - name: "version"
-    description: "Create and push Git semantic version tags"
+    description: "Create and push version tags to Git"
     category: "git"
     operations:
       - name: "Check Current Branch"
         id: "branch"
-        command: "git rev-parse --abbrev-ref HEAD"
+        command: |
+          git rev-parse --abbrev-ref HEAD
+          git fetch --tags
+          git fetch --all
         silent: true
 
       - name: "Find Latest Tag"
         id: "latest_tag"
-        command: "git tag -l 'v*.*.*' --sort=-v:refname | head -n1 || echo ''"
+        command: git tag -l "v*.*.*" --sort=-v:refname | head -n1 || echo ""
         silent: true
         transform: |
-          {{- $tag := .output | trim -}}
-          {{- if eq $tag "" -}}
-            {{- "NO_EXISTING_TAGS" -}}
-          {{- else -}}
-            {{- $tag -}}
-          {{- end -}}
+          {{ $tag := .output | trim }}
+          {{ if eq $tag "" }}
+            {{ "NO_EXISTING_TAGS" }}
+          {{ else }}
+            {{ $tag }}
+          {{ end }}
 
-      - name: "Display Current Version"
-        command: "{{- if eq .latest_tag \"NO_EXISTING_TAGS\" -}}echo 'No existing semantic version tags found. Will create first tag.'{{- else -}}echo 'Current version: {{ .latest_tag }}'{{- end -}}"
+      - name: "Existing Tags Message"
+        id: "existing_tags_message"
+        command: echo {{ color "magenta" "The current version:" }} {{ style "bold" (color "yellow" .latest_tag) }}
+        condition: ".latest_tag != 'NO_EXISTING_TAGS'"
 
-      - name: "Choose Version Bump"
-        command: "echo 'Selected bump type: {{ .bump_type }}'"
+      - name: "No Existing Tags Message"
+        id: "no_existing_tags_message"
+        command: echo {{ color "yellow" "No existing version tags found." }}
+        condition: ".latest_tag == 'NO_EXISTING_TAGS'"
+
+      - name: "Choose Version"
         prompts:
-          - name: "bump_type"
+          - name: "version"
             type: "select"
-            message: "{{- if eq .latest_tag \"NO_EXISTING_TAGS\" -}}Select initial version type{{- else -}}Version bump type{{- end -}}"
+            message: "{{ if eq .latest_tag `NO_EXISTING_TAGS` }}Select the initial version{{ else }}Choose version{{ end }}"
             options:
               - "major"
               - "minor"
               - "patch"
-              - "custom"
-            default: "{{- if eq .latest_tag \"NO_EXISTING_TAGS\" -}}minor{{- else -}}patch{{- end -}}"
+            default: "{{ if eq .latest_tag `NO_EXISTING_TAGS` }}minor{{ else }}patch{{ end }}"
 
       - name: "Calculate New Version"
         id: "new_version"
@@ -42,11 +50,11 @@ recipes:
         command: |
           if [[ "{{ .latest_tag }}" == "NO_EXISTING_TAGS" ]]; then
             # First version case
-            if [[ "{{ .bump_type }}" == "custom" ]]; then
+            if [[ "{{ .version }}" == "custom" ]]; then
               printf "{{ .custom_version }}"
-            elif [[ "{{ .bump_type }}" == "major" ]]; then
+            elif [[ "{{ .version }}" == "major" ]]; then
               printf "v1.0.0"
-            elif [[ "{{ .bump_type }}" == "minor" ]]; then
+            elif [[ "{{ .version }}" == "minor" ]]; then
               printf "v0.1.0"
             else
               printf "v0.0.1"
@@ -59,14 +67,14 @@ recipes:
             # Split into parts
             IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
           
-            if [[ "{{ .bump_type }}" == "custom" ]]; then
+            if [[ "{{ .version }}" == "custom" ]]; then
               printf "{{ .custom_version }}"
-            elif [[ "{{ .bump_type }}" == "major" ]]; then
+            elif [[ "{{ .version }}" == "major" ]]; then
               MAJOR=$((MAJOR + 1))
               MINOR=0
               PATCH=0
               printf "v$MAJOR.$MINOR.$PATCH"
-            elif [[ "{{ .bump_type }}" == "minor" ]]; then
+            elif [[ "{{ .version }}" == "minor" ]]; then
               MINOR=$((MINOR + 1))
               PATCH=0
               printf "v$MAJOR.$MINOR.$PATCH"
@@ -77,40 +85,35 @@ recipes:
             fi
           fi
 
-      - name: "Custom Version Input"
-        id: "custom_version_op"
-        command: "echo {{ .custom_version }}"
-        condition: "bump_type == \"custom\""
-        prompts:
-          - name: "custom_version"
-            type: "input"
-            message: "{{- if eq .latest_tag \"NO_EXISTING_TAGS\" -}}Enter initial version (must start with v){{- else -}}Enter custom version (must start with v){{- end -}}"
-            default: "{{- if eq .latest_tag \"NO_EXISTING_TAGS\" -}}v0.1.0{{- else -}}v1.0.0{{- end -}}"
-
       - name: "Display New Version"
-        command: "{{- if eq .latest_tag \"NO_EXISTING_TAGS\" -}}echo 'Initial version will be: {{ .new_version }}'{{- else -}}echo 'New version will be: {{ .new_version }}'{{- end -}}"
+        id: "display_new_version"
+        command: echo {{ color "magenta" "The new version:" }} {{ style "bold" (color "yellow" .new_version) }}
+        condition: ".latest_tag != 'NO_EXISTING_TAGS'"
+
+      - name: "Display Initial Version"
+        id: "display_initial_version"
+        command: echo {{ color "magenta" "Initial version:" }} {{ style "bold" (color "yellow" .new_version) }}
+        condition: ".latest_tag == 'NO_EXISTING_TAGS'"
 
       - name: "Prepare Tag"
         id: "tag_prep"
-        command: "echo 'Preparing tag {{ .new_version }}'"
         prompts:
           - name: "tag_message"
             type: "input"
-            message: "Tag message"
-            default: "{{- if eq .latest_tag \"NO_EXISTING_TAGS\" -}}Initial release {{ .new_version }}{{- else -}}Release {{ .new_version }}{{- end -}}"
+            message: "Please provide a release message [optional]"
+            default: "{{ if eq .latest_tag `NO_EXISTING_TAGS` }}Initial release {{ .new_version }}{{ else }}Release {{ .new_version }}{{ end }}"
           - name: "confirm_create"
             type: "confirm"
-            message: "Create tag {{ .new_version }}?"
+            message: "Create tag {{ .new_version }} locally?"
             default: "true"
 
       - name: "Create Tag"
         id: "create_tag"
-        command: "git tag -a {{ .new_version }} -m \"{{ .tag_message }}\""
+        command: git tag -a {{ .new_version }} -m "{{ .tag_message }}"
         condition: "confirm_create == true"
 
       - name: "Confirm Push"
         id: "confirm_push_op"
-        command: "echo 'Ready to push tag {{ .new_version }}'"
         condition: "create_tag.success"
         prompts:
           - name: "confirm_push"
@@ -118,11 +121,21 @@ recipes:
             message: "Push tag {{ .new_version }} to origin?"
             default: "true"
 
+      - name: "Push Tag Message"
+        id: "push_tag_message"
+        command: echo {{ color "magenta" (printf "Pushing the new tag %s to origin..." .new_version) }}
+        condition: "create_tag.success && confirm_push == true"
+
       - name: "Push Tag"
         id: "push_tag"
-        command: "git push origin {{ .new_version }}"
+        command: git push origin {{ .new_version }}
         condition: "create_tag.success && confirm_push == true"
 
       - name: "Show Result"
-        command: "echo 'Successfully created{{ if eq .confirm_push true }} and pushed{{ end }} tag {{ .new_version }} to origin'"
+        command: |
+          {{ if eq .confirm_push true }}
+          echo {{ color "green" "Successfully created and pushed" }} {{ style "bold" (color "yellow" .new_version) }} {{ color "green" "to origin" }}
+          {{ else }}
+          echo {{ color "green" "Successfully created" }} {{ style "bold" (color "yellow" .new_version) }}
+          {{ end }}
         condition: "create_tag.success"

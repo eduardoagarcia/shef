@@ -10,7 +10,7 @@ recipes:
           as: "fruit"
         operations:
           - name: "Process Fruit"
-            command: "echo 'Processing {{ .fruit }}'"
+            command: echo "Processing {{ .fruit }}"
 
       - name: "Show Completion"
-        command: "echo 'All fruits processed!'"
+        command: echo {{ color "green" "All fruits processed!" }}
