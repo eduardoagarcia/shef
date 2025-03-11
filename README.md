@@ -2,8 +2,11 @@
 
 Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up advanced shell recipes.
 
-Inspired by [CyberChef](https://gchq.github.io/CyberChef), Shef allows you to pipe commands together, add interactive
-user prompts, loop using complex control structures, and build reusable workflows with advanced conditional logic.
+Essentially, imagine [Make](https://www.gnu.org/software/make), [GitHub Actions](https://github.com/features/actions), and 
+[CyberChef](https://gchq.github.io/CyberChef) having a weird little `<moira-rose>bea-by</>` together.
+
+Shef allows you to pipe commands together, add interactive user prompts, loop using complex control structures,
+and build reusable workflows with advanced conditional logic.
 
 ## Quick Start Example
 
@@ -38,8 +41,6 @@ recipes:
         command: echo {{ style "bold" (color "yellow" "This is the orange operation!") }}
         condition: ".fruit == 'Oranges'"
 ```
-
-Now that you've gotten acquainted with the basics, let's explore Shef's capabilities in depth!
 
 ## Table of Contents
 
@@ -94,7 +95,7 @@ structures as elegantly for complex workflows.
 ## Installation
 
 > [!NOTE]
-> In the future, I would like to support these installation methods:
+> In the future, I will be working to support these installation methods:
 > - Brew install
 > - APT install
 > - YUM/DNF install
@@ -1228,4 +1229,4 @@ If you need help with your contribution, you can:
 
 - Open an issue on GitHub
 - Ask questions in the discussions section
-- Contact us directly
+- Reach out to me directly

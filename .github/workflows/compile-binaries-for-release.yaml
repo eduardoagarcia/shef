@@ -1,0 +1,111 @@
+name: Compile Binaries and Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  BINARY_FILE_NAME: shef
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.23.2'
+
+      - name: Install dependencies
+        working-directory: ./cli
+        run: go mod download
+
+      - name: Build binaries
+        working-directory: ./cli
+        run: |
+          platforms=(
+            "linux/amd64"
+            "linux/arm64"
+            "windows/amd64"
+            "windows/arm64"
+            "darwin/amd64"
+            "darwin/arm64"
+          )
+
+          for platform in "${platforms[@]}"
+          do
+            IFS="/" read -r GOOS GOARCH <<< "$platform"
+
+            executable_name=$BINARY_FILE_NAME
+            if [ "$GOOS" = "windows" ]; then
+              executable_name="${BINARY_FILE_NAME}.exe"
+            fi
+
+            CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -o "${executable_name}" .
+
+            package_dir="../${BINARY_FILE_NAME}_${GOOS}_${GOARCH}"
+            mkdir "$package_dir"
+
+            mv "${executable_name}" "$package_dir/"
+
+            if [ "$GOOS" != "windows" ]; then
+              chmod +x "$package_dir/${executable_name}"
+            fi
+          done
+
+      - name: Archive binaries
+        run: |
+          for dir in ${BINARY_FILE_NAME}_*
+          do
+            if [[ -d $dir ]]; then
+              archive_name="${dir}"
+              if [[ $dir == *"windows"* ]]; then
+                zip -r "${archive_name}.zip" "$dir"
+              else
+                tar czf "${archive_name}.tar.gz" "$dir"
+              fi
+              rm -rf "$dir"
+            fi
+          done
+
+      - name: Archive recipes directory
+        run: |
+          if [ -d "./recipes" ]; then
+            tar czf "recipes.tar.gz" "./recipes"
+          else
+            echo "Warning: recipes directory not found"
+            exit 1
+          fi
+
+      - name: Import GPG Key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Sign Files
+        run: |
+          for file in *.tar.gz *.zip
+          do
+            gpg --batch --yes --passphrase "${{ secrets.GPG_PASSPHRASE }}" --pinentry-mode loopback --armor --detach-sign "$file"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            *.tar.gz
+            *.zip
+            *.asc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
