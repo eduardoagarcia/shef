@@ -9,46 +9,34 @@ user prompts, loop using complex control structures, and build reusable workflow
 
 The following example showcases a simple Shef recipe, giving you a quick glance at the syntax and functionality.
 
-The recipe polls an unavailable endpoint, displaying its status, until it returns a `200` status code.
+![Quick Start Conditional Example](images/conditional.gif)
 
 ```yaml
 recipes:
-  - name: "monitor"
-    description: "Monitor a service until it returns a success status code"
+  - name: "conditional"
+    description: "A simple demo of conditional operations using direct prompt values"
     category: "demo"
     operations:
-      - name: "Initialize Empty Status Code"
-        id: "status_code"
-        command: echo ""
-        silent: true
+      - name: "Choose Fruit"
+        id: "choose"
+        command: 'echo "You selected: {{ .fruit }}"'
+        prompts:
+          - name: "fruit"
+            type: "select"
+            message: "Choose a fruit:"
+            options:
+              - "Apples"
+              - "Oranges"
 
-      - name: "Health Check"
-        control_flow:
-          type: "while"
-          condition: .status_code != "200" || .status_code == ""
-        operations:
-          - name: "Check Service Status"
-            id: "status_code"
-            command: |
-              # simulate a status change after three polling attempts
-              if [ {{ .iteration }} -gt 3 ]; then
-                curl -s -o /dev/null -w "%{http_code}" https://httpbin.org/status/200
-              else
-                curl -s -o /dev/null -w "%{http_code}" https://httpbin.org/status/500
-              fi
-            silent: true
+      - name: "Apple Operation"
+        id: "apple"
+        command: echo {{ style "bold" (color "red" "This is the apple operation!") }}
+        condition: ".fruit == 'Apples'"
 
-          - name: "Display Current Error Status"
-            command: echo {{ color "red" "Service unavailable! Status code:" }} {{ style "bold" (color "red" .status_code) }}
-            condition: .status_code != "200"
-
-          - name: "Throttle"
-            command: sleep 1
-            silent: true
-            condition: .status_code != "200"
-
-      - name: "Success Message"
-        command: echo {{ color "green" "Service available! Status code:" }} {{ style "bold" (color "green" .status_code) }}
+      - name: "Orange Operation"
+        id: "orange"
+        command: echo {{ style "bold" (color "yellow" "This is the orange operation!") }}
+        condition: ".fruit == 'Oranges'"
 ```
 
 Now that you've gotten acquainted with the basics, let's explore Shef's capabilities in depth!
