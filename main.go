@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -19,6 +18,12 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v3"
+)
+
+const (
+	Version               = "v0.1.2"
+	GithubRepo            = "https://github.com/eduardoagarcia/shef"
+	PublicRecipesFilename = "recipes.tar.gz"
 )
 
 type Config struct {
@@ -334,113 +339,6 @@ func findRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 	}
 
 	return sources, nil
-}
-
-func syncPublicRecipes() error {
-	if _, err := os.Stat("recipes"); os.IsNotExist(err) {
-		return fmt.Errorf("recipes directory not found - please run this command from the Shef repository root")
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to determine home directory: %w", err)
-	}
-
-	shefDir := filepath.Join(homeDir, ".shef")
-	publicDir := filepath.Join(shefDir, "public")
-	userDir := filepath.Join(shefDir, "user")
-
-	for _, dir := range []string{publicDir, userDir} {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
-		}
-	}
-
-	fmt.Println("Copying public recipes...")
-	if err := copyDir("recipes", publicDir); err != nil {
-		return fmt.Errorf("failed to copy recipes: %w", err)
-	}
-
-	fmt.Printf("Public recipes copied to %s\n", publicDir)
-	return nil
-}
-
-func copyDir(src, dst string) error {
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-
-	if err = os.MkdirAll(dst, srcInfo.Mode()); err != nil {
-		return err
-	}
-
-	dir, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer func(dir *os.File) {
-		err := dir.Close()
-		if err != nil {
-
-		}
-	}(dir)
-
-	items, err := dir.Readdir(-1)
-	if err != nil {
-		return err
-	}
-
-	for _, item := range items {
-		srcPath := filepath.Join(src, item.Name())
-		dstPath := filepath.Join(dst, item.Name())
-
-		if item.IsDir() {
-			if err = copyDir(srcPath, dstPath); err != nil {
-				return err
-			}
-		} else {
-			if err = copyFile(srcPath, dstPath); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func copyFile(src, dst string) error {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer func(srcFile *os.File) {
-		err := srcFile.Close()
-		if err != nil {
-
-		}
-	}(srcFile)
-
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer func(dstFile *os.File) {
-		err := dstFile.Close()
-		if err != nil {
-
-		}
-	}(dstFile)
-
-	if _, err = io.Copy(dstFile, srcFile); err != nil {
-		return err
-	}
-
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-	return os.Chmod(dst, srcInfo.Mode())
 }
 
 func handlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
@@ -1355,7 +1253,7 @@ func main() {
 	app := &cli.App{
 		Name:    "shef",
 		Usage:   "Shef is a powerful CLI tool that lets you combine shell commands into reusable recipes.",
-		Version: "0.1.0",
+		Version: Version,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "debug",
