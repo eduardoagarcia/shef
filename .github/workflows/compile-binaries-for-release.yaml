@@ -128,7 +128,6 @@ jobs:
             *.zip
             *.asc
             checksums.txt
-            checksums.txt.asc
             *.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
