@@ -78,7 +78,7 @@ jobs:
           if [ -d "./recipes" ]; then
             tar czf "recipes.tar.gz" "./recipes"
           else
-            echo "Warning: recipes directory not found"
+            echo "Warning: recipes directory not found, skipping"
           fi
 
       - name: Import GPG Key
