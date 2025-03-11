@@ -94,9 +94,18 @@ structures as elegantly for complex workflows.
 
 ## Installation
 
-### Binary Installation
+### Homebrew
 
-The simplest way to install Shef is to download the pre-built binary for your platform from
+```bash
+brew tap eduardoagarcia/tap
+brew install shef
+
+shef -v
+```
+
+### Binary
+
+For Linux and Windows, the simplest way to install Shef is to download the pre-built binary for your platform from
 the [latest release](https://github.com/eduardoagarcia/shef/releases/latest).
 
 #### Linux / macOS
@@ -134,7 +143,7 @@ Replace `[PLATFORM]` with `linux` or `darwin` (for macOS) and `[ARCH]` with your
 4. Open Command Prompt or PowerShell and run `shef -v` to verify installation
 5. Run `shef sync` to download recipes
 
-### Verify Binaries
+### Verify Binary
 
 > [!IMPORTANT]
 > Always verify the integrity of downloaded binaries for security. The release assets are signed with GPG, and you can
@@ -170,8 +179,7 @@ gpg --verify shef_windows_amd64.zip.asc shef_windows_amd64.zip
 ### Package Managers
 
 > [!NOTE]
-> Package manager support coming soon:
-> - Homebrew (macOS/Linux)
+> Future package manager support:
 > - APT (Debian/Ubuntu)
 > - YUM/DNF (RHEL/Fedora)
 > - Arch User Repository (AUR)
