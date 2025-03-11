@@ -2,11 +2,11 @@
 
 Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up advanced shell recipes.
 
-Essentially, imagine [Make](https://www.gnu.org/software/make), [GitHub Actions](https://github.com/features/actions), and 
-[CyberChef](https://gchq.github.io/CyberChef) having a weird little `<moira-rose>bea-by</>` together.
+Essentially, imagine that [Make](https://www.gnu.org/software/make), [GitHub Actions](https://github.com/features/actions),
+and [CyberChef](https://gchq.github.io/CyberChef) had a weird little `<moira-rose>bea-by</>`.
 
 Shef allows you to pipe commands together, add interactive user prompts, loop using complex control structures,
-and build reusable workflows with advanced conditional logic.
+and build reusable workflows with advanced conditional logic. It's not a replacement for bash scripts.
 
 ## Quick Start Example
 
@@ -94,119 +94,128 @@ structures as elegantly for complex workflows.
 
 ## Installation
 
+### Binary Installation
+
+The simplest way to install Shef is to download the pre-built binary for your platform from
+the [latest release](https://github.com/eduardoagarcia/shef/releases/latest).
+
+#### Linux / macOS
+
+```bash
+# Download the appropriate tarball for your platform
+curl -L https://github.com/eduardoagarcia/shef/releases/latest/download/shef_[OS]_[ARCH].tar.gz -o shef.tar.gz
+
+# Extract the binary
+tar -xzf shef.tar.gz
+
+# Make it executable
+chmod +x shef
+
+# Move to a directory in your PATH
+sudo mv shef /usr/local/bin/
+
+# Verify installation
+shef -v
+
+# Sync public recipes
+shef sync
+```
+
+Replace `[PLATFORM]` with `linux` or `darwin` (for macOS) and `[ARCH]` with your architecture (`amd64`, `arm64`).
+
+#### Windows
+
+1. Download the appropriate Windows ZIP file (`shef_windows_amd64.zip` or `shef_windows_arm64.zip`) from the [releases page](https://github.com/eduardoagarcia/shef/releases/latest)
+2. Extract the archive using Windows Explorer, 7-Zip, WinRAR, or similar tool
+3. Move the extracted executable to a directory in your PATH
+4. Open Command Prompt or PowerShell and run `shef -v` to verify installation
+5. Run `shef sync` to download recipes
+
+### Verify Binaries
+
+> [!IMPORTANT]
+> Always verify the integrity of downloaded binaries for security. The release assets are signed with GPG, and you can
+> verify them using [the public key found in the repository](https://raw.githubusercontent.com/eduardoagarcia/shef/main/keys/shef-binary-gpg-public-key.asc).
+
+#### Linux / macOS
+
+```bash
+# Import the GPG public key
+curl -L https://raw.githubusercontent.com/eduardoagarcia/shef/main/keys/shef-binary-gpg-public-key.asc | gpg --import
+
+# Download the signature file
+curl -L https://github.com/eduardoagarcia/shef/releases/latest/download/shef_[OS]_[ARCH].tar.gz.asc -o shef.tar.gz.asc
+
+# Verify the tarball
+gpg --verify shef.tar.gz.asc shef.tar.gz
+```
+
+#### Windows
+
+```bash
+# Import the GPG public key (requires GPG for Windows)
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/eduardoagarcia/shef/main/keys/shef-binary-gpg-public-key.asc" -OutFile "shef-key.asc"
+gpg --import shef-key.asc
+
+# Download the signature file
+Invoke-WebRequest -Uri "https://github.com/eduardoagarcia/shef/releases/latest/download/shef_windows_amd64.zip.asc" -OutFile "shef_windows_amd64.zip.asc"
+
+# Verify the ZIP file
+gpg --verify shef_windows_amd64.zip.asc shef_windows_amd64.zip
+```
+
+### Package Managers
+
 > [!NOTE]
-> In the future, I will be working to support these installation methods:
-> - Brew install
-> - APT install
-> - YUM/DNF install
+> Package manager support coming soon:
+> - Homebrew (macOS/Linux)
+> - APT (Debian/Ubuntu)
+> - YUM/DNF (RHEL/Fedora)
 > - Arch User Repository (AUR)
-> - Standalone binary downloads
-> - Windows package managers (Chocolatey/Scoop)
+> - Chocolatey/Scoop (Windows)
 
-### Prerequisites
+### Manual Installation
 
-Before installing Shef, ensure you have Go installed and configured on your system:
-
-1. **Install Go**: If you don't have Go installed, download and install it from [golang.org](https://golang.org/dl/) or
-   use your system's package manager:
-
-   ```bash
-   # macOS (using Homebrew)
-   brew install go
-
-   # Ubuntu/Debian
-   sudo apt update
-   sudo apt install golang-go
-
-   # Fedora
-   sudo dnf install golang
-   ```
-
-2. **Configure Go Environment**: Ensure your Go environment is properly set up:
-
-   ```bash
-   # Add these to your shell configuration (.bashrc, .zshrc, etc.)
-   export GOPATH=$HOME/go
-   export PATH=$PATH:$GOPATH/bin
-   ```
-
-3. **Verify Installation**: Confirm Go is correctly installed:
-
-   ```bash
-   go version
-   ```
-
-### Quick Installation
-
-The simplest way to install Shef is with Make:
+For developers or users who prefer to build from source:
 
 ```bash
 # Clone the repository
-git clone git@github.com:eduardoagarcia/shef.git
+git clone https://github.com/eduardoagarcia/shef.git
 cd shef
 
 # Install (requires sudo for system-wide installation)
 make install
 
-# Or install to your home directory (no sudo required)
-make install-local
-```
-
-### Manual Installation Options
-
-#### Install with Go
-
-Once you have Go installed, you can install Shef directly:
-
-```bash
+# Or install with Go directly
 go install github.com/eduardoagarcia/shef@latest
+
+# Verify installation
+shef -v
+
+# Sync public recipes
+shef sync
 ```
-
-This will install the `shef` binary to your `$GOPATH/bin` directory.
-
-#### Build from Source
-
-```bash
-# Clone the repository
-git clone git@github.com:eduardoagarcia/shef.git
-
-# Build the application
-cd shef
-go build -o shef
-
-# Move to a directory in your PATH
-sudo mv shef /usr/local/bin/
-```
-
-### Adding to PATH
-
-If the installation directory is not in your PATH, you'll need to add it:
-
-```bash
-# Add this to your .bashrc, .bash_profile, or .zshrc
-export PATH="$PATH:$GOPATH/bin"  # For go install
-# OR
-export PATH="$PATH:$HOME/bin"    # For make install-local
-```
-
-Then reload your shell configuration: `source ~/.bashrc` (or `~/.zshrc`, `~/.bash_profile` depending on your shell)
 
 ### Updating Shef
 
 To update Shef to the latest version:
 
 ```bash
-# Navigate to your local repository
-cd shef
-
-# Pull the latest changes
+# If installed via Make:
+cd /path/to/shef/repo
 git pull
-
-# Update system-wide installation (requires sudo)
 make update
 
-# Or update local installation (no sudo required)
-make update-local
+# OR download the latest binary:
+curl -L https://github.com/eduardoagarcia/shef/releases/latest/download/shef-[PLATFORM]-[ARCH] -o shef
+chmod +x shef
+sudo mv shef /usr/local/bin/
+
+# Verify the new version
+shef -v
+
+# Sync recipes to get the latest
+shef sync
 ```
 
 ## Quick Start
