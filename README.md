@@ -1,6 +1,6 @@
 # Shef
 
-Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up shell recipes without the mess.
+Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up advanced shell recipes.
 
 Inspired by [CyberChef](https://gchq.github.io/CyberChef), Shef allows you to pipe commands together, add interactive
 user prompts, loop using complex control structures, and build reusable workflows with advanced conditional logic.
@@ -44,7 +44,8 @@ Now that you've gotten acquainted with the basics, let's explore Shef's capabili
 ## Table of Contents
 
 - [Shef Features](#shef-features)
-- [Why Shef vs. Bash Scripts?](#why-shef-vs-bash-scripts)
+- [Bash Scripts and Shef: Complementary Tools](#bash-scripts-and-shef-complementary-tools)
+- [Ugh. YAML? Really?](#ugh-yaml-really)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Shef Command Reference](#shef-command-reference)
@@ -72,18 +73,37 @@ Now that you've gotten acquainted with the basics, let's explore Shef's capabili
 - **Multiple Sources**: Use local, user, or public recipes
 - **Organized Recipes**: Categorize and share your recipes with others
 
-## Why Shef vs. Bash Scripts?
+## Bash Scripts and Shef: Complementary Tools
 
-While many of Shef's capabilities can be implemented with bash scripts, Shef provides a structured approach that
-eliminates the tediousness of advanced shell scripting. Shef offers interactive user prompts, conditional logic, and command
-piping through a simple YAML interface—no need to wrestle with bash syntax, error handling, colors, or input validation.
+Bash scripting is a powerful and valid approach for shell automation. Shef isn't designed to replace bash scripts, but
+to provide a toolkit that sits on top of bash when you need specific features.
 
-Shef gives you the best of both worlds: the power of bash scripts with advanced features in a simple YAML format.
+Shef implements some common features, like offering built-in support for interactive prompts, conditional logic, and command
+piping. This structured approach can simplify certain tasks that might require more verbose code in bash.
+
+Consider Shef as another tool in your automation toolkit. Absolutely use bash scripts when they're the right fit, and
+reach for Shef when its features align with your specific needs.
 
 > [!TIP]
-> Entire bash scripts can be embedded within an operation for even more functionality!
+> Entire bash scripts can be embedded within an operation for even more functionality.
+
+## Ugh. YAML? Really?
+
+Sigh. Yep. Another config format. We considered several options, and YAML emerged as the most practical choice for
+this particular use case. JSON lacks comments and multiline string support, which are essential when defining shell
+commands and documenting workflows. XML would have been unnecessarily verbose. TOML, while nice, doesn't handle nested
+structures as elegantly for complex workflows.
 
 ## Installation
+
+> [!NOTE]
+> In the future, we would like to support these installation methods:
+> - Brew install
+> - APT install
+> - YUM/DNF install
+> - Arch User Repository (AUR)
+> - Standalone binary downloads
+> - Windows package managers (Chocolatey/Scoop)
 
 ### Prerequisites
 
