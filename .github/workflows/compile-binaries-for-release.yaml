@@ -81,6 +81,29 @@ jobs:
             echo "Warning: recipes directory not found, skipping"
           fi
 
+      - name: Generate checksums
+        run: |
+          echo "# SHA-256 Checksums for ${BINARY_FILE_NAME} ${GITHUB_REF_NAME}" > checksums.txt
+          echo "# Generated on $(date)" >> checksums.txt
+          echo "" >> checksums.txt
+
+          for file in *.tar.gz
+          do
+            sha256sum "$file" >> checksums.txt
+          done
+
+          for file in *.zip
+          do
+            sha256sum "$file" >> checksums.txt
+          done
+
+          for file in *.tar.gz *.zip
+          do
+            sha256sum "$file" > "${file}.sha256"
+          done
+
+          cat checksums.txt
+
       - name: Import GPG Key
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
@@ -89,7 +112,7 @@ jobs:
 
       - name: Sign Files
         run: |
-          for file in *.tar.gz *.zip
+          for file in *.tar.gz *.zip checksums.txt
           do
             gpg --batch --yes --passphrase "${{ secrets.GPG_PASSPHRASE }}" --pinentry-mode loopback --armor --detach-sign "$file"
           done
@@ -104,5 +127,8 @@ jobs:
             *.tar.gz
             *.zip
             *.asc
+            checksums.txt
+            checksums.txt.asc
+            *.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
