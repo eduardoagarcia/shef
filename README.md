@@ -78,7 +78,7 @@ Now that you've gotten acquainted with the basics, let's explore Shef's capabili
 Bash scripting is a powerful and valid approach for shell automation. Shef isn't designed to replace bash scripts, but
 to provide a toolkit that sits on top of bash when you need specific features.
 
-Shef implements some common features, like offering built-in support for interactive prompts, conditional logic, and command
+Shef implements some common tooling like built-in support for interactive prompts, conditional logic, and command
 piping. This structured approach can simplify certain tasks that might require more verbose code in bash.
 
 Consider Shef as another tool in your automation toolkit. Absolutely use bash scripts when they're the right fit, and
