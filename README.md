@@ -103,15 +103,18 @@ the [latest release](https://github.com/eduardoagarcia/shef/releases/latest).
 
 ```bash
 # Download the appropriate tarball for your platform
-curl -L https://github.com/eduardoagarcia/shef/releases/latest/download/shef_[OS]_[ARCH].tar.gz -o shef.tar.gz
+curl -L https://github.com/eduardoagarcia/shef/releases/latest/download/shef_[PLATFORM]_[ARCH].tar.gz -o shef.tar.gz
 
 # Extract the binary
 tar -xzf shef.tar.gz
 
-# Make it executable
+# Navigate to the extracted directory
+cd shef_[PLATFORM]_[ARCH]
+
+# Make the binary executable
 chmod +x shef
 
-# Move to a directory in your PATH
+# Move the binary to your PATH
 sudo mv shef /usr/local/bin/
 
 # Verify installation
