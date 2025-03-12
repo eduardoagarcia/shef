@@ -6,7 +6,7 @@ Essentially, imagine that [Make](https://www.gnu.org/software/make), [GitHub Act
 and [CyberChef](https://gchq.github.io/CyberChef) had a weird little `<moira-rose>bea-by</>`.
 
 Shef allows you to pipe commands together, add interactive user prompts, loop using complex control structures,
-and build reusable workflows with advanced conditional logic. It's not a replacement for bash scripts.
+and build reusable workflows with advanced conditional logic.
 
 ## Quick Start Example
 
