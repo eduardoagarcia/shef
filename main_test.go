@@ -934,10 +934,83 @@ func TestExecuteRecipeSimple(t *testing.T) {
 
 	mockCmd.On("Execute", "echo 'Hello'", "", "").Return("Hello", nil).Maybe()
 
-	err := executeRecipe(recipe, false)
+	err := executeRecipe(recipe, "", map[string]interface{}{}, false)
 	assert.NoError(t, err)
 
 	mockCmd.AssertCalled(t, "Execute", "echo 'Hello'", "", "")
+}
+
+// TestProcessRemainingArgs tests handling arguments and flags
+func TestProcessRemainingArgs(t *testing.T) {
+	tests := []struct {
+		name      string
+		args      []string
+		wantInput string
+		wantVars  map[string]interface{}
+	}{
+		{
+			name:      "no args",
+			args:      []string{},
+			wantInput: "",
+			wantVars:  map[string]interface{}{},
+		},
+		{
+			name:      "input only",
+			args:      []string{"hello world"},
+			wantInput: "hello world",
+			wantVars:  map[string]interface{}{},
+		},
+		{
+			name:      "short flag only",
+			args:      []string{"-f"},
+			wantInput: "",
+			wantVars:  map[string]interface{}{"f": true},
+		},
+		{
+			name:      "multiple short flags",
+			args:      []string{"-abc"},
+			wantInput: "",
+			wantVars:  map[string]interface{}{"a": true, "b": true, "c": true},
+		},
+		{
+			name:      "long flag only",
+			args:      []string{"--name=John"},
+			wantInput: "",
+			wantVars:  map[string]interface{}{"name": "John"},
+		},
+		{
+			name:      "long flag with dash",
+			args:      []string{"--user-agent=Chrome"},
+			wantInput: "",
+			wantVars:  map[string]interface{}{"user_agent": "Chrome"},
+		},
+		{
+			name:      "boolean long flag",
+			args:      []string{"--verbose"},
+			wantInput: "",
+			wantVars:  map[string]interface{}{"verbose": true},
+		},
+		{
+			name:      "input and flags",
+			args:      []string{"hello world", "-f", "--name=John"},
+			wantInput: "hello world",
+			wantVars:  map[string]interface{}{"f": true, "name": "John"},
+		},
+		{
+			name:      "complex case",
+			args:      []string{"input text", "-v", "--count=5", "--max-retry=3"},
+			wantInput: "input text",
+			wantVars:  map[string]interface{}{"v": true, "count": "5", "max_retry": "3"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotInput, gotVars := processRemainingArgs(tt.args)
+			assert.Equal(t, tt.wantInput, gotInput)
+			assert.Equal(t, tt.wantVars, gotVars)
+		})
+	}
 }
 
 // ExampleRenderTemplate demonstrates how to use the renderTemplate function
