@@ -58,6 +58,7 @@ recipes:
 - [Branching Workflows](#branching-workflows)
 - [Data Flow Between Operations](#data-flow-between-operations)
 - [Control Flow Structures](#control-flow-structures)
+- [Arguments and Flags](#arguments-and-flags)
 - [Example Recipes](#example-recipes)
 - [Creating Recipes](#creating-recipes)
 - [AI-Assisted Recipe Creation](#ai-assisted-recipe-creation)
@@ -565,11 +566,15 @@ transform: "{{ if eq .format `json` }}{{ .output }}{{ else }}{{ .output | cut ` 
 Variables available in templates:
 
 - `.output`: The output to the current transformation (output from the command)
-- `.input`: The input to the current command (input from previous operation)
+- `.input`: The input to the current command (input from previous operation or the input from the command line)
+- `.{variable_name}`: Any variable, argument, or flag
 - `.{prompt_name}`: Any variable from defined prompts
 - `.{operation_id}`: The output of a specific operation by ID
 - `.operationOutputs`: Map of all operation outputs by ID
 - `.operationResults`: Map of operation success/failure results by ID
+
+> [!NOTE]
+> Undefined variables will always evaluate to the boolean value of `false`
 
 ## Conditional Execution
 
@@ -831,6 +836,64 @@ Real-world polling example:
       command: "curl -s http://service/status"
       id: "status"
       transform: "{{ trim .input }}"
+```
+
+## Arguments and Flags
+
+Shef allows you to pass arguments and flags directly to your recipes from the command line.
+
+### Basic Argument Syntax
+
+```
+shef [category] [recipe-name] [input-text] [flags...]
+```
+
+or without category:
+
+```
+shef [recipe-name] [input-text] [flags...]
+```
+
+### Available Flag Types
+
+| Flag Type           | Example               | Variable         | Value           |
+|---------------------|-----------------------|------------------|-----------------|
+| Input Text          | `"Hello World"`       | `.input`         | `"Hello World"` |
+| Short Flag          | `-f`                  | `.f`             | `true`          |
+| Long Flag           | `--name=John`         | `.name`          | `"John"`        |
+| Long Flag with dash | `--user-agent=Chrome` | `.user_agent`    | `"Chrome"`      |
+| Multi-short         | `-abc`                | `.a`, `.b`, `.c` | `true`          |
+
+### Usage Examples
+
+```bash
+# Pass text input to a recipe
+shef demo arguments "Hello World"
+
+# Pass a boolean flag
+shef demo arguments -f
+
+# Pass a value flag
+shef demo arguments --name=John
+
+# Combine multiple types
+shef demo arguments "My input text" -vf -a --count=5 --verbose
+```
+
+### Accessing Arguments in Recipes
+
+You can access these values in your recipe operations:
+
+```yaml
+- name: "Display Arguments"
+  command: |
+    echo "Input: {{ .input }}"
+    echo "Flag f: {{ .f }}"
+    echo "Name: {{ .name }}"
+
+- name: "Conditional based on flag"
+  command: echo "Flag was set!"
+  condition: .f == true
 ```
 
 ## Example Recipes

@@ -1,0 +1,22 @@
+recipes:
+  - name: "arguments"
+    description: "A simple demo using arguments and flags"
+    category: "demo"
+    operations:
+      - name: "Display Arguments"
+        command: |
+          echo "Input: {{ .input }}"
+          echo "Short Flag f: {{ .f }}"
+          echo "Long Flag name: {{ .name }}"
+
+      - name: "Check if -f Flag is Set"
+        command: echo "The -f flag was set!"
+        condition: .f != false
+
+      - name: "Check if -f Flag is Not Set"
+        command: echo "The -f flag was NOT set."
+        condition: .f == false
+
+      - name: "Print Name"
+        command: echo "Hello, {{ .name }}!"
+        condition: .name != false

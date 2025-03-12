@@ -866,6 +866,13 @@ func evaluateNumericComparison(condition string, ctx *ExecutionContext) (bool, e
 		return false, err
 	}
 
+	if leftStr == "false" {
+		leftStr = "0"
+	}
+	if rightStr == "false" {
+		rightStr = "0"
+	}
+
 	leftInt, leftErr := strconv.Atoi(leftStr)
 	rightInt, rightErr := strconv.Atoi(rightStr)
 
@@ -910,7 +917,7 @@ func evaluateOperationResult(condition string, ctx *ExecutionContext) (bool, err
 			if exists {
 				return result, nil
 			}
-			return false, fmt.Errorf("operation %s result not found", opID)
+			return false, nil
 		}
 	}
 
@@ -922,7 +929,7 @@ func evaluateOperationResult(condition string, ctx *ExecutionContext) (bool, err
 			if exists {
 				return !result, nil
 			}
-			return false, fmt.Errorf("operation %s result not found", opID)
+			return true, nil
 		}
 	}
 
@@ -973,7 +980,10 @@ func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, 
 		return value != expectedValue, nil
 	}
 
-	return false, fmt.Errorf("variable %s not found", varName)
+	if op == "==" {
+		return "false" == expectedValue, nil
+	}
+	return "false" != expectedValue, nil
 }
 
 func resolveValue(value string, ctx *ExecutionContext) (string, error) {
@@ -1000,18 +1010,27 @@ func resolveValue(value string, ctx *ExecutionContext) (string, error) {
 		if val, exists := ctx.OperationOutputs[varName]; exists {
 			return val, nil
 		}
-		return "", fmt.Errorf("variable %s not found", varName)
+		return "false", nil
 	}
 
 	return value, nil
 }
 
-func executeRecipe(recipe Recipe, debug bool) error {
+func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, debug bool) error {
 	ctx := ExecutionContext{
 		Data:             "",
 		Vars:             make(map[string]interface{}),
 		OperationOutputs: make(map[string]string),
 		OperationResults: make(map[string]bool),
+	}
+
+	for k, v := range vars {
+		ctx.Vars[k] = v
+	}
+
+	if input != "" {
+		ctx.Vars["input"] = input
+		ctx.Data = input
 	}
 
 	opMap := make(map[string]Operation)
@@ -1424,27 +1443,78 @@ func handleRunCommand(c *cli.Context, args []string, sourcePriority []string) er
 	}
 
 	var category, recipeName string
-	if len(args) == 1 {
-		recipeName = args[0]
-		category = c.String("category")
-	} else {
+	var remainingArgs []string
+
+	recipe, err := findRecipeInSources(args[0], "", sourcePriority)
+
+	if err != nil && len(args) > 1 {
 		category = args[0]
 		recipeName = args[1]
+
+		if len(args) > 2 {
+			remainingArgs = args[2:]
+		}
+
+		recipe, err = findRecipeInSources(recipeName, category, sourcePriority)
+	} else if err == nil {
+		recipeName = args[0]
+
+		if len(args) > 1 {
+			remainingArgs = args[1:]
+		}
 	}
 
-	recipe, err := findRecipeInSources(recipeName, category, sourcePriority)
 	if err != nil {
 		return err
 	}
 
 	debug := c.Bool("debug")
 
+	input, vars := processRemainingArgs(remainingArgs)
+
 	if debug {
 		fmt.Printf("Running recipe: %s\n", recipe.Name)
+		fmt.Printf("With input: %s\n", input)
+		fmt.Printf("With vars: %v\n", vars)
 		fmt.Printf("Description: %s\n\n", recipe.Description)
 	}
 
-	return executeRecipe(*recipe, debug)
+	return executeRecipe(*recipe, input, vars, debug)
+}
+
+func processRemainingArgs(args []string) (string, map[string]interface{}) {
+	vars := make(map[string]interface{})
+	var input string
+
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "-") {
+			if strings.HasPrefix(arg, "--") {
+				arg = arg[2:] // Remove --
+				if strings.Contains(arg, "=") {
+					parts := strings.SplitN(arg, "=", 2)
+					flagName := strings.ReplaceAll(parts[0], "-", "_")
+					vars[flagName] = parts[1]
+				} else {
+					flagName := strings.ReplaceAll(arg, "-", "_")
+					vars[flagName] = true
+				}
+			} else {
+				arg = arg[1:] // Remove -
+				if strings.Contains(arg, "=") {
+					parts := strings.SplitN(arg, "=", 2)
+					vars[parts[0]] = parts[1]
+				} else {
+					for _, c := range arg {
+						vars[string(c)] = true
+					}
+				}
+			}
+		} else if input == "" {
+			input = arg
+		}
+	}
+
+	return input, vars
 }
 
 func runRecipeFromPath(filePath string) error {
