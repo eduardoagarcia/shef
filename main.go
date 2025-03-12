@@ -1284,7 +1284,7 @@ func main() {
 			&cli.PathFlag{
 				Name:    "recipe-file",
 				Aliases: []string{"r"},
-				Usage:   "Execute a recipe",
+				Usage:   "Path to the recipe file",
 			},
 		},
 		Action: func(c *cli.Context) error {
