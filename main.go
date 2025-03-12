@@ -1281,6 +1281,11 @@ func main() {
 				Aliases: []string{"c"},
 				Usage:   "Filter by category",
 			},
+			&cli.PathFlag{
+				Name:    "recipe-file",
+				Aliases: []string{"r"},
+				Usage:   "Path to the recipe file",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			args := c.Args().Slice()
@@ -1408,6 +1413,12 @@ func outputRecipesAsJSON(recipes []Recipe) error {
 }
 
 func handleRunCommand(c *cli.Context, args []string, sourcePriority []string) error {
+	recipeFilePath := c.String("recipe-file")
+
+	if recipeFilePath != "" {
+		return runRecipeFromPath(recipeFilePath)
+	}
+
 	if len(args) == 0 {
 		return fmt.Errorf("no recipe specified. Use shef ls to list available recipes")
 	}
@@ -1434,6 +1445,22 @@ func handleRunCommand(c *cli.Context, args []string, sourcePriority []string) er
 	}
 
 	return executeRecipe(*recipe, debug)
+}
+
+func runRecipeFromPath(filePath string) error {
+	contents, err := loadConfig(filePath)
+
+	if err != nil {
+		return err
+	}
+
+	for _, recipe := range contents.Recipes {
+		if err := executeRecipe(recipe, false); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func findRecipeInSources(recipeName, category string, sourcePriority []string) (*Recipe, error) {
