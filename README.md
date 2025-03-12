@@ -71,8 +71,8 @@ recipes:
 - **Interactive Prompts**: Add user input, selections, confirmations, and more
 - **Conditional Logic**: Use if/else branching based on command results
 - **Control Flow**: Create dynamic workflows with loops and control structures
-- **Multiple Sources**: Use local, user, or public recipes
-- **Organized Recipes**: Categorize and share your recipes with others
+- **Multiple Sources and Contexts**: Use local, user, or public recipes
+- **Public Recipes**: Common, useful recipes anyone can use. Browse public [recipes](https://github.com/eduardoagarcia/shef/tree/main/recipes).
 
 ## Bash Scripts and Shef: Complementary Tools
 
@@ -143,7 +143,7 @@ Replace `[PLATFORM]` with `linux` or `darwin` (for macOS) and `[ARCH]` with your
 4. Open Command Prompt or PowerShell and run `shef -v` to verify installation
 5. Run `shef sync` to download recipes
 
-### Verify Binary
+### Verify Binaries
 
 > [!IMPORTANT]
 > Always verify the integrity of downloaded binaries for security. The release assets are signed with GPG, and you can
@@ -190,43 +190,13 @@ gpg --verify shef_windows_amd64.zip.asc shef_windows_amd64.zip
 For developers or users who prefer to build from source:
 
 ```bash
-# Clone the repository
 git clone https://github.com/eduardoagarcia/shef.git
 cd shef
 
 # Install (requires sudo for system-wide installation)
 make install
 
-# Or install with Go directly
-go install github.com/eduardoagarcia/shef@latest
-
-# Verify installation
 shef -v
-
-# Sync public recipes
-shef sync
-```
-
-### Updating Shef
-
-To update Shef to the latest version:
-
-```bash
-# If installed via Make:
-cd /path/to/shef/repo
-git pull
-make update
-
-# OR download the latest binary:
-curl -L https://github.com/eduardoagarcia/shef/releases/latest/download/shef-[PLATFORM]-[ARCH] -o shef
-chmod +x shef
-sudo mv shef /usr/local/bin/
-
-# Verify the new version
-shef -v
-
-# Sync recipes to get the latest
-shef sync
 ```
 
 ## Quick Start
@@ -274,12 +244,9 @@ shef [category] [recipe-name]
 | `sync`          | Sync public recipes locally |
 | `list` `ls` `l` | List available recipes      |
 
-> [!IMPORTANT]
-> Make sure your Shef git repo is up to date before running `shef sync`
-
 ## Recipe Sources
 
-Shef looks for recipes in multiple locations:
+Shef looks for recipes in multiple locations and contexts:
 
 1. **Local Recipes**: `./.shef/*.yaml` in the current directory
 2. **User Recipes**: `~/.shef/user/*.yaml` in your home directory
