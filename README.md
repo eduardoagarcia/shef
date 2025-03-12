@@ -33,12 +33,12 @@ recipes:
 
       - name: "Apple Operation"
         id: "apple"
-        command: echo {{ style "bold" (color "red" "This is the apple operation!") }}
+        command: echo "This is the apple operation! 🍎"
         condition: ".fruit == 'Apples'"
 
       - name: "Orange Operation"
         id: "orange"
-        command: echo {{ style "bold" (color "yellow" "This is the orange operation!") }}
+        command: echo "This is the orange operation! 🍊"
         condition: ".fruit == 'Oranges'"
 ```
 
