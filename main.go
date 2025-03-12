@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	Version               = "v0.1.3"
+	Version               = "v0.1.4"
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"
 )
@@ -1432,54 +1432,57 @@ func outputRecipesAsJSON(recipes []Recipe) error {
 }
 
 func handleRunCommand(c *cli.Context, args []string, sourcePriority []string) error {
-	recipeFilePath := c.String("recipe-file")
-
-	if recipeFilePath != "" {
-		return runRecipeFromPath(recipeFilePath)
-	}
-
-	if len(args) == 0 {
-		return fmt.Errorf("no recipe specified. Use shef ls to list available recipes")
-	}
-
-	var category, recipeName string
+	debug := c.Bool("debug")
+	var recipes []Recipe
 	var remainingArgs []string
 
-	recipe, err := findRecipeInSources(args[0], "", sourcePriority)
-
-	if err != nil && len(args) > 1 {
-		category = args[0]
-		recipeName = args[1]
-
-		if len(args) > 2 {
-			remainingArgs = args[2:]
+	recipeFilePath := c.String("recipe-file")
+	if recipeFilePath != "" {
+		config, err := loadConfig(recipeFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to load recipe file %s: %w", recipeFilePath, err)
+		}
+		recipes = config.Recipes
+		remainingArgs = args
+	} else {
+		if len(args) == 0 {
+			return fmt.Errorf("no recipe specified. Use shef ls to list available recipes")
 		}
 
-		recipe, err = findRecipeInSources(recipeName, category, sourcePriority)
-	} else if err == nil {
-		recipeName = args[0]
+		recipe, err := findRecipeInSources(args[0], "", sourcePriority)
 
-		if len(args) > 1 {
+		if err != nil && len(args) > 1 {
+			recipe, err = findRecipeInSources(args[1], args[0], sourcePriority)
+			if err == nil {
+				remainingArgs = args[2:]
+			}
+		} else if err == nil {
 			remainingArgs = args[1:]
 		}
-	}
 
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			return err
+		}
 
-	debug := c.Bool("debug")
+		recipes = []Recipe{*recipe}
+	}
 
 	input, vars := processRemainingArgs(remainingArgs)
 
-	if debug {
-		fmt.Printf("Running recipe: %s\n", recipe.Name)
-		fmt.Printf("With input: %s\n", input)
-		fmt.Printf("With vars: %v\n", vars)
-		fmt.Printf("Description: %s\n\n", recipe.Description)
+	for _, recipe := range recipes {
+		if debug {
+			fmt.Printf("Running recipe: %s\n", recipe.Name)
+			fmt.Printf("With input: %s\n", input)
+			fmt.Printf("With vars: %v\n", vars)
+			fmt.Printf("Description: %s\n\n", recipe.Description)
+		}
+
+		if err := executeRecipe(recipe, input, vars, debug); err != nil {
+			return err
+		}
 	}
 
-	return executeRecipe(*recipe, input, vars, debug)
+	return nil
 }
 
 func processRemainingArgs(args []string) (string, map[string]interface{}) {
@@ -1515,22 +1518,6 @@ func processRemainingArgs(args []string) (string, map[string]interface{}) {
 	}
 
 	return input, vars
-}
-
-func runRecipeFromPath(filePath string) error {
-	contents, err := loadConfig(filePath)
-
-	if err != nil {
-		return err
-	}
-
-	for _, recipe := range contents.Recipes {
-		if err := executeRecipe(recipe, false); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func findRecipeInSources(recipeName, category string, sourcePriority []string) (*Recipe, error) {
