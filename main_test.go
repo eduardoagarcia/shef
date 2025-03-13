@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -246,10 +246,13 @@ func TestFindRecipeSourcesByType(t *testing.T) {
 	mockFS := new(MockFileSystem)
 	mockDirInfo := NewMockFileInfo(".shef", true)
 
-	mockFS.On("Stat", ".shef").Return(mockDirInfo, nil).Maybe()
-	mockFS.On("Stat", "/home/user/.shef").Return(mockDirInfo, nil).Maybe()
-	mockFS.On("Stat", "/home/user/.shef/public").Return(nil, os.ErrNotExist).Maybe()
-	mockFS.On("Stat", "/home/user/.shef/user").Return(nil, os.ErrNotExist).Maybe()
+	mockFS.On("Stat", mock.MatchedBy(func(path string) bool {
+		return strings.HasPrefix(path, ".shef")
+	})).Return(mockDirInfo, nil).Maybe()
+
+	mockFS.On("Stat", mock.MatchedBy(func(path string) bool {
+		return strings.HasPrefix(path, "/home/user/.shef")
+	})).Return(mockDirInfo, nil).Maybe()
 
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
@@ -258,8 +261,8 @@ func TestFindRecipeSourcesByType(t *testing.T) {
 		return "/home/user", nil
 	})
 
-	patches.ApplyFunc(filepath.Walk, func(root string, fn filepath.WalkFunc) error {
-		return nil
+	patches.ApplyFunc(os.ReadDir, func(dirname string) ([]os.DirEntry, error) {
+		return []os.DirEntry{}, nil
 	})
 
 	patches.ApplyFunc(os.Stat, mockFS.Stat)

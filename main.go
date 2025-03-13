@@ -303,18 +303,46 @@ func findRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 
 	findYamlFiles := func(root string) ([]string, error) {
 		var files []string
-		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		visited := make(map[string]bool)
+
+		var walkDir func(path string) error
+		walkDir = func(path string) error {
+			absPath, err := filepath.Abs(path)
 			if err != nil {
 				return nil
 			}
-			if info.IsDir() {
+
+			if visited[absPath] {
 				return nil
 			}
-			if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
+			visited[absPath] = true
+
+			// Get file info, will follow symlinks
+			fileInfo, err := os.Stat(path)
+			if err != nil {
+				return nil
+			}
+
+			if fileInfo.IsDir() {
+				entries, err := os.ReadDir(path)
+				if err != nil {
+					return nil
+				}
+
+				for _, entry := range entries {
+					entryPath := filepath.Join(path, entry.Name())
+					if err := walkDir(entryPath); err != nil {
+						return err
+					}
+				}
+			} else if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
 				files = append(files, path)
 			}
+
 			return nil
-		})
+		}
+
+		err := walkDir(root)
 		return files, err
 	}
 
