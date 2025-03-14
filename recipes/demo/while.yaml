@@ -6,7 +6,7 @@ recipes:
       - name: "Loop While Status is Running"
         control_flow:
           type: "while"
-          condition: '{{ ne .complete "true" }}'
+          condition: .complete == "false"
         operations:
           - name: "Perform Work"
             command: echo {{ color "yellow" "Service is running, performing work..." }}

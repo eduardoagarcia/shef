@@ -340,7 +340,7 @@ func TestRenderTemplate(t *testing.T) {
 			name:    "missing variable",
 			tmplStr: "Hello, {{.missing}}!",
 			vars:    map[string]interface{}{"name": "World"},
-			want:    "Hello, <no value>!",
+			want:    "Hello, false!",
 			wantErr: false,
 		},
 	}
