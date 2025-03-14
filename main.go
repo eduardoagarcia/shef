@@ -52,6 +52,7 @@ type Operation struct {
 	OnFailure     string      `yaml:"on_failure,omitempty"`
 	Transform     string      `yaml:"transform,omitempty"`
 	Prompts       []Prompt    `yaml:"prompts,omitempty"`
+	Exit          bool        `yaml:"exit,omitempty"`
 }
 
 type Prompt struct {
@@ -1092,21 +1093,21 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 		}
 	}
 
-	var executeOp func(op Operation, depth int) error
-	executeOp = func(op Operation, depth int) error {
+	var executeOp func(op Operation, depth int) (bool, error)
+	executeOp = func(op Operation, depth int) (bool, error) {
 		if depth > 50 {
-			return fmt.Errorf("possible infinite loop detected (max depth reached)")
+			return false, fmt.Errorf("possible infinite loop detected (max depth reached)")
 		}
 
 		if op.ControlFlow != nil {
 			flowMap, ok := op.ControlFlow.(map[string]interface{})
 			if !ok {
-				return fmt.Errorf("invalid control_flow structure")
+				return false, fmt.Errorf("invalid control_flow structure")
 			}
 
 			typeVal, ok := flowMap["type"].(string)
 			if !ok {
-				return fmt.Errorf("control_flow requires a 'type' field")
+				return false, fmt.Errorf("control_flow requires a 'type' field")
 			}
 
 			switch typeVal {
@@ -1114,26 +1115,29 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			case "foreach":
 				forEach, err := op.GetForEachFlow()
 				if err != nil {
-					return err
+					return false, err
 				}
-				return ExecuteForEach(op, forEach, &ctx, depth, executeOp, debug)
+				err = ExecuteForEach(op, forEach, &ctx, depth, executeOp, debug)
+				return op.Exit, err
 
 			case "while":
 				whileFlow, err := op.GetWhileFlow()
 				if err != nil {
-					return err
+					return false, err
 				}
-				return ExecuteWhile(op, whileFlow, &ctx, depth, executeOp, debug)
+				err = ExecuteWhile(op, whileFlow, &ctx, depth, executeOp, debug)
+				return op.Exit, err
 
 			case "for":
 				forFlow, err := op.GetForFlow()
 				if err != nil {
-					return err
+					return false, err
 				}
-				return ExecuteFor(op, forFlow, &ctx, depth, executeOp, debug)
+				err = ExecuteFor(op, forFlow, &ctx, depth, executeOp, debug)
+				return op.Exit, err
 
 			default:
-				return fmt.Errorf("unknown control_flow type: %s", typeVal)
+				return false, fmt.Errorf("unknown control_flow type: %s", typeVal)
 			}
 		}
 
@@ -1143,29 +1147,28 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			}
 			result, err := evaluateCondition(op.Condition, &ctx)
 			if err != nil {
-				return fmt.Errorf("condition evaluation failed: %w", err)
+				return false, fmt.Errorf("condition evaluation failed: %w", err)
 			}
 
 			if !result {
 				if debug {
 					fmt.Printf("Skipping operation '%s' (condition not met)\n", op.Name)
 				}
-
-				return nil
+				return false, nil
 			}
 		}
 
 		for _, prompt := range op.Prompts {
 			value, err := handlePrompt(prompt, &ctx)
 			if err != nil {
-				return err
+				return false, err
 			}
 			ctx.Vars[prompt.Name] = value
 		}
 
 		cmd, err := renderTemplate(op.Command, ctx.templateVars())
 		if err != nil {
-			return fmt.Errorf("failed to render command template: %w", err)
+			return false, fmt.Errorf("failed to render command template: %w", err)
 		}
 
 		if debug {
@@ -1191,9 +1194,10 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 
 				nextOp, exists := opMap[op.OnFailure]
 				if !exists {
-					return fmt.Errorf("on_failure operation %s not found", op.OnFailure)
+					return false, fmt.Errorf("on_failure operation %s not found", op.OnFailure)
 				}
-				return executeOp(nextOp, depth+1)
+				shouldExit, err := executeOp(nextOp, depth+1)
+				return shouldExit || op.Exit, err
 			}
 
 			var continueExecution bool
@@ -1202,11 +1206,11 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 				Default: false,
 			}
 			if err := survey.AskOne(prompt, &continueExecution); err != nil {
-				return err
+				return false, err
 			}
 
 			if !continueExecution {
-				return fmt.Errorf("recipe execution aborted by user after command error")
+				return true, fmt.Errorf("recipe execution aborted by user after command error")
 			}
 		}
 
@@ -1234,18 +1238,22 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 		if op.OnSuccess != "" && operationSuccess {
 			nextOp, exists := opMap[op.OnSuccess]
 			if !exists {
-				return fmt.Errorf("on_success operation %s not found", op.OnSuccess)
+				return false, fmt.Errorf("on_success operation %s not found", op.OnSuccess)
 			}
-			return executeOp(nextOp, depth+1)
+			shouldExit, err := executeOp(nextOp, depth+1)
+			return shouldExit || op.Exit, err
 		}
 
 		if debug {
 			fmt.Printf("Operation %s result: %v\n", op.ID, ctx.OperationResults[op.ID])
 			fmt.Printf("Handler for on_success: '%s'\n", op.OnSuccess)
 			fmt.Printf("Handler for on_failure: '%s'\n", op.OnFailure)
+			if op.Exit {
+				fmt.Printf("Exit flag is set. Will exit after this operation.\n")
+			}
 		}
 
-		return nil
+		return op.Exit, nil
 	}
 
 	for i, op := range recipe.Operations {
@@ -1260,8 +1268,16 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			fmt.Printf("Executing operation %d: %s\n", i+1, op.Name)
 		}
 
-		if err := executeOp(op, 0); err != nil {
+		shouldExit, err := executeOp(op, 0)
+		if err != nil {
 			return err
+		}
+
+		if shouldExit {
+			if debug {
+				fmt.Printf("Exiting recipe execution after operation: %s\n", op.Name)
+			}
+			return nil
 		}
 	}
 

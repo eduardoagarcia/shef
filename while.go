@@ -37,7 +37,7 @@ func (op *Operation) GetWhileFlow() (*WhileFlow, error) {
 	}, nil
 }
 
-func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) error, debug bool) error {
+func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) error {
 	maxIterations := 1000
 	iterations := 0
 
@@ -68,8 +68,16 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		ctx.Vars["iteration"] = iterations
 
 		for _, subOp := range op.Operations {
-			if err := executeOp(subOp, depth+1); err != nil {
+			shouldExit, err := executeOp(subOp, depth+1)
+			if err != nil {
 				return err
+			}
+
+			if shouldExit {
+				if debug {
+					fmt.Printf("Exiting while loop early due to exit flag\n")
+				}
+				return nil
 			}
 		}
 	}
