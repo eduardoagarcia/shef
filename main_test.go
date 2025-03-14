@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -254,11 +255,27 @@ func TestFindRecipeSourcesByType(t *testing.T) {
 		return strings.HasPrefix(path, "/home/user/.shef")
 	})).Return(mockDirInfo, nil).Maybe()
 
+	mockFS.On("Stat", mock.MatchedBy(func(path string) bool {
+		return strings.HasPrefix(path, "/home/user/.config/shef")
+	})).Return(mockDirInfo, nil).Maybe()
+
+	mockFS.On("Stat", mock.MatchedBy(func(path string) bool {
+		return strings.HasPrefix(path, "/home/user/.local/share/shef")
+	})).Return(mockDirInfo, nil).Maybe()
+
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
 
 	patches.ApplyFunc(os.UserHomeDir, func() (string, error) {
 		return "/home/user", nil
+	})
+
+	patches.ApplyFunc(getXDGConfigHome, func() string {
+		return filepath.Join("/home/user", ".config")
+	})
+
+	patches.ApplyFunc(getXDGDataHome, func() string {
+		return filepath.Join("/home/user", ".local", "share")
 	})
 
 	patches.ApplyFunc(os.ReadDir, func(dirname string) ([]os.DirEntry, error) {

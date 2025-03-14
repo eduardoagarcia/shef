@@ -368,6 +368,10 @@ func findRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 					sources = append(sources, userFiles...)
 				}
 			}
+
+			if isLinux() {
+				sources = addXDGRecipeSources(sources, userDir, publicRepo, findYamlFiles)
+			}
 		}
 	}
 
@@ -1473,6 +1477,16 @@ func handleListCommand(c *cli.Context, args []string, sourcePriority []string) e
 				recipeMap[r.Name] = true
 			}
 		}
+	}
+
+	if category == "" {
+		var filteredRecipes []Recipe
+		for _, recipe := range allRecipes {
+			if recipe.Category != "demo" {
+				filteredRecipes = append(filteredRecipes, recipe)
+			}
+		}
+		allRecipes = filteredRecipes
 	}
 
 	if len(allRecipes) == 0 {
