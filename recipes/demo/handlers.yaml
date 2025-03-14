@@ -1,0 +1,22 @@
+recipes:
+  - name: "handlers"
+    description: "A simple demo of error and success handlers"
+    category: "demo"
+    operations:
+      - name: "Help"
+        command: echo {{ color "magenta" "Please provide a valid or invalid directory argument to test" }}
+        condition: .input == "false"
+
+      - name: "Test if directory exists"
+        command: cd {{ .input }}
+        on_failure: "handle_error"
+        on_success: "handle_success"
+        condition: .input != "false"
+
+      - name: "Handle error"
+        id: "handle_error"
+        command: echo {{ color "red" (printf "Directory %s does NOT exist!" .input) }}
+
+      - name: "Handle success"
+        id: "handle_success"
+        command: echo {{ color "green" (printf "Directory %s exists!" .input) }}

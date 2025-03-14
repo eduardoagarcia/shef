@@ -249,7 +249,10 @@ func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error)
 		return "", fmt.Errorf("template execution error: %w", err)
 	}
 
-	return buf.String(), nil
+	result := buf.String()
+	result = strings.ReplaceAll(result, "<no value>", "false")
+
+	return result, nil
 }
 
 func transformOutput(output, transform string, ctx *ExecutionContext) (string, error) {
@@ -784,6 +787,7 @@ func evaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 		if err != nil {
 			return false, fmt.Errorf("failed to render condition template: %w", err)
 		}
+		rendered = strings.ReplaceAll(rendered, "<no value>", "false")
 		return evaluateCondition(rendered, ctx)
 	}
 
@@ -983,7 +987,11 @@ func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, 
 		return false, fmt.Errorf("invalid variable comparison format: %s", condition)
 	}
 
-	varName := strings.TrimSpace(parts[0])
+	leftPart := strings.TrimSpace(parts[0])
+	rightPart := strings.TrimSpace(parts[1])
+	rightPart = strings.Trim(rightPart, "\"'")
+
+	varName := leftPart
 	if strings.HasPrefix(varName, "$") {
 		varName = varName[1:]
 	}
@@ -991,28 +999,33 @@ func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, 
 		varName = varName[1:]
 	}
 
-	expectedValue := strings.TrimSpace(parts[1])
-	expectedValue = strings.Trim(expectedValue, "\"'")
+	var actualValue string
+	var exists bool
 
-	if value, exists := ctx.Vars[varName]; exists {
-		strValue := fmt.Sprintf("%v", value)
-		if op == "==" {
-			return strValue == expectedValue, nil
-		}
-		return strValue != expectedValue, nil
+	if value, ok := ctx.Vars[varName]; ok {
+		actualValue = fmt.Sprintf("%v", value)
+		exists = true
 	}
 
-	if value, exists := ctx.OperationOutputs[varName]; exists {
-		if op == "==" {
-			return value == expectedValue, nil
+	if !exists {
+		if value, ok := ctx.OperationOutputs[varName]; ok {
+			actualValue = value
+			exists = true
 		}
-		return value != expectedValue, nil
 	}
 
+	if !exists {
+		actualValue = "false"
+	}
+
+	var result bool
 	if op == "==" {
-		return "false" == expectedValue, nil
+		result = actualValue == rightPart
+	} else {
+		result = actualValue != rightPart
 	}
-	return "false" != expectedValue, nil
+
+	return result, nil
 }
 
 func resolveValue(value string, ctx *ExecutionContext) (string, error) {
@@ -1136,17 +1149,6 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			if !result {
 				if debug {
 					fmt.Printf("Skipping operation '%s' (condition not met)\n", op.Name)
-				}
-				if op.ID != "" {
-					ctx.OperationResults[op.ID] = false
-				}
-
-				if op.OnFailure != "" {
-					nextOp, exists := opMap[op.OnFailure]
-					if !exists {
-						return fmt.Errorf("on_failure operation %s not found", op.OnFailure)
-					}
-					return executeOp(nextOp, depth+1)
 				}
 
 				return nil
