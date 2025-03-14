@@ -299,6 +299,7 @@ Operations are the building blocks of recipes:
   command: "echo 'Hello'"           # Shell command to execute
   execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, or stream)
   silent: false                     # [Optional] Whether to suppress output to stdout
+  exit: false                       # [Optional] When set to true, the recipe will exit after the operation completes
   condition: "var == true"          # [Optional] Condition for execution
   on_success: "success_op"          # [Optional] Operation to run on success
   on_failure: "failure_op"          # [Optional] Operation to run on failure

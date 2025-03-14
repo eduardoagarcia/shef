@@ -48,7 +48,7 @@ func (op *Operation) GetForFlow() (*ForFlow, error) {
 	}, nil
 }
 
-func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) error, debug bool) error {
+func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) error {
 	countStr, err := renderTemplate(forFlow.Count, ctx.templateVars())
 	if err != nil {
 		return fmt.Errorf("failed to render count template: %w", err)
@@ -72,8 +72,16 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 		ctx.Vars["iteration"] = i + 1
 
 		for _, subOp := range op.Operations {
-			if err := executeOp(subOp, depth+1); err != nil {
+			shouldExit, err := executeOp(subOp, depth+1)
+			if err != nil {
 				return err
+			}
+
+			if shouldExit {
+				if debug {
+					fmt.Printf("Exiting for loop early due to exit flag\n")
+				}
+				return nil
 			}
 		}
 	}

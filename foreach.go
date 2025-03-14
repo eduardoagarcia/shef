@@ -44,7 +44,7 @@ func (op *Operation) GetForEachFlow() (*ForEachFlow, error) {
 	}, nil
 }
 
-func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) error, debug bool) error {
+func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) error {
 	collectionExpr, err := renderTemplate(forEach.Collection, ctx.templateVars())
 	if err != nil {
 		return fmt.Errorf("failed to render collection template: %w", err)
@@ -64,8 +64,16 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 		ctx.Vars[forEach.As] = item
 
 		for _, subOp := range op.Operations {
-			if err := executeOp(subOp, depth+1); err != nil {
+			shouldExit, err := executeOp(subOp, depth+1)
+			if err != nil {
 				return err
+			}
+
+			if shouldExit {
+				if debug {
+					fmt.Printf("Exiting foreach loop early due to exit flag\n")
+				}
+				return nil
 			}
 		}
 	}
