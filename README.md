@@ -34,12 +34,12 @@ recipes:
       - name: "Apple Operation"
         id: "apple"
         command: echo "This is the apple operation! 🍎"
-        condition: ".fruit == 'Apples'"
+        condition: .fruit == "Apples"
 
       - name: "Orange Operation"
         id: "orange"
         command: echo "This is the orange operation! 🍊"
-        condition: ".fruit == 'Oranges'"
+        condition: .fruit == "Oranges"
 ```
 
 ## Table of Contents
@@ -287,10 +287,10 @@ recipes:
     operations:
       - name: "First Operation"
         id: "first_op"
-        command: "echo 'Hello, World!'"
+        command: echo "Hello, World!"
 
       - name: "Second Operation"
-        command: "cat"
+        command: cat
         transform: "{{ filter .input 'Hello' }}"
 ```
 
@@ -309,11 +309,11 @@ Operations are the building blocks of recipes:
 ```yaml
 - name: "Operation Name"            # Operation name
   id: "unique_id"                   # Identifier for referencing output
-  command: "echo 'Hello'"           # Shell command to execute
+  command: echo "Hello"             # Shell command to execute
   execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, or stream)
   silent: false                     # [Optional] Whether to suppress output to stdout
   exit: false                       # [Optional] When set to true, the recipe will exit after the operation completes
-  condition: "var == true"          # [Optional] Condition for execution
+  condition: .var == true           # [Optional] Condition for execution
   on_success: "success_op"          # [Optional] Operation to run on success
   on_failure: "failure_op"          # [Optional] Operation to run on failure
   transform: "{{ .output | trim }}" # [Optional] Transform output
@@ -325,7 +325,7 @@ Operations are the building blocks of recipes:
     type: "foreach"                 # Type of control flow (foreach, for, while)
   operations:                       # [Optional] Sub-operations for when control flow structures are used
     - name: "Sub Operation"
-      command: "echo 'Processing {{ .item }}'"
+      command: echo "Processing " {{ .item }}
 ```
 
 #### Control Flow Configuration
@@ -468,10 +468,10 @@ You can generate selection options from a previous operation's output:
 ```yaml
 - name: "List Files"
   id: "files_list"
-  command: "find . -name '*.go'"
+  command: find . -name "*.go"
 
 - name: "Select File"
-  command: "cat {{ .file }}"
+  command: cat {{ .file }}
   prompts:
     - name: "file"
       type: "select"
@@ -543,19 +543,19 @@ Colors and styles can be used in commands, transformations, and anywhere templat
 ##### Basic Color Usage
 
 ```yaml
-command: echo "{{ color "green" "Success!" }}"
+command: echo {{ color "green" "Success!" }}
 ```
 
 ##### Basic Style Usage
 
 ```yaml
-command: echo "{{ style "bold" "Important!" }}"
+command: echo {{ style "bold" "Important!" }}
 ```
 
 ##### Combine Color and Style
 
 ```yaml
-command: echo "{{ style "bold" (color "red" "Error!") }}"
+command: echo {{ style "bold" (color "red" "Error!") }}
  ```
 
 ##### Transformations
@@ -638,17 +638,17 @@ You can create branching workflows based on success or failure:
 ```yaml
 - name: "Build App"
   id: "build_op"
-  command: "make build"
+  command: make build
   on_success: "deploy_op"  # Go to deploy_op on success
   on_failure: "fix_op"     # Go to fix_op on failure
 
 - name: "Deploy"
   id: "deploy_op"
-  command: "make deploy"
+  command: make deploy
   
 - name: "Fix Issues"
   id: "fix_op"
-  command: "make lint"
+  command: make lint
 ```
 
 ## Data Flow Between Operations
@@ -659,10 +659,10 @@ by its ID:
 ```yaml
 - name: "Get Hostname"
   id: "hostname_op"
-  command: "hostname"
+  command: hostname
 
 - name: "Show Info"
-  command: "echo 'Running on {{ .hostname_op }}'"
+  command: echo "Running on " {{ .hostname_op }}
 ```
 
 ## Control Flow Structures
@@ -708,7 +708,7 @@ You can iterate over a collection of items and perform a flow of operations on e
      as: "fruit"  # Each item will be available as .fruit
   operations:
      - name: "Process Fruit"
-       command: "echo 'Processing {{ .fruit }}'"
+       command: echo "Processing " {{ .fruit }}
 ```
 
 You can also generate the collection dynamically:
@@ -716,7 +716,7 @@ You can also generate the collection dynamically:
 ```yaml
 - name: "List Files"
   id: "files"
-  command: "find . -type f -name '*.txt'"
+  command: find . -type f -name "*.txt"
 
 - name: "Process Each File"
   control_flow:
@@ -725,7 +725,7 @@ You can also generate the collection dynamically:
     as: "file"                  # Each item will be available as .file
   operations:
     - name: "Process File"
-      command: "cat {{ .file }} | wc -l"
+      command: cat {{ .file }} | wc -l
 ```
 
 ### For Loops
@@ -768,7 +768,7 @@ You can execute a set of operations a fixed number of times.
     variable: "i"
   operations:
     - name: "Print Iteration"
-      command: "echo 'Running iteration {{ .iteration }} (zero-based index: {{ .i }})'"
+      command: 'echo "Running iteration {{ .iteration }} (zero-based index: {{ .i }})"'
 ```
 
 You can also use a dynamic count:
@@ -776,7 +776,7 @@ You can also use a dynamic count:
 ```yaml
 - name: "Get Count"
   id: "count"
-  command: "echo '3'"
+  command: echo "3"
   transform: "{{ trim .input }}"
 
 - name: "Dynamic For Loop"
@@ -786,7 +786,7 @@ You can also use a dynamic count:
     variable: "step"
   operations:
     - name: "Execute Step"
-      command: "echo 'Executing step {{ .step }} of {{ .count }}'"
+      command: echo "Executing step {{ .step }} of {{ .count }}"
 ```
 
 ### While Loops
@@ -823,7 +823,7 @@ You can repeatedly execute operations as long as a condition remains true.
 ```yaml
 - name: "Initialize Status"
   id: "status"
-  command: "echo 'running'"
+  command: echo "running"
   transform: "{{ trim .input }}"
   silent: true
 
@@ -833,7 +833,7 @@ You can repeatedly execute operations as long as a condition remains true.
     condition: "{{ contains .status `running` }}"
   operations:
     - name: "Check Status"
-      command: "echo 'Checking status (iteration {{ .iteration }})...'"
+      command: echo "Checking status (iteration {{ .iteration }})..."
       id: "status"
       transform: "{{ if eq .iteration 5 }}completed{{ else }}running{{ end }}"
 ```
@@ -847,7 +847,7 @@ Real-world polling example:
     condition: "{{ ne .status `ready` }}"
   operations:
     - name: "Check Service Status"
-      command: "curl -s http://service/status"
+      command: curl -s http://service/status
       id: "status"
       transform: "{{ trim .input }}"
 ```
@@ -932,37 +932,35 @@ recipes:
             default: "World"
 ```
 
-### Conditional Operations
+### Success and Error Handling
 
 ```yaml
 recipes:
-  - name: "conditional"
-    description: "A simple demo of conditional operations using direct prompt values"
+  - name: "handlers"
+    description: "A simple demo of error and success handlers"
     category: "demo"
     operations:
-      - name: "Choose Fruit"
-        id: "choose"
-        command: 'echo "You selected: {{ .fruit }}"'
-        prompts:
-          - name: "fruit"
-            type: "select"
-            message: "Choose a fruit:"
-            options:
-              - "Apples"
-              - "Oranges"
+      - name: "Help"
+        command: echo {{ color "magenta" "Please provide a valid or invalid directory argument to test" }}
+        condition: .input == "false"
 
-      - name: "Apple Operation"
-        id: "apple"
-        command: echo "This is the apple operation! 🍎"
-        condition: ".fruit == 'Apples'"
+      - name: "Test if directory exists"
+        command: cd {{ .input }}
+        on_failure: "handle_error"
+        on_success: "handle_success"
+        condition: .input != "false"
 
-      - name: "Orange Operation"
-        id: "orange"
-        command: echo "This is the orange operation! 🍊"
-        condition: ".fruit == 'Oranges'"
+      - name: "Handle error"
+        id: "handle_error"
+        command: echo {{ color "red" (printf "Directory %s does NOT exist!" .input) }}
+
+      - name: "Handle success"
+        id: "handle_success"
+        command: echo {{ color "green" (printf "Directory %s exists!" .input) }}
+
 ```
 
-### Transformation Pipeline
+### Transform Pipeline
 
 ```yaml
 recipes:
@@ -979,15 +977,15 @@ recipes:
           dragonfruit
           eggplant"
 
-      - name: "Filter Items"
-        id: "filter"
-        command: "cat"
-        transform: "{{ filter .input `a` }}"
+      - name: "Filter 'a' Items"
+        id: "filter_a"
+        command: cat
+        transform: '{{ filter .generate "a" }}'
         silent: true
 
-      - name: "Display Results"
-        id: "display"
-        command: "echo 'Items containing `a`:\n{{ .filter }}'"
+      - name: "Display 'a' Results"
+        id: "display_a"
+        command: echo "Items containing 'a':\n{{ color "green" .filter_a }}"
 ```
 
 ## Creating Recipes
@@ -1063,7 +1061,8 @@ recipes:
         id: "unique_id"
         command: "shell command"
         execution_mode: "standard|interactive|stream"  # How the command runs
-        silent: true|false  # Whether to suppress the command's output
+        silent: true|false  # Whether to suppress the command's output. Default is false
+        exit: true|false # Whether to exit the recipe after operation completes. Default is false
         condition: "optional condition"
         on_success: "next_op_id"
         on_failure: "fallback_op_id"
