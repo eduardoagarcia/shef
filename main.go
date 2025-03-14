@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	Version               = "v0.1.5"
+	Version               = "v0.1.6"
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"
 	PublicRecipesFolder   = "recipes"
