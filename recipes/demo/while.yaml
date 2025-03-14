@@ -3,24 +3,20 @@ recipes:
     description: "A simple demo of the while loop control flow"
     category: "demo"
     operations:
-      - name: "Initialize Status"
-        id: "status"
-        command: echo "running"
-        silent: true
-
       - name: "Loop While Status is Running"
         control_flow:
           type: "while"
-          condition: '{{ contains .status "running" }}'
+          condition: .complete == "false"
         operations:
           - name: "Perform Work"
-            id: "perform_work"
             command: echo {{ color "yellow" "Service is running, performing work..." }}
 
-          - name: "Check Status"
-            id: "status"
+          - name: "Sleep"
             command: sleep 1
-            transform: "{{ if eq .iteration 3 }}stopped{{ else }}running{{ end }}"
+
+          - name: "Status Check"
+            id: "complete"
+            command: echo "{{ if ge .iteration 3 }}true{{ else }}false{{ end }}"
             silent: true
 
       - name: "Show Completion"

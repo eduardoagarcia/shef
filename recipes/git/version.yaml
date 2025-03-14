@@ -26,12 +26,12 @@ recipes:
       - name: "Existing Tags Message"
         id: "existing_tags_message"
         command: echo {{ color "magenta" "The current version:" }} {{ style "bold" (color "yellow" .latest_tag) }}
-        condition: ".latest_tag != 'NO_EXISTING_TAGS'"
+        condition: .latest_tag != "NO_EXISTING_TAGS"
 
       - name: "No Existing Tags Message"
         id: "no_existing_tags_message"
         command: echo {{ color "yellow" "No existing version tags found." }}
-        condition: ".latest_tag == 'NO_EXISTING_TAGS'"
+        condition: .latest_tag == "NO_EXISTING_TAGS"
 
       - name: "Choose Version"
         prompts:
@@ -88,12 +88,12 @@ recipes:
       - name: "Display New Version"
         id: "display_new_version"
         command: echo {{ color "magenta" "The new version:" }} {{ style "bold" (color "yellow" .new_version) }}
-        condition: ".latest_tag != 'NO_EXISTING_TAGS'"
+        condition: .latest_tag != "NO_EXISTING_TAGS"
 
       - name: "Display Initial Version"
         id: "display_initial_version"
         command: echo {{ color "magenta" "Initial version:" }} {{ style "bold" (color "yellow" .new_version) }}
-        condition: ".latest_tag == 'NO_EXISTING_TAGS'"
+        condition: .latest_tag == "NO_EXISTING_TAGS"
 
       - name: "Prepare Tag"
         id: "tag_prep"
@@ -110,11 +110,11 @@ recipes:
       - name: "Create Tag"
         id: "create_tag"
         command: git tag -a {{ .new_version }} -m "{{ .tag_message }}"
-        condition: "confirm_create == true"
+        condition: .confirm_create == "true"
 
       - name: "Confirm Push"
         id: "confirm_push_op"
-        condition: "create_tag.success"
+        condition: create_tag.success
         prompts:
           - name: "confirm_push"
             type: "confirm"
@@ -124,12 +124,12 @@ recipes:
       - name: "Push Tag Message"
         id: "push_tag_message"
         command: echo {{ color "magenta" (printf "Pushing the new tag %s to origin..." .new_version) }}
-        condition: "create_tag.success && confirm_push == true"
+        condition: create_tag.success && .confirm_push == "true"
 
       - name: "Push Tag"
         id: "push_tag"
         command: git push origin {{ .new_version }}
-        condition: "create_tag.success && confirm_push == true"
+        condition: create_tag.success && .confirm_push == "true"
 
       - name: "Show Result"
         command: |
@@ -138,4 +138,4 @@ recipes:
           {{ else }}
           echo {{ color "green" "Successfully created" }} {{ style "bold" (color "yellow" .new_version) }}
           {{ end }}
-        condition: "create_tag.success"
+        condition: create_tag.success

@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	Version               = "v0.1.4"
+	Version               = "v0.1.5"
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"
+	PublicRecipesFolder   = "recipes"
 )
 
 type Config struct {
@@ -248,7 +249,10 @@ func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error)
 		return "", fmt.Errorf("template execution error: %w", err)
 	}
 
-	return buf.String(), nil
+	result := buf.String()
+	result = strings.ReplaceAll(result, "<no value>", "false")
+
+	return result, nil
 }
 
 func transformOutput(output, transform string, ctx *ExecutionContext) (string, error) {
@@ -783,6 +787,7 @@ func evaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 		if err != nil {
 			return false, fmt.Errorf("failed to render condition template: %w", err)
 		}
+		rendered = strings.ReplaceAll(rendered, "<no value>", "false")
 		return evaluateCondition(rendered, ctx)
 	}
 
@@ -982,7 +987,11 @@ func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, 
 		return false, fmt.Errorf("invalid variable comparison format: %s", condition)
 	}
 
-	varName := strings.TrimSpace(parts[0])
+	leftPart := strings.TrimSpace(parts[0])
+	rightPart := strings.TrimSpace(parts[1])
+	rightPart = strings.Trim(rightPart, "\"'")
+
+	varName := leftPart
 	if strings.HasPrefix(varName, "$") {
 		varName = varName[1:]
 	}
@@ -990,28 +999,33 @@ func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, 
 		varName = varName[1:]
 	}
 
-	expectedValue := strings.TrimSpace(parts[1])
-	expectedValue = strings.Trim(expectedValue, "\"'")
+	var actualValue string
+	var exists bool
 
-	if value, exists := ctx.Vars[varName]; exists {
-		strValue := fmt.Sprintf("%v", value)
-		if op == "==" {
-			return strValue == expectedValue, nil
-		}
-		return strValue != expectedValue, nil
+	if value, ok := ctx.Vars[varName]; ok {
+		actualValue = fmt.Sprintf("%v", value)
+		exists = true
 	}
 
-	if value, exists := ctx.OperationOutputs[varName]; exists {
-		if op == "==" {
-			return value == expectedValue, nil
+	if !exists {
+		if value, ok := ctx.OperationOutputs[varName]; ok {
+			actualValue = value
+			exists = true
 		}
-		return value != expectedValue, nil
 	}
 
+	if !exists {
+		actualValue = "false"
+	}
+
+	var result bool
 	if op == "==" {
-		return "false" == expectedValue, nil
+		result = actualValue == rightPart
+	} else {
+		result = actualValue != rightPart
 	}
-	return "false" != expectedValue, nil
+
+	return result, nil
 }
 
 func resolveValue(value string, ctx *ExecutionContext) (string, error) {
@@ -1064,10 +1078,17 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 	opMap := make(map[string]Operation)
 	registerOperations(recipe.Operations, opMap)
 
+	handlerIDs := make(map[string]bool)
+	identifyHandlers(recipe.Operations, handlerIDs)
+
 	if debug {
 		fmt.Println("Registered operations:")
 		for id := range opMap {
-			fmt.Printf("  - %s\n", id)
+			handlerStatus := ""
+			if handlerIDs[id] {
+				handlerStatus = " (handler)"
+			}
+			fmt.Printf("  - %s%s\n", id, handlerStatus)
 		}
 	}
 
@@ -1129,17 +1150,6 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 				if debug {
 					fmt.Printf("Skipping operation '%s' (condition not met)\n", op.Name)
 				}
-				if op.ID != "" {
-					ctx.OperationResults[op.ID] = false
-				}
-
-				if op.OnFailure != "" {
-					nextOp, exists := opMap[op.OnFailure]
-					if !exists {
-						return fmt.Errorf("on_failure operation %s not found", op.OnFailure)
-					}
-					return executeOp(nextOp, depth+1)
-				}
 
 				return nil
 			}
@@ -1165,8 +1175,26 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode)
 		operationSuccess := err == nil
 
+		if op.ID != "" {
+			ctx.OperationResults[op.ID] = operationSuccess
+		}
+
 		if err != nil {
-			fmt.Printf("Warning: command execution had errors: %v\n", err)
+			if debug {
+				fmt.Printf("Warning: command execution had errors: %v\n", err)
+			}
+
+			if op.OnFailure != "" {
+				if debug {
+					fmt.Printf("Executing on_failure handler: %s\n", op.OnFailure)
+				}
+
+				nextOp, exists := opMap[op.OnFailure]
+				if !exists {
+					return fmt.Errorf("on_failure operation %s not found", op.OnFailure)
+				}
+				return executeOp(nextOp, depth+1)
+			}
 
 			var continueExecution bool
 			prompt := &survey.Confirm{
@@ -1193,45 +1221,47 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			}
 		}
 
+		ctx.Data = output
+
 		if op.ID != "" {
-			ctx.OperationResults[op.ID] = operationSuccess
 			ctx.OperationOutputs[op.ID] = strings.TrimSpace(output)
 		}
-
-		ctx.Data = output
 
 		if output != "" && !op.Silent {
 			fmt.Println(output)
 		}
 
-		if op.OnSuccess != "" && ctx.OperationResults[op.ID] {
+		if op.OnSuccess != "" && operationSuccess {
 			nextOp, exists := opMap[op.OnSuccess]
 			if !exists {
 				return fmt.Errorf("on_success operation %s not found", op.OnSuccess)
 			}
 			return executeOp(nextOp, depth+1)
-		} else if op.OnFailure != "" && !ctx.OperationResults[op.ID] {
-			nextOp, exists := opMap[op.OnFailure]
-			if !exists {
-				return fmt.Errorf("on_failure operation %s not found", op.OnFailure)
-			}
-			return executeOp(nextOp, depth+1)
+		}
+
+		if debug {
+			fmt.Printf("Operation %s result: %v\n", op.ID, ctx.OperationResults[op.ID])
+			fmt.Printf("Handler for on_success: '%s'\n", op.OnSuccess)
+			fmt.Printf("Handler for on_failure: '%s'\n", op.OnFailure)
 		}
 
 		return nil
 	}
 
 	for i, op := range recipe.Operations {
+		if op.ID != "" && handlerIDs[op.ID] {
+			if debug {
+				fmt.Printf("Skipping handler operation %d: %s (ID: %s)\n", i+1, op.Name, op.ID)
+			}
+			continue
+		}
+
 		if debug {
 			fmt.Printf("Executing operation %d: %s\n", i+1, op.Name)
 		}
 
 		if err := executeOp(op, 0); err != nil {
 			return err
-		}
-
-		if op.OnSuccess != "" || op.OnFailure != "" {
-			break
 		}
 	}
 
@@ -1246,6 +1276,21 @@ func registerOperations(operations []Operation, opMap map[string]Operation) {
 
 		if op.ControlFlow != nil && len(op.Operations) > 0 {
 			registerOperations(op.Operations, opMap)
+		}
+	}
+}
+
+func identifyHandlers(operations []Operation, handlerIDs map[string]bool) {
+	for _, op := range operations {
+		if op.OnSuccess != "" {
+			handlerIDs[op.OnSuccess] = true
+		}
+		if op.OnFailure != "" {
+			handlerIDs[op.OnFailure] = true
+		}
+
+		if op.ControlFlow != nil && len(op.Operations) > 0 {
+			identifyHandlers(op.Operations, handlerIDs)
 		}
 	}
 }

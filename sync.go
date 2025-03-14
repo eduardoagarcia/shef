@@ -86,7 +86,8 @@ func syncPublicRecipes() error {
 		return fmt.Errorf("failed to clean public recipes directory: %w", err)
 	}
 
-	if err := copyDir(extractedDir, publicDir); err != nil {
+	recipesDir := filepath.Join(extractedDir, PublicRecipesFolder)
+	if err := copyDir(recipesDir, publicDir); err != nil {
 		return fmt.Errorf("failed to copy recipes: %w", err)
 	}
 
