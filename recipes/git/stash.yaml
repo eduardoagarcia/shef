@@ -1,0 +1,139 @@
+recipes:
+  - name: "stash"
+    description: "Easily list, save, apply, and drop git stashes"
+    category: "git"
+    operations:
+      - name: "Stash Action"
+        id: "action"
+        prompts:
+          - name: "stash_action"
+            type: "select"
+            message: "Which stash action do you wish to run?"
+            options:
+              - "List"
+              - "Save"
+              - "Apply"
+              - "Drop"
+            default: "Save"
+
+      - name: "Get Current Branch"
+        id: "current_branch"
+        command: git rev-parse --abbrev-ref HEAD
+        silent: true
+
+      - name: "Git Changes"
+        id: "git_changes"
+        command: git status --porcelain
+        silent: true
+
+      # Save Stash
+      - name: "Handle No Changes to Stash"
+        command: echo {{ color "yellow" "No changes to stash." }}
+        condition: .git_changes == "" && .stash_action == "Save"
+        exit: true
+
+      - name: "Show git status"
+        command: git status --porcelain
+        execution_mode: "stream"
+        condition: .stash_action == "Save"
+
+      - name: "Get New Stash Name"
+        prompts:
+          - name: "stash_name"
+            type: "input"
+            message: "Enter stash name"
+        condition: .stash_action == "Save"
+
+      - name: "Save New Stash"
+        command: 'git stash save -u "({{ .current_branch }}): {{ .stash_name }}"'
+        silent: true
+        condition: .stash_action == "Save" && stash_name != ""
+        on_success: "save_success"
+        on_failure: "stash_error"
+
+      - name: "Save Success"
+        id: "save_success"
+        command: echo {{ color "green" "Stash saved!" }}
+        exit: true
+
+      # List, Apply, and Drop Stashes
+      - name: "Get Indexes with Messages"
+        id: "index_messages"
+        command: |
+          git stash list | sed -E 's/(stash@\{[0-9]+\}): On ([^:]+): (.*)/\1||||\3/g'
+        silent: true
+
+      - name: "Get Messages"
+        id: "messages"
+        command: |
+          git stash list | sed -E 's/(stash@\{[0-9]+\}): On ([^:]+): (.*)/\3/g'
+        silent: true
+
+      - name: "Handle No Stashes"
+        command: echo {{ color "yellow" "No stashes found." }}
+        condition: .index_messages == ""
+        exit: true
+
+      # List Stashes
+      - name: "List Stashes"
+        command: echo "{{ .messages }}"
+        condition: .stash_action == "List"
+        exit: true
+
+      # Apply and Drop stash
+      - name: "Select Stash"
+        prompts:
+          - name: "selected_message"
+            type: "select"
+            message: "Select a stash"
+            source_operation: "messages"
+
+      - name: "Filter Messages"
+        id: "filter"
+        transform: '{{ filter .index_messages .selected_message }}'
+        silent: true
+
+      - name: "Cut Index"
+        id: "index"
+        transform: '{{ cut .filter "||||" 0 }}'
+        silent: true
+
+      # Apply Stash
+      - name: "Apply Stash"
+        command: git stash apply {{ .index }}
+        silent: true
+        condition: .stash_action == "Apply"
+        on_success: "apply_success"
+        on_failure: "stash_error"
+
+      - name: "Apply Success"
+        id: "apply_success"
+        command: echo {{ color "green" "Stash applied!" }}
+        exit: true
+
+      # Drop Stash
+      - name: "Confirm Drop Stash"
+        condition: .stash_action == "Drop"
+        prompts:
+          - name: "confirm_drop"
+            type: "confirm"
+            message: "Drop this stash?"
+            default: "false"
+
+      - name: "Drop Stash"
+        command: git stash drop {{ .index }}
+        silent: true
+        condition: .stash_action == "Drop" && .confirm_drop == "true"
+        on_success: "drop_success"
+        on_failure: "stash_error"
+
+      - name: "Drop Success"
+        id: "drop_success"
+        command: echo {{ color "green" "Stash dropped!" }}
+        condition: .confirm_drop == "true"
+        exit: true
+
+      - name: "Stash Error"
+        id: "stash_error"
+        command: echo {{ color "red" "There was a stash error. Please try again." }}
+        exit: true
