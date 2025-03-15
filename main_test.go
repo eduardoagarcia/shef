@@ -107,8 +107,8 @@ type MockCommandExecutor struct {
 	mock.Mock
 }
 
-func (m *MockCommandExecutor) Execute(cmd string, input string, mode string) (string, error) {
-	args := m.Called(cmd, input, mode)
+func (m *MockCommandExecutor) Execute(cmd string, input string, mode string, outputFormat string) (string, error) {
+	args := m.Called(cmd, input, mode, outputFormat)
 	return args.String(0), args.Error(1)
 }
 
@@ -435,6 +435,66 @@ func TestTransformOutput(t *testing.T) {
 
 // TestExecuteCommand tests the executeCommand function
 func TestExecuteCommand(t *testing.T) {
+	t.Run("test output formatting", func(t *testing.T) {
+		formatOutput := func(output, format string) string {
+			switch format {
+			case "trim":
+				return strings.TrimSpace(output)
+			case "lines":
+				var lines []string
+				for _, line := range strings.Split(output, "\n") {
+					if trimmedLine := strings.TrimSpace(line); trimmedLine != "" {
+						lines = append(lines, trimmedLine)
+					}
+				}
+				return strings.Join(lines, "\n")
+			case "raw", "":
+				return output
+			default:
+				return output
+			}
+		}
+
+		testCases := []struct {
+			name         string
+			rawOutput    string
+			outputFormat string
+			expected     string
+		}{
+			{
+				name:         "raw format",
+				rawOutput:    "test\n",
+				outputFormat: "raw",
+				expected:     "test\n",
+			},
+			{
+				name:         "trimmed format",
+				rawOutput:    "test\n",
+				outputFormat: "trim",
+				expected:     "test",
+			},
+			{
+				name:         "lines format",
+				rawOutput:    "test1\n  test2  \n\ntest3",
+				outputFormat: "lines",
+				expected:     "test1\ntest2\ntest3",
+			},
+			{
+				name:         "default format (raw)",
+				rawOutput:    "test\n",
+				outputFormat: "",
+				expected:     "test\n",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				result := formatOutput(tc.rawOutput, tc.outputFormat)
+				assert.Equal(t, tc.expected, result)
+			})
+		}
+	})
+
 	mockCmd := new(MockCommandExecutor)
 	patches := gomonkey.ApplyFunc(executeCommand, mockCmd.Execute)
 	defer patches.Reset()
@@ -444,9 +504,9 @@ func TestExecuteCommand(t *testing.T) {
 		cmd           string
 		input         string
 		executionMode string
+		outputFormat  string
 		mockOutput    string
 		mockError     error
-		want          string
 		wantErr       bool
 	}{
 		{
@@ -454,9 +514,9 @@ func TestExecuteCommand(t *testing.T) {
 			cmd:           "echo 'test'",
 			input:         "",
 			executionMode: "standard",
-			mockOutput:    "test",
+			outputFormat:  "raw",
+			mockOutput:    "test\n",
 			mockError:     nil,
-			want:          "test",
 			wantErr:       false,
 		},
 		{
@@ -464,9 +524,9 @@ func TestExecuteCommand(t *testing.T) {
 			cmd:           "cat",
 			input:         "test input",
 			executionMode: "standard",
+			outputFormat:  "raw",
 			mockOutput:    "test input",
 			mockError:     nil,
-			want:          "test input",
 			wantErr:       false,
 		},
 		{
@@ -474,23 +534,23 @@ func TestExecuteCommand(t *testing.T) {
 			cmd:           "invalid-command",
 			input:         "",
 			executionMode: "standard",
+			outputFormat:  "raw",
 			mockOutput:    "",
 			mockError:     errors.New("command not found"),
-			want:          "",
 			wantErr:       true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockCmd.On("Execute", tt.cmd, tt.input, tt.executionMode).Return(tt.mockOutput, tt.mockError).Once()
+			mockCmd.On("Execute", tt.cmd, tt.input, tt.executionMode, tt.outputFormat).Return(tt.mockOutput, tt.mockError).Once()
 
-			got, err := executeCommand(tt.cmd, tt.input, tt.executionMode)
+			got, err := executeCommand(tt.cmd, tt.input, tt.executionMode, tt.outputFormat)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want, got)
+				assert.Equal(t, tt.mockOutput, got)
 			}
 		})
 	}
@@ -952,12 +1012,12 @@ func TestExecuteRecipeSimple(t *testing.T) {
 		},
 	}
 
-	mockCmd.On("Execute", "echo 'Hello'", "", "").Return("Hello", nil).Maybe()
+	mockCmd.On("Execute", "echo 'Hello'", "", "", "").Return("Hello", nil).Maybe()
 
 	err := executeRecipe(recipe, "", map[string]interface{}{}, false)
 	assert.NoError(t, err)
 
-	mockCmd.AssertCalled(t, "Execute", "echo 'Hello'", "", "")
+	mockCmd.AssertCalled(t, "Execute", "echo 'Hello'", "", "", "")
 }
 
 // TestProcessRemainingArgs tests handling arguments and flags

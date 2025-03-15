@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	Version               = "v0.1.6"
+	Version               = "v0.1.7"
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"
 	PublicRecipesFolder   = "recipes"
@@ -46,6 +46,7 @@ type Operation struct {
 	ControlFlow   interface{} `yaml:"control_flow,omitempty"`
 	Operations    []Operation `yaml:"operations,omitempty"`
 	ExecutionMode string      `yaml:"execution_mode,omitempty"`
+	OutputFormat  string      `yaml:"output_format,omitempty"`
 	Silent        bool        `yaml:"silent,omitempty"`
 	Condition     string      `yaml:"condition,omitempty"`
 	OnSuccess     string      `yaml:"on_success,omitempty"`
@@ -719,7 +720,7 @@ func parseOptionsFromOutput(output string) []string {
 	return result
 }
 
-func executeCommand(cmdStr string, input string, executionMode string) (string, error) {
+func executeCommand(cmdStr string, input string, executionMode string, outputFormat string) (string, error) {
 	if executionMode == "" {
 		executionMode = "standard"
 	}
@@ -740,7 +741,22 @@ func executeCommand(cmdStr string, input string, executionMode string) (string, 
 			return "", fmt.Errorf("command failed: %w\nStderr: %s", err, stderr.String())
 		}
 
-		return strings.TrimSpace(stdout.String()), nil
+		switch outputFormat {
+		case "trim":
+			return strings.TrimSpace(stdout.String()), nil
+		case "lines":
+			var lines []string
+			for _, line := range strings.Split(stdout.String(), "\n") {
+				if trimmedLine := strings.TrimSpace(line); trimmedLine != "" {
+					lines = append(lines, trimmedLine)
+				}
+			}
+			return strings.Join(lines, "\n"), nil
+		case "raw", "":
+			return stdout.String(), nil
+		default:
+			return stdout.String(), nil
+		}
 	}
 
 	// Execute command with interactive or streaming mode
@@ -1179,7 +1195,7 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			fmt.Printf("Running command: %s\n", cmd)
 		}
 
-		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode)
+		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat)
 		operationSuccess := err == nil
 
 		if op.ID != "" {
