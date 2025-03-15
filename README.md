@@ -311,6 +311,7 @@ Operations are the building blocks of recipes:
   id: "unique_id"                   # Identifier for referencing output
   command: echo "Hello"             # Shell command to execute
   execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, or stream)
+  output_format: "raw"              # [Optional] How to format command output (raw, trim, or lines)
   silent: false                     # [Optional] Whether to suppress output to stdout
   exit: false                       # [Optional] When set to true, the recipe will exit after the operation completes
   condition: .var == true           # [Optional] Condition for execution
@@ -326,6 +327,46 @@ Operations are the building blocks of recipes:
   operations:                       # [Optional] Sub-operations for when control flow structures are used
     - name: "Sub Operation"
       command: echo "Processing " {{ .item }}
+```
+
+#### Execution Modes
+
+- **standard**: Default mode (used when no execution_mode is specified). Output is captured and can be used by
+  subsequent operations.
+- **interactive**: The command has direct access to the terminal's stdin, stdout, and stderr. Useful for commands that
+  require direct terminal interaction, but output cannot be captured for use in subsequent operations.
+- **stream**: Similar to interactive mode but optimized for long-running processes that produce continuous output. The
+  command's output streams to the terminal in real-time, but output cannot be captured for use in subsequent operations.
+
+#### Output Format
+
+Shef provides options for controlling how whitespace and empty lines are handled in command output:
+
+- **raw**: The default mode. Preserves all whitespace and newlines exactly as produced by the command, behaving like a
+  standard bash script.
+- **trim**: Removes leading and trailing whitespace and newlines from the command output, useful for cleaner output when
+  exact formatting isn't needed.
+- **lines**: Splits the output by newlines, trims each line, removes empty lines, and joins them back together. Useful
+  for processing lists where empty lines and whitespace should be ignored.
+
+##### Example Usage
+
+```yaml
+operations:
+  - name: "Get file content with preserved formatting"
+    id: "read_file"
+    command: cat config.yaml
+    output_format: "raw"  # Preserves all whitespace and newlines
+
+  - name: "Get version number"
+    id: "get_version"
+    command: echo "  v1.2.3\n\n"
+    output_format: "trim"  # Result: "v1.2.3"
+
+  - name: "Get clean list of items"
+    id: "list_items"
+    command: echo "  item1  \n\n\n\n\n      item2  \n\n  item3    "
+    output_format: "lines"  # Result: "item1\nitem2\nitem3"
 ```
 
 #### Control Flow Configuration
@@ -357,15 +398,6 @@ control_flow:
   type: "while"                          # Execute while condition is true
   condition: "{{ ne .status `ready` }}"  # Condition to evaluate each iteration
 ```
-
-#### Execution Modes
-
-- **standard**: Default mode (used when no execution_mode is specified). Output is captured and can be used by
-  subsequent operations.
-- **interactive**: The command has direct access to the terminal's stdin, stdout, and stderr. Useful for commands that
-  require direct terminal interaction, but output cannot be captured for use in subsequent operations.
-- **stream**: Similar to interactive mode but optimized for long-running processes that produce continuous output. The
-  command's output streams to the terminal in real-time, but output cannot be captured for use in subsequent operations.
 
 ## Interactive User Prompts
 
