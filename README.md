@@ -484,10 +484,9 @@ You can generate selection options from a previous operation's output:
 
 Transformations let you modify a command's output before it's passed to the next operation or used in prompts.
 
-> [!IMPORTANT] Parameter Order
-> In Go templates (which Shef uses), parameters are passed in the order they appear in the function call. When using
-> pipe syntax (`|`), the piped value becomes the **last parameter** of the function, not the first as in many template
-> engines.
+> [!IMPORTANT]
+> In Go templates (which Shef uses), parameters are passed in the order they appear in the function call. When using pipe
+> syntax (`|`), the piped value becomes the **last parameter** of the function, not the first as in many template engines.
 
 ### Basic Syntax
 
