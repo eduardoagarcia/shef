@@ -290,8 +290,8 @@ recipes:
         command: echo "Hello, World!"
 
       - name: "Second Operation"
-        command: cat
-        transform: "{{ filter .input 'Hello' }}"
+        id: "second_op"
+        command: ls -la
 ```
 
 ### Key Recipe Components
@@ -308,17 +308,17 @@ Operations are the building blocks of recipes:
 
 ```yaml
 - name: "Operation Name"            # Operation name
-  id: "unique_id"                   # Identifier for referencing output
-  command: echo "Hello"             # Shell command to execute
+  id: "unique_id"                   # [Optional] Identifier for referencing output
+  command: echo "Hello"             # [Optional] Shell command to execute
   execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, or stream)
-  output_format: "raw"              # [Optional] How to format command output (raw, trim, or lines)
-  silent: false                     # [Optional] Whether to suppress output to stdout
-  exit: false                       # [Optional] When set to true, the recipe will exit after the operation completes
+  output_format: "raw"              # [Optional] How to format command output (raw [default], trim, or lines)
+  silent: false                     # [Optional] Flag whether to suppress output to stdout. Default is false.
+  exit: false                       # [Optional] When set to true, the recipe will exit after the operation completes. Default is false.
   condition: .var == true           # [Optional] Condition for execution
-  on_success: "success_op"          # [Optional] Operation to run on success
+  on_success: "success_op"          # [Optional] Operation to run on success (if not defined, Shef continues to next operation)
   on_failure: "failure_op"          # [Optional] Operation to run on failure
-  transform: "{{ .output | trim }}" # [Optional] Transform output
-  prompts:                          # [Optional] Interactive prompts
+  transform: "{{ trim .output }}"   # [Optional] Transform output
+  prompts:                          # [Optional] Interactive prompts (can include one or more prompts)
      - name: "var_name"
        type: "input"
        message: "Enter value:"
@@ -331,7 +331,7 @@ Operations are the building blocks of recipes:
 
 #### Execution Modes
 
-- **standard**: Default mode (used when no execution_mode is specified). Output is captured and can be used by
+- **standard**: Default mode (used when no `execution_mode` is specified). Output is captured and can be used by
   subsequent operations.
 - **interactive**: The command has direct access to the terminal's stdin, stdout, and stderr. Useful for commands that
   require direct terminal interaction, but output cannot be captured for use in subsequent operations.
@@ -396,7 +396,7 @@ control_flow:
 ```yaml
 control_flow:
   type: "while"                          # Execute while condition is true
-  condition: "{{ ne .status `ready` }}"  # Condition to evaluate each iteration
+  condition: .status != "ready"          # Condition to evaluate each iteration
 ```
 
 ## Interactive User Prompts
@@ -509,12 +509,12 @@ You can generate selection options from a previous operation's output:
       type: "select"
       message: "Select a file:"
       source_operation: "files_list"
-      source_transform: "{{ .input | trim }}"
+      source_transform: "{{ trim .input }}"
 ```
 
 ## Transformations
 
-Transformations let you modify a command's output before it's passed to the next operation or used in prompts.
+Transformations let you modify a command's output before it's passed to the next operation.
 
 > [!IMPORTANT]
 > In Go templates (which Shef uses), parameters are passed in the order they appear in the function call. When using pipe
@@ -536,27 +536,27 @@ transform: "{{ param1 | function1 .output }}"
 
 ### Available Transformation Functions
 
-| Function        | Description                        | Parameters                 | Direct Example                        | Pipe Example                           | Input                  | Output                   |
-|-----------------|------------------------------------|----------------------------|---------------------------------------|----------------------------------------|------------------------|--------------------------|
-| `trim`          | Remove whitespace                  | (string)                   | `{{ trim .output }}`                  | `{{ .output \| trim }}`                | `"  hello  "`          | `"hello"`                |
-| `split`         | Split string by delimiter          | (string, delimiter)        | `{{ split .output "," }}`             | `{{ "," \| split .output }}`           | `"a,b,c"`              | `["a", "b", "c"]`        |
-| `join`          | Join array with delimiter          | (array, delimiter)         | `{{ join .array "," }}`               | `{{ "," \| join .array }}`             | `["a", "b", "c"]`      | `"a,b,c"`                |
-| `joinArray`     | Join any array type with delimiter | (array, delimiter)         | `{{ joinArray .array ":" }}`          | `{{ ":" \| joinArray .array }}`        | `[1, 2, 3]`            | `"1:2:3"`                |
-| `trimPrefix`    | Remove prefix from string          | (string, prefix)           | `{{ trimPrefix .output "pre" }}`      | `{{ "pre" \| trimPrefix .output }}`    | `"prefix"`             | `"fix"`                  |
-| `trimSuffix`    | Remove suffix from string          | (string, suffix)           | `{{ trimSuffix .output "fix" }}`      | `{{ "fix" \| trimSuffix .output }}`    | `"prefix"`             | `"pre"`                  |
-| `contains`      | Check if string contains pattern   | (string, substring)        | `{{ contains .output "pat" }}`        | `{{ "pat" \| contains .output }}`      | `"pattern"`            | `true`                   |
-| `replace`       | Replace text                       | (string, old, new)         | `{{ replace .output "old" "new" }}`   | `{{ "old" \| replace .output "new" }}` | `"oldtext"`            | `"newtext"`              |
-| `filter`/`grep` | Keep lines containing a pattern    | (string, pattern)          | `{{ filter .output "err" }}`          | `{{ "err" \| filter .output }}`        | `"error\nok\nerror2"`  | `"error\nerror2"`        |
-| `cut`           | Extract field from each line       | (string, delimiter, field) | `{{ cut .output ":" 1 }}`             | `{{ ":" \| cut .output 1 }}`           | `"name:value"`         | `"value"`                |
-| `atoi`          | Convert string to int              | (string)                   | `{{ atoi .output }}`                  | `{{ .output \| atoi }}`                | `"42"`                 | `42`                     |
-| `add`           | Add numbers                        | (num1, num2)               | `{{ add 5 3 }}` or `{{ add .num 5 }}` | `{{ 5 \| add 3 }}`                     | `5, 3`                 | `8`                      |
-| `sub`           | Subtract numbers                   | (num1, num2)               | `{{ sub 10 4 }}`                      | `{{ 4 \| sub 10 }}`                    | `10, 4`                | `6`                      |
-| `div`           | Divide numbers                     | (num1, num2)               | `{{ div 10 2 }}`                      | `{{ 2 \| div 10 }}`                    | `10, 2`                | `5`                      |
-| `mul`           | Multiply numbers                   | (num1, num2)               | `{{ mul 6 7 }}`                       | `{{ 7 \| mul 6 }}`                     | `6, 7`                 | `42`                     |
-| `exec`          | Execute command                    | (command)                  | `{{ exec "date" }}`                   | N/A                                    | `"date"`               | Output of `date` command |
-| `color`         | Add color to text                  | (color, text)              | `{{ color "green" "Success!" }}`      | `{{ "Success!" \| color "green" }}`    | `"green", "Success!"`  | Green-colored "Success!" |
-| `style`         | Add styling to text                | (style, text)              | `{{ style "bold" "Important!" }}`     | `{{ "Important!" \| style "bold" }}`   | `"bold", "Important!"` | Bold "Important!"        |
-| `resetFormat`   | Reset colors and styles            | ()                         | `{{ resetFormat }}`                   | N/A                                    | N/A                    | ANSI reset code          |
+| Function         | Description                        | Parameters                 | Direct Example                        | Pipe Example                           | Input                  | Output                   |
+|------------------|------------------------------------|----------------------------|---------------------------------------|----------------------------------------|------------------------|--------------------------|
+| `trim`           | Remove whitespace                  | (string)                   | `{{ trim .output }}`                  | `{{ .output \| trim }}`                | `"  hello  "`          | `"hello"`                |
+| `split`          | Split string by delimiter          | (string, delimiter)        | `{{ split .output "," }}`             | `{{ "," \| split .output }}`           | `"a,b,c"`              | `["a", "b", "c"]`        |
+| `join`           | Join array with delimiter          | (array, delimiter)         | `{{ join .array "," }}`               | `{{ "," \| join .array }}`             | `["a", "b", "c"]`      | `"a,b,c"`                |
+| `joinArray`      | Join any array type with delimiter | (array, delimiter)         | `{{ joinArray .array ":" }}`          | `{{ ":" \| joinArray .array }}`        | `[1, 2, 3]`            | `"1:2:3"`                |
+| `trimPrefix`     | Remove prefix from string          | (string, prefix)           | `{{ trimPrefix .output "pre" }}`      | `{{ "pre" \| trimPrefix .output }}`    | `"prefix"`             | `"fix"`                  |
+| `trimSuffix`     | Remove suffix from string          | (string, suffix)           | `{{ trimSuffix .output "fix" }}`      | `{{ "fix" \| trimSuffix .output }}`    | `"prefix"`             | `"pre"`                  |
+| `contains`       | Check if string contains pattern   | (string, substring)        | `{{ contains .output "pat" }}`        | `{{ "pat" \| contains .output }}`      | `"pattern"`            | `true`                   |
+| `replace`        | Replace text                       | (string, old, new)         | `{{ replace .output "old" "new" }}`   | `{{ "old" \| replace .output "new" }}` | `"oldtext"`            | `"newtext"`              |
+| `filter`, `grep` | Keep lines containing a pattern    | (string, pattern)          | `{{ filter .output "err" }}`          | `{{ "err" \| filter .output }}`        | `"error\nok\nerror2"`  | `"error\nerror2"`        |
+| `cut`            | Extract field from each line       | (string, delimiter, field) | `{{ cut .output ":" 1 }}`             | `{{ ":" \| cut .output 1 }}`           | `"name:value"`         | `"value"`                |
+| `atoi`           | Convert string to int              | (string)                   | `{{ atoi .output }}`                  | `{{ .output \| atoi }}`                | `"42"`                 | `42`                     |
+| `add`            | Add numbers                        | (num1, num2)               | `{{ add 5 3 }}` or `{{ add .num 5 }}` | `{{ 5 \| add 3 }}`                     | `5, 3`                 | `8`                      |
+| `sub`            | Subtract numbers                   | (num1, num2)               | `{{ sub 10 4 }}`                      | `{{ 4 \| sub 10 }}`                    | `10, 4`                | `6`                      |
+| `div`            | Divide numbers                     | (num1, num2)               | `{{ div 10 2 }}`                      | `{{ 2 \| div 10 }}`                    | `10, 2`                | `5`                      |
+| `mul`            | Multiply numbers                   | (num1, num2)               | `{{ mul 6 7 }}`                       | `{{ 7 \| mul 6 }}`                     | `6, 7`                 | `42`                     |
+| `exec`           | Execute command                    | (command)                  | `{{ exec "date" }}`                   | N/A                                    | `"date"`               | Output of `date` command |
+| `color`          | Add color to text                  | (color, text)              | `{{ color "green" "Success!" }}`      | `{{ "Success!" \| color "green" }}`    | `"green", "Success!"`  | Green-colored "Success!" |
+| `style`          | Add styling to text                | (style, text)              | `{{ style "bold" "Important!" }}`     | `{{ "Important!" \| style "bold" }}`   | `"bold", "Important!"` | Bold "Important!"        |
+| `resetFormat`    | Reset colors and styles            | ()                         | `{{ resetFormat }}`                   | N/A                                    | N/A                    | ANSI reset code          |
 
 ### Recommended Practices
 
@@ -570,9 +570,9 @@ transform: "{{ param1 | function1 .output }}"
    // In templates (direct call)
    {{ trimPrefix .output "[" }}  // CORRECT
 
-   // In templates (pipe syntax) - CAUTION: parameters are reversed!
-   {{ "[" | trimPrefix .output }}  // CORRECT but confusing
-   {{ .output | trimPrefix "[" }}  // INCORRECT - will try to remove .output from "["
+   // In templates (pipe syntax) parameters are reversed
+   {{ "[" | trimPrefix .output }}  // Correct, but confusing
+   {{ .output | trimPrefix "[" }}  // Incorrect as it will try to remove .output from "["
    ```
 
 ### Function Groups
@@ -587,7 +587,7 @@ transform: "{{ param1 | function1 .output }}"
 
 #### Text Processing
 
-- `filter`/`grep`, `cut`
+- `filter`, `grep`, `cut`
 
 #### Numeric Operations
 
@@ -666,7 +666,7 @@ transform: "{{ if eq .format `json` }}{{ .output }}{{ else }}{{ .output | cut ` 
 Variables available in templates:
 
 - `.output`: The output to the current transformation (output from the command)
-- `.input`: The input to the current command (input from previous operation or the input from the command line)
+- `.input`: The input to the current command (input from previous operation or the string input from the user running the recipe)
 - `.{variable_name}`: Any variable, argument, or flag
 - `.{prompt_name}`: Any variable from defined prompts
 - `.{operation_id}`: The output of a specific operation by ID
@@ -748,7 +748,7 @@ by its ID:
   command: hostname
 
 - name: "Show Info"
-  command: echo "Running on " {{ .hostname_op }}
+  command: echo "Running on {{ .hostname_op }}"
 ```
 
 ## Control Flow Structures
@@ -794,7 +794,7 @@ You can iterate over a collection of items and perform a flow of operations on e
      as: "fruit"  # Each item will be available as .fruit
   operations:
      - name: "Process Fruit"
-       command: echo "Processing " {{ .fruit }}
+       command: echo "Processing {{ .fruit }}"
 ```
 
 You can also generate the collection dynamically:
@@ -916,7 +916,7 @@ You can repeatedly execute operations as long as a condition remains true.
 - name: "Wait For Completion"
   control_flow:
     type: "while"
-    condition: "{{ contains .status `running` }}"
+    condition: .status == "running"
   operations:
     - name: "Check Status"
       command: echo "Checking status (iteration {{ .iteration }})..."
@@ -930,12 +930,12 @@ Real-world polling example:
 - name: "Poll Service Until Ready"
   control_flow:
     type: "while"
-    condition: "{{ ne .status `ready` }}"
+    condition: .status != "ready"
   operations:
     - name: "Check Service Status"
-      command: curl -s http://service/status
       id: "status"
-      transform: "{{ trim .input }}"
+      command: curl -s http://service/status
+      transform: "{{ trim .output }}"
 ```
 
 ## Arguments and Flags
@@ -956,13 +956,13 @@ shef [recipe-name] [input-text] [flags...]
 
 ### Available Flag Types
 
-| Flag Type           | Example               | Variable         | Value           |
-|---------------------|-----------------------|------------------|-----------------|
-| Input Text          | `"Hello World"`       | `.input`         | `"Hello World"` |
-| Short Flag          | `-f`                  | `.f`             | `true`          |
-| Long Flag           | `--name=John`         | `.name`          | `"John"`        |
-| Long Flag with dash | `--user-agent=Chrome` | `.user_agent`    | `"Chrome"`      |
-| Multi-short         | `-abc`                | `.a`, `.b`, `.c` | `true`          |
+| Flag Type                  | Example               | Variable         | Value           |
+|----------------------------|-----------------------|------------------|-----------------|
+| Input Text                 | `"Hello World"`       | `.input`         | `"Hello World"` |
+| Short Flag (boolean only)  | `-f`                  | `.f`             | `true`          |
+| Long Flag                  | `--name=John`         | `.name`          | `"John"`        |
+| Long Flag with dash        | `--user-agent=Chrome` | `.user_agent`    | `"Chrome"`      |
+| Multi-short (boolean only) | `-abc`                | `.a`, `.b`, `.c` | `true`          |
 
 ### Usage Examples
 
