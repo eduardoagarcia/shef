@@ -19,12 +19,14 @@ recipes:
           - name: "Check If Git Repository"
             id: "check_git_repo"
             command: ls -d "{{ .dir }}/.git" 2>/dev/null || echo ""
+            output_format: trim
             silent: true
             transform: "{{ if .output }}is_git_repo{{ else }}not_git_repo{{ end }}"
 
           - name: "Echo Repository"
             id: "echo_repo"
             command: echo {{ color "yellow" "Updating" }} {{ color "magenta" .dir }}
+            output_format: trim
             condition: .check_git_repo == "is_git_repo"
 
           - name: "Update Repository"
@@ -36,7 +38,10 @@ recipes:
           - name: "Skip Repository"
             id: "skip_repo"
             command: echo {{ style "dim" (printf "Skipping %s because it is not a git repository" .dir) }}
+            output_format: trim
             condition: .check_git_repo != "is_git_repo"
 
       - name: "Display Summary"
-        command: echo {{ color "green" "Complete!" }}
+        command: |
+          echo ""
+          echo {{ color "green" "Complete!" }}
