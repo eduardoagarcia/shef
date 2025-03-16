@@ -42,6 +42,8 @@ recipes:
         condition: .fruit == "Oranges"
 ```
 
+Want to see more example recipes? [Dive in to the demos](https://github.com/eduardoagarcia/shef/tree/main/recipes/demo)!
+
 ## Table of Contents
 
 - [Shef Features](#shef-features)
