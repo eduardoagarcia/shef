@@ -1195,6 +1195,8 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			fmt.Printf("Running command: %s\n", cmd)
 		}
 
+		ctx.Vars["error"] = ""
+
 		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat)
 		operationSuccess := err == nil
 
@@ -1203,6 +1205,8 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 		}
 
 		if err != nil {
+			ctx.Vars["error"] = err.Error()
+
 			if debug {
 				fmt.Printf("Warning: command execution had errors: %v\n", err)
 			}
@@ -1220,9 +1224,11 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 				return shouldExit || op.Exit, err
 			}
 
+			fmt.Printf("Error in operation '%s': \n%v\n", op.Name, err)
+
 			var continueExecution bool
 			prompt := &survey.Confirm{
-				Message: "Command had errors. Continue with recipe execution?",
+				Message: "Continue with recipe execution?",
 				Default: false,
 			}
 			if err := survey.AskOne(prompt, &continueExecution); err != nil {

@@ -668,6 +668,7 @@ Variables available in templates:
 
 - `.output`: The output to the current transformation (output from the command)
 - `.input`: The input to the current command (input from previous operation or the string input from the user running the recipe)
+- `.error`: If an operation fails, the error will be captured here. Resets every operation.
 - `.{variable_name}`: Any variable, argument, or flag
 - `.{prompt_name}`: Any variable from defined prompts
 - `.{operation_id}`: The output of a specific operation by ID
@@ -675,7 +676,7 @@ Variables available in templates:
 - `.operationResults`: Map of operation success/failure results by ID
 
 > [!NOTE]
-> Undefined variables will always evaluate to the boolean value of `false`
+> Undefined variables will always evaluate to the string value of `"false"`
 
 ## Conditional Execution
 
