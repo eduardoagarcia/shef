@@ -241,10 +241,11 @@ shef [category] [recipe-name]
 
 ### Utility Commands
 
-| Command         | Description                                                           |
-|-----------------|-----------------------------------------------------------------------|
-| `sync`          | Sync public recipes locally                                           |
-| `list` `ls` `l` | List available recipes (note: `demo` recipes are excluded by default) |
+| Command                                  | Description                                                           |
+|------------------------------------------|-----------------------------------------------------------------------|
+| `sync` `s`                               | Sync public recipes locally                                           |
+| `list` `ls` `l`                          | List available recipes (note: `demo` recipes are excluded by default) |
+| `which` `w` \[category\] \[recipe-name\] | Show the location of a recipe file                                    |
 
 ## Recipe Sources
 

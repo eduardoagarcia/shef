@@ -1444,10 +1444,38 @@ func main() {
 				},
 			},
 			{
-				Name:  "sync",
-				Usage: "Sync public recipes locally",
+				Name:    "sync",
+				Aliases: []string{"s"},
+				Usage:   "Sync public recipes locally",
 				Action: func(c *cli.Context) error {
 					return syncPublicRecipes()
+				},
+			},
+			{
+				Name:    "which",
+				Aliases: []string{"w"},
+				Usage:   "Show the location of a recipe file",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "local",
+						Aliases: []string{"L"},
+						Usage:   "Force local recipes first",
+					},
+					&cli.BoolFlag{
+						Name:    "user",
+						Aliases: []string{"U"},
+						Usage:   "Force user recipes first",
+					},
+					&cli.BoolFlag{
+						Name:    "public",
+						Aliases: []string{"P"},
+						Usage:   "Force public recipes first",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					args := c.Args().Slice()
+					sourcePriority := getSourcePriority(c)
+					return handleWhichCommand(c, args, sourcePriority)
 				},
 			},
 		},
@@ -1663,4 +1691,60 @@ func findRecipeInSources(recipeName, category string, sourcePriority []string) (
 	}
 
 	return nil, fmt.Errorf("recipe not found: %s", recipeName)
+}
+
+func handleWhichCommand(c *cli.Context, args []string, sourcePriority []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("you must specify a recipe name")
+	}
+
+	var category string
+	var recipeName string
+
+	if len(args) >= 2 {
+		category = args[0]
+		recipeName = args[1]
+	} else {
+		recipeName = args[0]
+	}
+
+	sourcePath, err := findRecipeSourceFile(recipeName, category, sourcePriority)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(sourcePath)
+	return nil
+}
+
+func findRecipeSourceFile(recipeName, category string, sourcePriority []string) (string, error) {
+	for _, source := range sourcePriority {
+		useLocal := source == "local"
+		useUser := source == "user"
+		usePublic := source == "public"
+
+		sources, _ := findRecipeSourcesByType(useLocal, useUser, usePublic)
+
+		for _, sourceFile := range sources {
+			config, err := loadConfig(sourceFile)
+			if err != nil {
+				continue
+			}
+
+			for _, recipe := range config.Recipes {
+				if recipe.Name == recipeName {
+					return sourceFile, nil
+				}
+
+				if category != "" {
+					combinedName := fmt.Sprintf("%s-%s", category, recipeName)
+					if recipe.Name == combinedName {
+						return sourceFile, nil
+					}
+				}
+			}
+		}
+	}
+
+	return "", fmt.Errorf("recipe not found: %s", recipeName)
 }
