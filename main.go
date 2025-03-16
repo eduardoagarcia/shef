@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/agnivade/levenshtein"
 	"log"
 	"os"
 	"os/exec"
@@ -17,12 +16,13 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/agnivade/levenshtein"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	Version               = "v0.1.10"
+	Version               = "v0.1.11"
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"
 	PublicRecipesFolder   = "recipes"
