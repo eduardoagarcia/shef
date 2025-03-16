@@ -1,0 +1,33 @@
+recipes:
+  - name: "operation-order"
+    description: "A simple demo to show the order of operations in a recipe"
+    category: "demo"
+    operations:
+      - name: "Hello"
+        command: echo "Executing command [old text] {{ .item }}"
+        condition: .f == "true"
+        transform: '{{ replace .output "old" "new" }}'
+        on_success: "success_op"
+        prompts:
+          - name: "item"
+            type: "select"
+            message: "Choose an option:"
+            options:
+              - "Item 1"
+              - "Item 2"
+        control_flow:
+          type: "for"
+          count: 10
+          variable: "i"
+        operations:
+          - name: "Control Flow Operations"
+            command: echo "Iteration " {{ .i }}
+
+          - name: "Control Flow Exit"
+            command: echo "Exiting for loop control flow!"
+            condition: .i == 5
+            exit: true
+
+      - name: "Success"
+        id: "success_op"
+        command: echo "Success operation!"
