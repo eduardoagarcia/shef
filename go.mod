@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/agiledragon/gomonkey/v2 v2.13.0
+	github.com/agnivade/levenshtein v1.2.1
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.6
 	gopkg.in/yaml.v3 v3.0.1

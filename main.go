@@ -16,12 +16,13 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/agnivade/levenshtein"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	Version               = "v0.1.10"
+	Version               = "v0.1.11"
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"
 	PublicRecipesFolder   = "recipes"
@@ -1367,11 +1368,13 @@ func listRecipes(recipes []Recipe) {
 			return catRecipes[i].Name < catRecipes[j].Name
 		})
 
-		fmt.Printf("\n[%s]\n", category)
-		for i, recipe := range catRecipes {
-			fmt.Printf("%d. %s: %s\n", i+1, recipe.Name, recipe.Description)
+		fmt.Printf("\n  [%s]\n", category)
+		for _, recipe := range catRecipes {
+			fmt.Printf("    - %s: %s\n", recipe.Name, recipe.Description)
 		}
 	}
+
+	fmt.Printf("\n\n")
 }
 
 func findRecipeByName(recipes []Recipe, name string) (*Recipe, error) {
@@ -1423,6 +1426,14 @@ func main() {
 		},
 		Action: func(c *cli.Context) error {
 			args := c.Args().Slice()
+			if len(args) == 0 {
+				err := cli.ShowAppHelp(c)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+
 			sourcePriority := getSourcePriority(c)
 			return handleRunCommand(c, args, sourcePriority)
 		},
@@ -1481,7 +1492,7 @@ func main() {
 				Action: func(c *cli.Context) error {
 					args := c.Args().Slice()
 					sourcePriority := getSourcePriority(c)
-					return handleWhichCommand(c, args, sourcePriority)
+					return handleWhichCommand(args, sourcePriority)
 				},
 			},
 		},
@@ -1602,15 +1613,33 @@ func handleRunCommand(c *cli.Context, args []string, sourcePriority []string) er
 			return fmt.Errorf("no recipe specified. Use shef ls to list available recipes")
 		}
 
-		recipe, err := findRecipeInSources(args[0], "", sourcePriority)
+		var recipe *Recipe
+		var err error
 
-		if err != nil && len(args) > 1 {
-			recipe, err = findRecipeInSources(args[1], args[0], sourcePriority)
+		recipe, err = findRecipeInSources(args[0], "", sourcePriority, false)
+		if err == nil {
+			remainingArgs = args[1:]
+		} else if len(args) > 1 {
+			recipe, err = findRecipeInSources(args[1], args[0], sourcePriority, false)
 			if err == nil {
 				remainingArgs = args[2:]
 			}
-		} else if err == nil {
-			remainingArgs = args[1:]
+		}
+
+		if err != nil {
+			if len(args) > 1 {
+				recipe, err = findRecipeInSources(args[1], args[0], sourcePriority, true)
+				if err == nil {
+					remainingArgs = args[2:]
+				}
+			}
+
+			if err != nil {
+				recipe, err = findRecipeInSources(args[0], "", sourcePriority, true)
+				if err == nil {
+					remainingArgs = args[1:]
+				}
+			}
 		}
 
 		if err != nil {
@@ -1673,7 +1702,7 @@ func processRemainingArgs(args []string) (string, map[string]interface{}) {
 	return input, vars
 }
 
-func findRecipeInSources(recipeName, category string, sourcePriority []string) (*Recipe, error) {
+func findRecipeInSources(recipeName, category string, sourcePriority []string, fuzzyMatch bool) (*Recipe, error) {
 	for _, source := range sourcePriority {
 		useLocal := source == "local"
 		useUser := source == "user"
@@ -1696,10 +1725,91 @@ func findRecipeInSources(recipeName, category string, sourcePriority []string) (
 		}
 	}
 
+	if fuzzyMatch {
+		var allRecipes []Recipe
+		seenRecipeNames := make(map[string]bool)
+
+		for _, source := range sourcePriority {
+			useLocal := source == "local"
+			useUser := source == "user"
+			usePublic := source == "public"
+
+			sources, _ := findRecipeSourcesByType(useLocal, useUser, usePublic)
+			recipes, _ := loadRecipes(sources, "")
+
+			for _, recipe := range recipes {
+				if !seenRecipeNames[recipe.Name] {
+					allRecipes = append(allRecipes, recipe)
+					seenRecipeNames[recipe.Name] = true
+				}
+			}
+		}
+
+		if len(allRecipes) > 0 {
+			recipeNames := make([]string, 0, len(allRecipes))
+			recipeMap := make(map[string]Recipe)
+
+			for _, recipe := range allRecipes {
+				recipeNames = append(recipeNames, recipe.Name)
+				recipeMap[recipe.Name] = recipe
+			}
+
+			if match, found := fuzzyMatchRecipe(recipeName, recipeNames, recipeMap); found {
+				return match, nil
+			}
+		}
+	}
+
 	return nil, fmt.Errorf("recipe not found: %s", recipeName)
 }
 
-func handleWhichCommand(c *cli.Context, args []string, sourcePriority []string) error {
+func fuzzyMatchRecipe(recipeName string, recipeNames []string, recipeMap map[string]Recipe) (*Recipe, bool) {
+	if len(recipeNames) == 0 {
+		return nil, false
+	}
+
+	type nameDistance struct {
+		name     string
+		distance int
+	}
+	var matches []nameDistance
+
+	for _, name := range recipeNames {
+		distance := levenshtein.ComputeDistance(recipeName, name)
+		matches = append(matches, nameDistance{name: name, distance: distance})
+	}
+
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].distance < matches[j].distance
+	})
+
+	if len(matches) > 0 {
+		bestMatch := matches[0]
+		recipe := recipeMap[bestMatch.name]
+
+		var confirm bool
+		var promptMessage string
+
+		if recipe.Category != "" {
+			promptMessage = fmt.Sprintf("Did you mean [%s] '%s'?", recipe.Category, bestMatch.name)
+		} else {
+			promptMessage = fmt.Sprintf("Did you mean '%s'?", bestMatch.name)
+		}
+
+		prompt := &survey.Confirm{
+			Message: promptMessage,
+			Default: true,
+		}
+
+		if err := survey.AskOne(prompt, &confirm); err == nil && confirm {
+			return &recipe, true
+		}
+	}
+
+	return nil, false
+}
+
+func handleWhichCommand(args []string, sourcePriority []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("you must specify a recipe name")
 	}
