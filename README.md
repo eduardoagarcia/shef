@@ -322,9 +322,9 @@ Operations are the building blocks of recipes:
      - name: "var_name"
        type: "input"
        message: "Enter value:"
-  control_flow:                     # [Optional] Control flow structure (one of the below types)
+  control_flow:                     # [Optional] Control flow structure
     type: "foreach"                 # Type of control flow (foreach, for, while)
-  operations:                       # [Optional] Sub-operations for when control flow structures are used
+  operations:                       # [Optional] Sub-operations for control flows
     - name: "Sub Operation"
       command: echo "Processing " {{ .item }}
 ```
@@ -395,8 +395,8 @@ control_flow:
 
 ```yaml
 control_flow:
-  type: "while"                          # Execute while condition is true
-  condition: .status != "ready"          # Condition to evaluate each iteration
+  type: "while"                  # Execute while condition is true
+  condition: .status != "ready"  # Condition to evaluate each iteration
 ```
 
 ## Interactive User Prompts
@@ -568,7 +568,7 @@ transform: "{{ param1 | function1 .output }}"
    strings.TrimPrefix(str, prefix)
 
    // In templates (direct call)
-   {{ trimPrefix .output "[" }}  // CORRECT
+   {{ trimPrefix .output "[" }}  // Correct
 
    // In templates (pipe syntax) parameters are reversed
    {{ "[" | trimPrefix .output }}  // Correct, but confusing
