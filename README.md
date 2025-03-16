@@ -42,7 +42,7 @@ recipes:
         condition: .fruit == "Oranges"
 ```
 
-> [!NOTE]
+> [!TIP]
 > Want to see more before diving deeper? [Check out the demo recipes!](https://github.com/eduardoagarcia/shef/tree/main/recipes/demo)
 
 ## Table of Contents
