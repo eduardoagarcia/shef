@@ -1120,6 +1120,35 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			return false, fmt.Errorf("possible infinite loop detected (max depth reached)")
 		}
 
+		// 1. Check the condition first
+		if op.Condition != "" {
+			if debug {
+				fmt.Printf("Evaluating condition: %s\n", op.Condition)
+			}
+			result, err := evaluateCondition(op.Condition, &ctx)
+			if err != nil {
+				return false, fmt.Errorf("condition evaluation failed: %w", err)
+			}
+
+			if !result {
+				if debug {
+					fmt.Printf("Skipping operation '%s' (condition not met)\n", op.Name)
+				}
+				return false, nil
+			}
+		}
+
+		// 2. Run the prompts
+		for _, prompt := range op.Prompts {
+			value, err := handlePrompt(prompt, &ctx)
+			if err != nil {
+				return false, err
+			}
+			ctx.Vars[prompt.Name] = value
+		}
+
+		// 3. Run the control flow if it exists
+		var controlFlowExit bool
 		if op.ControlFlow != nil {
 			flowMap, ok := op.ControlFlow.(map[string]interface{})
 			if !ok {
@@ -1139,7 +1168,10 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 					return false, err
 				}
 				err = ExecuteForEach(op, forEach, &ctx, depth, executeOp, debug)
-				return op.Exit, err
+				if err != nil {
+					return op.Exit, err
+				}
+				controlFlowExit = op.Exit
 
 			case "while":
 				whileFlow, err := op.GetWhileFlow()
@@ -1147,7 +1179,10 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 					return false, err
 				}
 				err = ExecuteWhile(op, whileFlow, &ctx, depth, executeOp, debug)
-				return op.Exit, err
+				if err != nil {
+					return op.Exit, err
+				}
+				controlFlowExit = op.Exit
 
 			case "for":
 				forFlow, err := op.GetForFlow()
@@ -1155,38 +1190,17 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 					return false, err
 				}
 				err = ExecuteFor(op, forFlow, &ctx, depth, executeOp, debug)
-				return op.Exit, err
+				if err != nil {
+					return op.Exit, err
+				}
+				controlFlowExit = op.Exit
 
 			default:
 				return false, fmt.Errorf("unknown control_flow type: %s", typeVal)
 			}
 		}
 
-		if op.Condition != "" {
-			if debug {
-				fmt.Printf("Evaluating condition: %s\n", op.Condition)
-			}
-			result, err := evaluateCondition(op.Condition, &ctx)
-			if err != nil {
-				return false, fmt.Errorf("condition evaluation failed: %w", err)
-			}
-
-			if !result {
-				if debug {
-					fmt.Printf("Skipping operation '%s' (condition not met)\n", op.Name)
-				}
-				return false, nil
-			}
-		}
-
-		for _, prompt := range op.Prompts {
-			value, err := handlePrompt(prompt, &ctx)
-			if err != nil {
-				return false, err
-			}
-			ctx.Vars[prompt.Name] = value
-		}
-
+		// 4. Run the command
 		cmd, err := renderTemplate(op.Command, ctx.templateVars())
 		if err != nil {
 			return false, fmt.Errorf("failed to render command template: %w", err)
@@ -1222,7 +1236,7 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 					return false, fmt.Errorf("on_failure operation %s not found", op.OnFailure)
 				}
 				shouldExit, err := executeOp(nextOp, depth+1)
-				return shouldExit || op.Exit, err
+				return shouldExit || op.Exit || controlFlowExit, err
 			}
 
 			fmt.Printf("Error in operation '%s': \n%v\n", op.Name, err)
@@ -1241,6 +1255,7 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			}
 		}
 
+		// 5. Run the transforms
 		if op.Transform != "" {
 			transformedOutput, err := transformOutput(output, op.Transform, &ctx)
 			if err != nil {
@@ -1262,13 +1277,14 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			fmt.Println(output)
 		}
 
+		// 6. Run the on_success handler
 		if op.OnSuccess != "" && operationSuccess {
 			nextOp, exists := opMap[op.OnSuccess]
 			if !exists {
 				return false, fmt.Errorf("on_success operation %s not found", op.OnSuccess)
 			}
 			shouldExit, err := executeOp(nextOp, depth+1)
-			return shouldExit || op.Exit, err
+			return shouldExit || op.Exit || controlFlowExit, err
 		}
 
 		if debug {
@@ -1280,7 +1296,7 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			}
 		}
 
-		return op.Exit, nil
+		return op.Exit || controlFlowExit, nil
 	}
 
 	for i, op := range recipe.Operations {
