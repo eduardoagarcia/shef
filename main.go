@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	Version               = "v0.1.12"
+	Version               = "v0.1.13"
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"
 	PublicRecipesFolder   = "recipes"
@@ -108,6 +108,38 @@ func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 
 	return vars
 }
+
+type Color string
+
+type Style string
+
+const (
+	ColorNone      Color = ""
+	ColorBlack     Color = "black"
+	ColorRed       Color = "red"
+	ColorGreen     Color = "green"
+	ColorYellow    Color = "yellow"
+	ColorBlue      Color = "blue"
+	ColorMagenta   Color = "magenta"
+	ColorCyan      Color = "cyan"
+	ColorWhite     Color = "white"
+	BgColorBlack   Color = "bg-black"
+	BgColorRed     Color = "bg-red"
+	BgColorGreen   Color = "bg-green"
+	BgColorYellow  Color = "bg-yellow"
+	BgColorBlue    Color = "bg-blue"
+	BgColorMagenta Color = "bg-magenta"
+	BgColorCyan    Color = "bg-cyan"
+	BgColorWhite   Color = "bg-white"
+)
+
+const (
+	StyleNone      Style = ""
+	StyleBold      Style = "bold"
+	StyleDim       Style = "dim"
+	StyleItalic    Style = "italic"
+	StyleUnderline Style = "underline"
+)
 
 var colorCodes = map[string]string{
 	"black":      "\033[30m",
@@ -284,6 +316,7 @@ func loadConfig(filename string) (*Config, error) {
 
 func loadRecipes(sources []string, category string) ([]Recipe, error) {
 	var allRecipes []Recipe
+	lowerCategory := strings.ToLower(category)
 
 	for _, source := range sources {
 		config, err := loadConfig(source)
@@ -298,7 +331,7 @@ func loadRecipes(sources []string, category string) ([]Recipe, error) {
 		}
 
 		for _, recipe := range config.Recipes {
-			if recipe.Category == category {
+			if strings.ToLower(recipe.Category) == lowerCategory {
 				allRecipes = append(allRecipes, recipe)
 			}
 		}
@@ -1377,11 +1410,11 @@ func identifyHandlers(operations []Operation, handlerIDs map[string]bool) {
 
 func listRecipes(recipes []Recipe) {
 	if len(recipes) == 0 {
-		fmt.Println("No recipes found.")
+		fmt.Println(FormatText("No recipes found.", ColorYellow, StyleNone))
 		return
 	}
 
-	fmt.Println("Available recipes:")
+	fmt.Println("\nAvailable recipes:")
 
 	categories := make(map[string][]Recipe)
 	for _, recipe := range recipes {
@@ -1405,9 +1438,19 @@ func listRecipes(recipes []Recipe) {
 			return catRecipes[i].Name < catRecipes[j].Name
 		})
 
-		fmt.Printf("\n  [%s]\n", category)
+		fmt.Printf(
+			"\n  %s%s%s\n",
+			FormatText("[", ColorNone, StyleDim),
+			FormatText(strings.ToLower(category), ColorMagenta, StyleNone),
+			FormatText("]", ColorNone, StyleDim),
+		)
 		for _, recipe := range catRecipes {
-			fmt.Printf("    - %s: %s\n", recipe.Name, recipe.Description)
+			fmt.Printf(
+				"    %s %s: %s\n",
+				FormatText("•", ColorNone, StyleDim),
+				FormatText(strings.ToLower(recipe.Name), ColorGreen, StyleBold),
+				strings.ToLower(recipe.Description),
+			)
 		}
 	}
 
@@ -1415,8 +1458,9 @@ func listRecipes(recipes []Recipe) {
 }
 
 func findRecipeByName(recipes []Recipe, name string) (*Recipe, error) {
+	lowerName := strings.ToLower(name)
 	for _, recipe := range recipes {
-		if recipe.Name == name {
+		if strings.ToLower(recipe.Name) == lowerName {
 			return &recipe, nil
 		}
 	}
@@ -1424,9 +1468,11 @@ func findRecipeByName(recipes []Recipe, name string) (*Recipe, error) {
 }
 
 func main() {
+	log.SetFlags(0)
+
 	app := &cli.App{
 		Name:    "shef",
-		Usage:   "Shef is a powerful CLI tool that lets you combine shell commands into reusable recipes.",
+		Usage:   "Shef is a powerful CLI tool for cooking up shell recipes.",
 		Version: Version,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
@@ -1458,12 +1504,12 @@ func main() {
 			&cli.PathFlag{
 				Name:    "recipe-file",
 				Aliases: []string{"r"},
-				Usage:   "Path to the recipe file",
+				Usage:   "Path to the recipe file (note: additional recipe flags not supported)",
 			},
 		},
 		Action: func(c *cli.Context) error {
 			args := c.Args().Slice()
-			if len(args) == 0 {
+			if len(args) == 0 && !c.IsSet("recipe-file") {
 				err := cli.ShowAppHelp(c)
 				if err != nil {
 					return err
@@ -1551,7 +1597,13 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+		errorText := strings.ToLower(err.Error())
+		formattedErr := fmt.Sprintf(
+			"%s: %s",
+			FormatText("Error", ColorRed, StyleBold),
+			errorText,
+		)
+		log.Fatal(formattedErr)
 	}
 }
 
@@ -1931,4 +1983,39 @@ func findRecipeSourceFile(recipeName, category string, sourcePriority []string) 
 	}
 
 	return "", fmt.Errorf("recipe not found: %s", recipeName)
+}
+
+func FormatText(text string, color Color, style Style) string {
+	if os.Getenv("NO_COLOR") != "" {
+		return text
+	}
+
+	var result string = text
+
+	if color != ColorNone {
+		if code, ok := colorCodes[string(color)]; ok {
+			result = code + result + colorCodes["reset"]
+		}
+	}
+
+	if style != StyleNone {
+		if color != ColorNone {
+			pos := strings.Index(result, text)
+			if pos != -1 {
+				if code, ok := styleCodes[string(style)]; ok {
+					result = result[:pos] + code + result[pos:]
+					resetPos := strings.LastIndex(result, colorCodes["reset"])
+					if resetPos != -1 {
+						result = result[:resetPos] + styleCodes["reset"] + result[resetPos:]
+					}
+				}
+			}
+		} else {
+			if code, ok := styleCodes[string(style)]; ok {
+				result = code + result + styleCodes["reset"]
+			}
+		}
+	}
+
+	return result
 }
