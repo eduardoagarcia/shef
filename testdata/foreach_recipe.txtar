@@ -1,0 +1,21 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp foreach_recipe.yaml .shef/
+
+# Test running the recipe
+exec shef foreach_recipe
+stdout 'apple'
+stdout 'banana'
+stdout 'cherry'
+stdout 'Processing apple'
+stdout 'Processing banana'
+stdout 'Processing cherry'

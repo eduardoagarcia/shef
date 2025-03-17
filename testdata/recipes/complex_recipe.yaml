@@ -1,0 +1,41 @@
+recipes:
+  - name: "complex_recipe"
+    description: "A complex recipe with multiple operations, for loop, transforms, etc."
+    category: "test"
+    operations:
+      # Operation 1: Write content to a file
+      - name: "Write content to a file"
+        id: "write_file"
+        command: echo "Line 1\nLine 2\nLine 3\nLine 4\nLine 5" > test_file.txt
+
+      # Operation 2: Show file content
+      - name: "Show file content"
+        id: "show_file"
+        command: cat test_file.txt
+
+      # Operation 3: Count lines in file with transform
+      - name: "Count lines in file"
+        id: "count_lines"
+        command: wc -l < test_file.txt
+        transform: "{{ trim .input }}"
+
+      # Operation 4: For loop
+      - name: "For loop example"
+        control_flow:
+          type: "for"
+          count: 4
+          variable: "i"
+        operations:
+          - name: "Process iteration"
+            command: echo "Iteration {{ .i }}"
+
+      # Operation 5: Conditional operation
+      - name: "Conditional operation"
+        condition: .count_lines > 3
+        command: echo "File has more than 3 lines"
+
+      # Operation 6: Transform operation
+      - name: "Transform output"
+        id: "transform_output"
+        command: echo "hello, world!"
+        transform: '{{ replace .input "hello" "HELLO" }}'

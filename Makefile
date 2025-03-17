@@ -29,7 +29,19 @@ update-local:
 	@echo "Example: export PATH=\"\$PATH:\$HOME/bin\""
 
 test:
-	go test -v
+	@go test -v > test_output.tmp
+	@grep -v "WORK=" test_output.tmp | \
+	grep -v "PATH=" | \
+	grep -v "GOTRACEBACK=" | \
+	grep -v "HOME=" | \
+	grep -v "TMPDIR=" | \
+	grep -v "devnull=" | \
+	grep -v "/=/" | \
+	grep -v ":=:" | \
+	grep -v '\$$=\$$' | \
+	grep -v "exe=" | \
+	grep -v "^[[:space:]]*>"
+	@rm test_output.tmp
 
 test-coverage:
 	go test -coverprofile=coverage.out ./...

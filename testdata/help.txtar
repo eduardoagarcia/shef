@@ -1,0 +1,6 @@
+# Test help output
+env NO_COLOR=1
+exec shef --help
+stdout 'Shef is a powerful CLI tool'
+stdout 'USAGE:'
+stdout 'COMMANDS:'

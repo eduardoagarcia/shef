@@ -1,0 +1,25 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp complex_recipe.yaml .shef/
+
+# Test running the complex recipe
+exec shef complex_recipe
+stdout 'Line 1'
+stdout 'Line 2'
+stdout 'Line 3'
+stdout 'Line 4'
+stdout 'Line 5'
+stdout 'Iteration 1'
+stdout 'Iteration 2'
+stdout 'Iteration 3'
+stdout 'File has more than 3 lines'
+stdout 'HELLO, world!'

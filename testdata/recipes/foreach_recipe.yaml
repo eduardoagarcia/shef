@@ -1,0 +1,17 @@
+recipes:
+  - name: "foreach_recipe"
+    description: "A recipe that uses forEach"
+    category: "test"
+    operations:
+      - name: "Generate list"
+        id: "generate_list"
+        command: echo "apple\nbanana\ncherry"
+
+      - name: "Process list"
+        control_flow:
+          type: "foreach"
+          collection: "{{ .generate_list }}"
+          as: "fruit"
+        operations:
+          - name: "Process fruit"
+            command: echo "Processing {{.fruit}}"

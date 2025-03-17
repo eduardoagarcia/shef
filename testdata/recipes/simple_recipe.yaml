@@ -1,0 +1,7 @@
+recipes:
+  - name: "simple_recipe"
+    description: "A simple test recipe"
+    category: "test"
+    operations:
+      - name: "Echo Test"
+        command: echo "Test successful"

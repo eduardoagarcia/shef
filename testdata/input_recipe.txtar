@@ -1,0 +1,16 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp input_recipe.yaml .shef/
+
+# Test running the recipe with input
+exec shef test input 'Hello World'
+stdout 'input = Hello World'
