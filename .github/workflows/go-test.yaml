@@ -28,6 +28,11 @@ jobs:
           go mod tidy
           go get github.com/agiledragon/gomonkey/v2
 
+      - name: Build for tests
+        run: |
+          go build -v -o shef
+          echo "$(pwd)" >> $GITHUB_PATH
+
       - name: Run tests
         run: go test -v ./...
 
@@ -51,6 +56,11 @@ jobs:
           go mod download
           go mod tidy
           go get github.com/agiledragon/gomonkey/v2
+
+      - name: Build for tests
+        run: |
+          go build -v -o shef
+          echo "$(pwd)" >> $GITHUB_PATH
 
       - name: Run tests with coverage
         run: go test -coverprofile=coverage.out ./...
