@@ -68,6 +68,7 @@ recipes:
 - [AI-Assisted Recipe Creation](#ai-assisted-recipe-creation)
 - [Troubleshooting](#troubleshooting)
 - [Contributing to Shef](#contributing-to-shef)
+- [Additional Reference](#additional-reference)
 
 ## Shef Features
 
@@ -332,6 +333,7 @@ Operations are the building blocks of recipes:
   operations:                       # [Optional] Sub-operations for control flows
     - name: "Sub Operation"
       command: echo "Processing " {{ .item }}
+      break: false                  # [Optional] When true, break out of a control flow and resume recipe
 ```
 
 #### Execution Modes
@@ -414,66 +416,18 @@ Operations are executed in the following order:
 
 1. **Condition Check**: The condition (if specified) is evaluated first. If the condition is not met, the operation is
    skipped entirely.
-
 2. **Prompts**: All prompts are processed next, collecting user input before any other execution occurs.
-
 3. **Control Flow**: If the operation has a control flow structure (foreach, while, for), it is executed after prompts
    are collected.
-
 4. **Command**: The command is executed after the control flow completes.
-
 5. **Transforms**: Any transformations are applied to the command output.
-
 6. **Success/Failure Handlers**: Based on the operation result, either the on_success or on_failure handlers are
    executed.
 
 This order ensures that user input is collected before any execution, control flow structures are processed completely
 before running commands, and transformations are applied to command outputs.
 
-### Flow Diagram
-
-The following diagram illustrates the execution flow for each operation:
-
-```mermaid
-flowchart TD
-    Start([Start Operation]) --> ConditionCheck{Check Condition}
-    ConditionCheck -- "Condition Passed" --> Prompts[Run Prompts]
-    ConditionCheck -- "Condition Failed" --> Skip[Skip Operation]
-    Skip --> End([End Operation])
-
-    Prompts --> ControlFlowCheck{Has Control Flow?}
-    ControlFlowCheck -- "Yes" --> ControlFlow[Execute Control Flow]
-    ControlFlowCheck -- "No" --> Command
-
-    ControlFlow --> Command[Execute Command]
-
-    Command --> CommandStatus{Command Success?}
-    CommandStatus -- "Failed" --> SetErrorVar[Set Error Variable]
-    SetErrorVar --> OnFailureCheck{Has OnFailure?}
-
-    CommandStatus -- "Success" --> Transform[Apply Transformations]
-
-    OnFailureCheck -- "Yes" --> OnFailure[Execute OnFailure Handler]
-    OnFailureCheck -- "No" --> AskUser{Ask User to Continue?}
-    AskUser -- "Yes" --> Transform
-    AskUser -- "No" --> Abort[Abort Recipe]
-
-    Transform --> StoreOutputs[Store Outputs]
-    StoreOutputs --> SuccessCheck{Operation Success?}
-
-    SuccessCheck -- "Success & Has OnSuccess" --> OnSuccess[Execute OnSuccess Handler]
-    SuccessCheck -- "Success & No OnSuccess" --> ExitCheck
-    SuccessCheck -- "Failed" --> ExitCheck
-
-    OnSuccess --> ExitCheck{Exit Flag Set?}
-    OnFailure --> ExitCheck
-
-    ExitCheck -- "Yes" --> EndRecipe[End Recipe Execution]
-    ExitCheck -- "No" --> End
-
-    Abort --> EndRecipe
-    EndRecipe --> End
-```
+For a detailed flow chart, check out the [Operation Flow Diagram.](#flow-diagram)
 
 ## Interactive User Prompts
 
@@ -1457,3 +1411,40 @@ If you need help with your contribution, you can:
 - Open an issue on GitHub
 - Ask questions in the discussions section
 - Reach out to me directly
+
+## Additional Reference
+
+### Flow Diagram
+
+The following diagram illustrates the execution flow for each operation:
+
+```mermaid
+flowchart TD
+    Start([Start Operation]) --> ConditionCheck{Check Condition}
+    ConditionCheck -- " Condition Passed " --> Prompts[Run Prompts]
+    ConditionCheck -- " Condition Failed " --> Skip[Skip Operation]
+    Skip --> End([End Operation])
+    Prompts --> ControlFlowCheck{Has Control Flow?}
+    ControlFlowCheck -- " Yes " --> ControlFlow[Execute Control Flow]
+    ControlFlowCheck -- " No " --> Command
+    ControlFlow --> Command[Execute Command]
+    Command --> CommandStatus{Command Success?}
+    CommandStatus -- " Failed " --> SetErrorVar[Set Error Variable]
+    SetErrorVar --> OnFailureCheck{Has OnFailure?}
+    CommandStatus -- " Success " --> Transform[Apply Transformations]
+    OnFailureCheck -- " Yes " --> OnFailure[Execute OnFailure Handler]
+    OnFailureCheck -- " No " --> AskUser{Ask User to Continue?}
+    AskUser -- " Yes " --> Transform
+    AskUser -- " No " --> Abort[Abort Recipe]
+    Transform --> StoreOutputs[Store Outputs]
+    StoreOutputs --> SuccessCheck{Operation Success?}
+    SuccessCheck -- " Success & Has OnSuccess " --> OnSuccess[Execute OnSuccess Handler]
+    SuccessCheck -- " Success & No OnSuccess " --> ExitCheck
+    SuccessCheck -- " Failed " --> ExitCheck
+    OnSuccess --> ExitCheck{Exit Flag Set?}
+    OnFailure --> ExitCheck
+    ExitCheck -- " Yes " --> EndRecipe[End Recipe Execution]
+    ExitCheck -- " No " --> End
+    Abort --> EndRecipe
+    EndRecipe --> End
+```
