@@ -9,7 +9,8 @@ recipes:
           echo "Current time: $(date)"
           echo "Welcome to Shef, the shell recipe tool."
         prompts:
-          - name: "name"
+          - name: "Name Input"
+            id: "name"
             type: "input"
             message: "What is your name?"
             default: "World"

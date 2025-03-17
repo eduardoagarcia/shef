@@ -18,7 +18,8 @@ recipes:
         command: echo "{{ .project_display }}"
         silent: true
         prompts:
-          - name: "project_display"
+          - name: "Project Select"
+            id: "project_display"
             type: "select"
             message: "Select a project"
             source_operation: "display_options"

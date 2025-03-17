@@ -6,7 +6,8 @@ recipes:
       - name: "Stash Action"
         id: "action"
         prompts:
-          - name: "stash_action"
+          - name: "Stash Action"
+            id: "stash_action"
             type: "select"
             message: "Which stash action do you wish to run?"
             options:
@@ -39,7 +40,8 @@ recipes:
 
       - name: "Get New Stash Name"
         prompts:
-          - name: "stash_name"
+          - name: "Stash Name"
+            id: "stash_name"
             type: "input"
             message: "Enter stash name"
         condition: .stash_action == "Save"
@@ -83,7 +85,8 @@ recipes:
       # Apply and Drop stash
       - name: "Select Stash"
         prompts:
-          - name: "selected_message"
+          - name: "Selected Message"
+            id: "selected_message"
             type: "select"
             message: "Select a stash"
             source_operation: "messages"
@@ -115,7 +118,8 @@ recipes:
       - name: "Confirm Drop Stash"
         condition: .stash_action == "Drop"
         prompts:
-          - name: "confirm_drop"
+          - name: "Confirm Drop"
+            id: "confirm_drop"
             type: "confirm"
             message: "Drop this stash?"
             default: "false"

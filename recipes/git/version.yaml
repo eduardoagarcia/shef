@@ -35,7 +35,8 @@ recipes:
 
       - name: "Choose Version"
         prompts:
-          - name: "version"
+          - name: "Version"
+            id: "version"
             type: "select"
             message: "{{ if eq .latest_tag `NO_EXISTING_TAGS` }}Select the initial version{{ else }}Choose version{{ end }}"
             options:
@@ -98,11 +99,13 @@ recipes:
       - name: "Prepare Tag"
         id: "tag_prep"
         prompts:
-          - name: "tag_message"
+          - name: "Tag Message"
+            id: "tag_message"
             type: "input"
             message: "Please provide a release message [optional]"
             default: "{{ if eq .latest_tag `NO_EXISTING_TAGS` }}Initial release {{ .new_version }}{{ else }}Release {{ .new_version }}{{ end }}"
-          - name: "confirm_create"
+          - name: "Confirm Create"
+            id: "confirm_create"
             type: "confirm"
             message: "Create tag {{ .new_version }} locally?"
             default: "true"
@@ -116,7 +119,8 @@ recipes:
         id: "confirm_push_op"
         condition: create_tag.success
         prompts:
-          - name: "confirm_push"
+          - name: "Confirm Push"
+            id: "confirm_push"
             type: "confirm"
             message: "Push tag {{ .new_version }} to origin?"
             default: "true"

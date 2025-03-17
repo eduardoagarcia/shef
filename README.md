@@ -24,7 +24,8 @@ recipes:
         id: "choose"
         command: 'echo "You selected: {{ .fruit }}"'
         prompts:
-          - name: "fruit"
+          - name: "Fruit Select"
+            id: "fruit"
             type: "select"
             message: "Choose a fruit:"
             options:
@@ -314,7 +315,7 @@ Operations are the building blocks of recipes:
 
 ```yaml
 - name: "Operation Name"            # Operation name
-  id: "unique_id"                   # [Optional] Identifier for referencing output
+  id: "var_id"                      # [Optional] Identifier for referencing the variable for the operation
   command: echo "Hello"             # [Optional] Shell command to execute
   execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, or stream)
   output_format: "raw"              # [Optional] How to format command output (raw [default], trim, or lines)
@@ -325,7 +326,8 @@ Operations are the building blocks of recipes:
   on_failure: "failure_op"          # [Optional] Operation to run on failure
   transform: "{{ trim .output }}"   # [Optional] Transform output
   prompts:                          # [Optional] Interactive prompts (can include one or more prompts)
-     - name: "var_name"
+     - name: "Prompt Name"
+       id: "var_id"
        type: "input"
        message: "Enter value:"
   control_flow:                     # [Optional] Control flow structure
@@ -437,14 +439,16 @@ Shef supports the following types of user prompts:
 
 ```yaml
 # Text Input
-- name: "username"
+- name: "Username Input"
+  id: "username"
   type: "input"
   message: "Enter your username:"
   default: "admin"
   help_text: "This will be used for authentication"
 
 # Selection
-- name: "environment"
+- name: "Environment Select"
+  id: "environment"
   type: "select"
   message: "Select environment:"
   options:
@@ -455,14 +459,16 @@ Shef supports the following types of user prompts:
   help_text: "Choose the deployment environment"
 
 # Confirmation (yes/no)
-- name: "confirm_deploy"
+- name: "Confirm Deploy"
+  id: "confirm_deploy"
   type: "confirm"
   message: "Deploy to production?"
   default: "false"
   help_text: "This will start the deployment process"
 
 # Password (input is masked)
-- name: "password"
+- name: "Password Input"
+  id: "password"
   type: "password"
   message: "Enter your password:"
   help_text: "Your input will be hidden"
@@ -472,7 +478,8 @@ Shef supports the following types of user prompts:
 
 ```yaml
 # Multi-select
-- name: "features"
+- name: "Features Select"
+  id: "features"
   type: "multiselect"
   message: "Select features to enable:"
   options:
@@ -483,7 +490,8 @@ Shef supports the following types of user prompts:
   help_text: "Use space to toggle, enter to confirm"
 
 # Numeric Input
-- name: "count"
+- name: "Count Input"
+  id: "count"
   type: "number"
   message: "Enter number of instances:"
   default: "3"
@@ -492,7 +500,8 @@ Shef supports the following types of user prompts:
   help_text: "Value must be between 1 and 10"
 
 # File Path Input
-- name: "config_file"
+- name: "Config File"
+  id: "config_file"
   type: "path"
   message: "Select configuration file:"
   default: "./config.json"
@@ -504,7 +513,8 @@ Shef supports the following types of user prompts:
   help_text: "File must exist and have the right extension"
 
 # Text Editor
-- name: "description"
+- name: "Description"
+  id: "description"
   type: "editor"
   message: "Enter a detailed description:"
   default: "# Project Description\n\nEnter details here..."
@@ -512,7 +522,8 @@ Shef supports the following types of user prompts:
   help_text: "This will open your text editor"
 
 # Autocomplete Selection
-- name: "service"
+- name: "Service"
+  id: "service"
   type: "autocomplete"
   message: "Select a service:"
   options:
@@ -535,7 +546,8 @@ You can generate selection options from a previous operation's output:
 - name: "Select File"
   command: cat {{ .file }}
   prompts:
-    - name: "file"
+    - name: "File Select"
+      id: "file"
       type: "select"
       message: "Select a file:"
       source_operation: "files_list"
@@ -1043,7 +1055,8 @@ recipes:
           echo "Current time: $(date)"
           echo "Welcome to Shef, the shell recipe tool."
         prompts:
-          - name: "name"
+          - name: "Name Input"
+            id: "name"
             type: "input"
             message: "What is your name?"
             default: "World"
@@ -1185,7 +1198,8 @@ recipes:
         on_failure: "fallback_op_id"
         transform: "{{ .input | transformation }}"
         prompts:
-          - name: "variable_name"
+          - name: "Input Name"
+            id: "variable_name"
             type: "input|select|confirm|password|multiselect|number|editor|path|autocomplete"
             message: "Prompt message"
             default: "Default value"

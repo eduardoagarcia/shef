@@ -12,7 +12,8 @@ recipes:
         id: "select_container"
         command: echo "Streaming logs for {{ .container }}..."
         prompts:
-          - name: "container"
+          - name: "Container Select"
+            id: "container"
             type: "select"
             message: "Select a container"
             source_operation: "list_containers"
