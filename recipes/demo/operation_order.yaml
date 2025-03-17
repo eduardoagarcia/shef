@@ -9,7 +9,8 @@ recipes:
         transform: '{{ replace .output "old" "new" }}'
         on_success: "success_op"
         prompts:
-          - name: "item"
+          - name: "Item Select"
+            id: "item"
             type: "select"
             message: "Choose an option:"
             options:

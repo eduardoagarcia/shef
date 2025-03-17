@@ -60,6 +60,7 @@ type Operation struct {
 
 type Prompt struct {
 	Name            string            `yaml:"name"`
+	ID              string            `yaml:"id,omitempty"`
 	Type            string            `yaml:"type"`
 	Message         string            `yaml:"message"`
 	Default         string            `yaml:"default,omitempty"`
@@ -1156,7 +1157,12 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			if err != nil {
 				return false, err
 			}
-			ctx.Vars[prompt.Name] = value
+
+			varName := prompt.Name
+			if prompt.ID != "" {
+				varName = prompt.ID
+			}
+			ctx.Vars[varName] = value
 		}
 
 		// 3. Run the control flow if it exists

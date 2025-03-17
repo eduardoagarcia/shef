@@ -12,13 +12,15 @@ recipes:
           echo "- Confirmation: {{ if .confirmation }}Yes{{ else }}No{{ end }}"
           echo "- Password: {{ .password }}"
         prompts:
-          - name: text_input
+          - name: Text Input
+            id: text_input
             type: input
             message: "Enter some text"
             default: "Default text value"
             help_text: "This is a simple text input field with default value"
 
-          - name: selection
+          - name: Selection
+            id: selection
             type: select
             message: "Choose an option"
             options:
@@ -28,13 +30,15 @@ recipes:
             default: "Option Two"
             help_text: "This is a single-selection dropdown menu"
 
-          - name: confirmation
+          - name: Confirmation
+            id: confirmation
             type: confirm
             message: "Do you want to proceed?"
             default: "true"
             help_text: "This is a yes/no confirmation prompt"
 
-          - name: password
+          - name: Password
+            id: password
             type: password
             message: "Enter a password (characters will be hidden)"
             help_text: "This is a password input that masks what you type"
@@ -46,7 +50,8 @@ recipes:
           echo "- Multi-selection: $(echo "{{ range $i, $e := .multi_selection }}{{if $i}}, {{end}}{{$e}}{{end}}")"
           echo "- Autocomplete: {{ .autocomplete }}"
         prompts:
-          - name: multi_selection
+          - name: Multi Select
+            id: multi_selection
             type: multiselect
             message: "Select multiple items (use space to toggle selection)"
             options:
@@ -58,7 +63,8 @@ recipes:
             default: "Apple,Cherry"
             help_text: "Press space to select/deselect, enter to confirm"
 
-          - name: autocomplete
+          - name: Autocomplete
+            id: autocomplete
             type: autocomplete
             message: "Type to filter and select a country"
             options:
@@ -83,7 +89,8 @@ recipes:
           RESULT=$(( {{ .number_value }} * 2 ))
           echo "Doubled value: $RESULT"
         prompts:
-          - name: number_value
+          - name: Number Value
+            id: number_value
             type: number
             message: "Enter a number between 1 and 100"
             default: "50"
@@ -103,7 +110,8 @@ recipes:
             echo "Path doesn't exist or is not a file"
           fi
         prompts:
-          - name: file_path
+          - name: File Path
+            id: file_path
             type: path
             message: "Enter path to a text file (.txt, .md, .json)"
             file_extensions:
@@ -123,7 +131,8 @@ recipes:
           LINE_COUNT=$(echo "{{ .editor_content }}" | wc -l)
           echo "Line count: $LINE_COUNT"
         prompts:
-          - name: editor_content
+          - name: Editor Content
+            id: editor_content
             type: editor
             message: "Enter multi-line text in your editor"
             default: "# Sample Heading\n\nThis is placeholder text.\nReplace with your own content."
@@ -154,7 +163,8 @@ recipes:
           echo "--------------------"
           echo "Demo complete!"
         prompts:
-          - name: dynamic_fruit
+          - name: Dynamic Fruit
+            id: dynamic_fruit
             type: select
             message: "Select a fruit from dynamically generated options"
             source_operation: dynamic_options

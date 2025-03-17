@@ -7,7 +7,8 @@ recipes:
         id: "choose"
         command: 'echo "You selected: {{ .fruit }}"'
         prompts:
-          - name: "fruit"
+          - name: "Fruit Select"
+            id: "fruit"
             type: "select"
             message: "Choose a fruit:"
             options:
