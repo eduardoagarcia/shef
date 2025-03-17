@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/rogpeppe/go-internal/testscript"
 	"io"
 	"os"
 	"path/filepath"
@@ -1104,4 +1105,40 @@ func Example_renderTemplate() {
 		return
 	}
 	fmt.Println(result)
+}
+
+// TestShefEndToEnd runs all end-to-end tests within ./testdata
+func TestShefEndToEnd(t *testing.T) {
+	testscript.Run(t, testscript.Params{
+		Dir: "testdata",
+		Setup: func(e *testscript.Env) error {
+			recipesDir := filepath.Join("testdata", "recipes")
+			if _, err := os.Stat(recipesDir); err != nil {
+				if os.IsNotExist(err) {
+					return nil
+				}
+				return err
+			}
+
+			entries, err := os.ReadDir(recipesDir)
+			if err != nil {
+				return err
+			}
+
+			for _, entry := range entries {
+				if filepath.Ext(entry.Name()) == ".yaml" {
+					content, err := os.ReadFile(filepath.Join(recipesDir, entry.Name()))
+					if err != nil {
+						return err
+					}
+
+					err = os.WriteFile(filepath.Join(e.WorkDir, entry.Name()), content, 0644)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		},
+	})
 }

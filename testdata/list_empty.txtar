@@ -1,0 +1,10 @@
+# Clear any existing recipes
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Test listing recipes when none are available
+exec shef list
+stdout 'No recipes found.'

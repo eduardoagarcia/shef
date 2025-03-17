@@ -1,0 +1,8 @@
+recipes:
+  - name: "input"
+    description: "A recipe that uses input"
+    category: "test"
+    operations:
+      - name: "Echo input"
+        id: "echo_input"
+        command: echo "input = {{ .input }}"

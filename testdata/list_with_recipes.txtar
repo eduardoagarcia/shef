@@ -1,0 +1,17 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp simple_recipe.yaml .shef/
+
+# Test listing recipes
+exec shef list
+stdout '\[test\]'
+stdout 'simple_recipe: a simple test recipe'
