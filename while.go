@@ -37,19 +37,24 @@ func (op *Operation) GetWhileFlow() (*WhileFlow, error) {
 	}, nil
 }
 
-func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) error {
+func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
 	maxIterations := 1000
 	iterations := 0
+	breakLoop := false
 
 	for {
+		if breakLoop {
+			break
+		}
+
 		renderedCondition, err := renderTemplate(whileFlow.Condition, ctx.templateVars())
 		if err != nil {
-			return fmt.Errorf("failed to render while condition template: %w", err)
+			return false, fmt.Errorf("failed to render while condition template: %w", err)
 		}
 
 		conditionResult, err := evaluateCondition(renderedCondition, ctx)
 		if err != nil {
-			return fmt.Errorf("failed to evaluate while condition '%s': %w", renderedCondition, err)
+			return false, fmt.Errorf("failed to evaluate while condition '%s': %w", renderedCondition, err)
 		}
 
 		if !conditionResult {
@@ -58,7 +63,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 
 		iterations++
 		if iterations > maxIterations {
-			return fmt.Errorf("maximum while loop iterations exceeded (%d)", maxIterations)
+			return false, fmt.Errorf("maximum while loop iterations exceeded (%d)", maxIterations)
 		}
 
 		if debug {
@@ -68,16 +73,38 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		ctx.Vars["iteration"] = iterations
 
 		for _, subOp := range op.Operations {
-			shouldExit, err := executeOp(subOp, depth+1)
-			if err != nil {
-				return err
+			if subOp.Condition != "" {
+				condResult, err := evaluateCondition(subOp.Condition, ctx)
+				if err != nil {
+					return false, fmt.Errorf("condition evaluation failed: %w", err)
+				}
+
+				if !condResult {
+					if debug {
+						fmt.Printf("Skipping operation '%s' (condition not met)\n", subOp.Name)
+					}
+					continue
+				}
 			}
 
-			if shouldExit {
+			shouldExit, err := executeOp(subOp, depth+1)
+			if err != nil {
+				return shouldExit, err
+			}
+
+			if shouldExit || subOp.Exit {
 				if debug {
-					fmt.Printf("Exiting while loop early due to exit flag\n")
+					fmt.Printf("Exiting entire recipe due to exit flag in '%s'\n", subOp.Name)
 				}
-				return nil
+				return true, nil
+			}
+
+			if subOp.Break {
+				if debug {
+					fmt.Printf("Breaking out of while loop due to break flag in '%s'\n", subOp.Name)
+				}
+				breakLoop = true
+				break
 			}
 		}
 	}
@@ -88,5 +115,5 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		ctx.OperationResults[op.ID] = true
 	}
 
-	return nil
+	return false, nil
 }

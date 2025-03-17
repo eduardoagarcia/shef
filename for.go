@@ -48,22 +48,23 @@ func (op *Operation) GetForFlow() (*ForFlow, error) {
 	}, nil
 }
 
-func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) error {
+func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
 	countStr, err := renderTemplate(forFlow.Count, ctx.templateVars())
 	if err != nil {
-		return fmt.Errorf("failed to render count template: %w", err)
+		return false, fmt.Errorf("failed to render count template: %w", err)
 	}
 
 	count, err := strconv.Atoi(countStr)
 	if err != nil {
-		return fmt.Errorf("invalid count value after rendering: %s", countStr)
+		return false, fmt.Errorf("invalid count value after rendering: %s", countStr)
 	}
 
 	if debug {
 		fmt.Printf("For loop with %d iterations\n", count)
 	}
 
-	for i := 0; i < count; i++ {
+	breakLoop := false
+	for i := 0; i < count && !breakLoop; i++ {
 		if debug {
 			fmt.Printf("For iteration %d/%d: %s = %d\n", i+1, count, forFlow.Variable, i)
 		}
@@ -72,16 +73,38 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 		ctx.Vars["iteration"] = i + 1
 
 		for _, subOp := range op.Operations {
-			shouldExit, err := executeOp(subOp, depth+1)
-			if err != nil {
-				return err
+			if subOp.Condition != "" {
+				condResult, err := evaluateCondition(subOp.Condition, ctx)
+				if err != nil {
+					return false, fmt.Errorf("condition evaluation failed: %w", err)
+				}
+
+				if !condResult {
+					if debug {
+						fmt.Printf("Skipping operation '%s' (condition not met)\n", subOp.Name)
+					}
+					continue
+				}
 			}
 
-			if shouldExit {
+			shouldExit, err := executeOp(subOp, depth+1)
+			if err != nil {
+				return shouldExit, err
+			}
+
+			if shouldExit || subOp.Exit {
 				if debug {
-					fmt.Printf("Exiting for loop early due to exit flag\n")
+					fmt.Printf("Exiting entire recipe due to exit flag in '%s'\n", subOp.Name)
 				}
-				return nil
+				return true, nil
+			}
+
+			if subOp.Break {
+				if debug {
+					fmt.Printf("Breaking out of for loop due to break flag in '%s'\n", subOp.Name)
+				}
+				breakLoop = true
+				break
 			}
 		}
 	}
@@ -93,5 +116,5 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 		ctx.OperationResults[op.ID] = true
 	}
 
-	return nil
+	return false, nil
 }
