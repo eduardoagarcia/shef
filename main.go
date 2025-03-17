@@ -361,19 +361,30 @@ func findRecipeSourcesByType(localDir, userDir, publicRepo bool) ([]string, erro
 		}
 	}
 
-	if userDir || publicRepo {
-		homeDir, err := os.UserHomeDir()
-		if err == nil {
-			userRoot := filepath.Join(homeDir, ".shef")
-			if _, err := os.Stat(userRoot); err == nil {
-				if userFiles, err := findYamlFiles(userRoot); err == nil {
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		userRoot := filepath.Join(homeDir, ".shef")
+
+		if userDir {
+			userSpecificDir := filepath.Join(userRoot, "user")
+			if _, err := os.Stat(userSpecificDir); err == nil {
+				if userFiles, err := findYamlFiles(userSpecificDir); err == nil {
 					sources = append(sources, userFiles...)
 				}
 			}
+		}
 
-			if isLinux() {
-				sources = addXDGRecipeSources(sources, userDir, publicRepo, findYamlFiles)
+		if publicRepo {
+			publicSpecificDir := filepath.Join(userRoot, "public")
+			if _, err := os.Stat(publicSpecificDir); err == nil {
+				if publicFiles, err := findYamlFiles(publicSpecificDir); err == nil {
+					sources = append(sources, publicFiles...)
+				}
 			}
+		}
+
+		if isLinux() && (userDir || publicRepo) {
+			sources = addXDGRecipeSources(sources, userDir, publicRepo, findYamlFiles)
 		}
 	}
 
@@ -1460,6 +1471,21 @@ func main() {
 				Usage:   "List available recipes",
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
+						Name:    "local",
+						Aliases: []string{"l"},
+						Usage:   "Filter to local recipes only",
+					},
+					&cli.BoolFlag{
+						Name:    "user",
+						Aliases: []string{"u"},
+						Usage:   "Filter to user recipes only",
+					},
+					&cli.BoolFlag{
+						Name:    "public",
+						Aliases: []string{"p"},
+						Usage:   "Filter to public recipes only",
+					},
+					&cli.BoolFlag{
 						Name:    "json",
 						Aliases: []string{"j"},
 						Usage:   "Output results in JSON format",
@@ -1520,11 +1546,15 @@ func main() {
 }
 
 func getSourcePriority(c *cli.Context) []string {
-	if c.Bool("local") {
+	useLocal := c.Bool("local") || c.Bool("L")
+	useUser := c.Bool("user") || c.Bool("U")
+	usePublic := c.Bool("public") || c.Bool("P")
+
+	if useLocal {
 		return []string{"local", "user", "public"}
-	} else if c.Bool("user") {
+	} else if useUser {
 		return []string{"user", "local", "public"}
-	} else if c.Bool("public") {
+	} else if usePublic {
 		return []string{"public", "local", "user"}
 	}
 
@@ -1537,15 +1567,27 @@ func handleListCommand(c *cli.Context, args []string, sourcePriority []string) e
 		category = args[0]
 	}
 
+	useLocal := c.Bool("local") || c.Bool("L")
+	useUser := c.Bool("user") || c.Bool("U")
+	usePublic := c.Bool("public") || c.Bool("P")
+
+	if !useLocal && !useUser && !usePublic {
+		useLocal = true
+		useUser = true
+		usePublic = true
+	}
+
 	var allRecipes []Recipe
 	recipeMap := make(map[string]bool)
 
 	for _, source := range sourcePriority {
-		useLocal := source == "local"
-		useUser := source == "user"
-		usePublic := source == "public"
+		if (source == "local" && !useLocal) ||
+			(source == "user" && !useUser) ||
+			(source == "public" && !usePublic) {
+			continue
+		}
 
-		sources, _ := findRecipeSourcesByType(useLocal, useUser, usePublic)
+		sources, _ := findRecipeSourcesByType(source == "local", source == "user", source == "public")
 		recipes, _ := loadRecipes(sources, category)
 
 		for _, r := range recipes {
