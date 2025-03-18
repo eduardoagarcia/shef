@@ -1,0 +1,37 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe files for testing
+cp category_filter_recipe1.yaml .shef/
+cp category_filter_recipe2.yaml .shef/
+
+# Test listing all recipes
+exec shef list
+
+# Validate test
+stdout '\[cat_a\]'
+stdout 'cat_a_recipe: a recipe in category a'
+stdout '\[cat_b\]'
+stdout 'cat_b_recipe: a recipe in category b'
+
+# Test filtering by category
+exec shef list cat_a
+
+# Validate test
+stdout '\[cat_a\]'
+stdout 'cat_a_recipe: a recipe in category a'
+! stdout '\[cat_b\]'
+! stdout 'cat_b_recipe'
+
+# Test running recipe with category prefix
+exec shef cat_a cat_a_recipe
+
+# Validate test
+stdout 'Category A recipe'

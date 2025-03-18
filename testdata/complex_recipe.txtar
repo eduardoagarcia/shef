@@ -13,6 +13,8 @@ cp complex_recipe.yaml .shef/
 
 # Test running the complex recipe
 exec shef complex_recipe
+
+# Validate test
 stdout 'Line 1'
 stdout 'Line 2'
 stdout 'Line 3'

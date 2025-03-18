@@ -1,0 +1,32 @@
+recipes:
+  - name: "transform_functions_recipe"
+    description: "A recipe that tests various transform functions"
+    category: "test"
+    operations:
+      - name: "Create sample data"
+        id: "sample_data"
+        command: echo "apple,banana,cherry"
+
+      - name: "Split function"
+        command: echo {{ .sample_data }}
+        transform: '{{ split .output "," }}'
+
+      - name: "Replace function"
+        command: echo "Hello, World!"
+        transform: '{{ replace .output "Hello" "Goodbye" }}'
+
+      - name: "Trim function"
+        command: echo "  Spaces around  "
+        transform: '{{ trim .output }}'
+
+      - name: "Math functions Add"
+        transform: '{{ add 2 3 }}'
+
+      - name: "Math functions Sub"
+        transform: '{{ sub 5 2 }}'
+
+      - name: "Math functions Mul"
+        transform: '{{ mul 3 4 }}'
+
+      - name: "Math functions Div"
+        transform: '{{ div 10 2 }}'

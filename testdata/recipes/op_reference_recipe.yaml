@@ -1,0 +1,19 @@
+recipes:
+  - name: "op_reference_recipe"
+    description: "A recipe that references outputs from other operations"
+    category: "test"
+    operations:
+      - name: "Generate data"
+        id: "data_source"
+        command: echo "Hello, World!"
+
+      - name: "Reference previous output"
+        command: echo "Previous output {{ .data_source }}"
+
+      - name: "Transform previous output"
+        id: "transformed"
+        command: echo "{{ .data_source }}"
+        transform: '{{ replace .input "Hello" "Goodbye" }}'
+
+      - name: "Reference transformed output"
+        command: echo "Transformed output {{ .transformed }}"

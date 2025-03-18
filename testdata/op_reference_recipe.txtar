@@ -1,0 +1,20 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp op_reference_recipe.yaml .shef/
+
+# Test running the operation reference recipe
+exec shef op_reference_recipe
+
+# Validate test
+stdout 'Hello, World!'
+stdout 'Previous output Hello, World!'
+stdout 'Transformed output Goodbye, World!'

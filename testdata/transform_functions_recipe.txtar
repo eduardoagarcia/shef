@@ -1,0 +1,25 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp transform_functions_recipe.yaml .shef/
+
+# Test running the transform functions recipe
+exec shef transform_functions_recipe
+
+# Validate test
+stdout 'apple,banana,cherry'
+stdout 'apple banana cherry'
+stdout 'Goodbye, World!'
+stdout 'Spaces around'
+stdout '5'
+stdout '3'
+stdout '12'
+stdout '5'

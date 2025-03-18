@@ -1,0 +1,10 @@
+recipes:
+  - name: "command_line_vars_recipe"
+    description: "A recipe that uses command line variables"
+    category: "test"
+    operations:
+      - name: "Show command line variables"
+        command: |
+          echo "name = {{ .name }}"
+          echo "value = {{ .value }}"
+          echo "f = {{ .f }}"

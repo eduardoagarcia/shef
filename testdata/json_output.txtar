@@ -8,12 +8,14 @@ rm -rf .shef
 # Create recipe directory
 mkdir -p .shef
 
-# Copy recipe file for testing
+# Copy recipe files for testing
 cp simple_recipe.yaml .shef/
 
-# Test listing recipes
-exec shef list
+# Test JSON output
+exec shef list --json
 
 # Validate test
-stdout '\[test\]'
-stdout 'simple_recipe: a simple test recipe'
+stdout '{'
+stdout '"name": "simple_recipe"'
+stdout '"description": "A simple test recipe"'
+stdout '"category": "test"'

@@ -11,9 +11,12 @@ mkdir -p .shef
 # Copy recipe file for testing
 cp simple_recipe.yaml .shef/
 
-# Test listing recipes
-exec shef list
+# Test debugging output
+exec shef --debug simple_recipe
 
 # Validate test
-stdout '\[test\]'
-stdout 'simple_recipe: a simple test recipe'
+stdout 'Running recipe: simple_recipe'
+stdout 'With input:'
+stdout 'With vars:'
+stdout 'Running command: echo "Test successful"'
+stdout 'Test successful'

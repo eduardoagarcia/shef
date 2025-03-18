@@ -1,0 +1,21 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp error_handling_recipe.yaml .shef/
+
+# Test running the error handling recipe
+exec shef error_handling_recipe
+
+# Validate test
+stdout 'This operation succeeds'
+stdout 'Success handler executed'
+stdout 'Failure handler executed'
+stdout 'Operation results verified'

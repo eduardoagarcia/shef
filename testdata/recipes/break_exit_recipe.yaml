@@ -1,0 +1,31 @@
+recipes:
+  - name: "break_exit_recipe"
+    description: "A recipe that tests break and exit flags"
+    category: "test"
+    operations:
+      - name: "First operation"
+        command: echo "First operation"
+
+      - name: "For loop with break"
+        control_flow:
+          type: "for"
+          count: 5
+          variable: "i"
+        operations:
+          - name: "Loop operation"
+            command: echo "Loop iteration {{ .i }}"
+
+          - name: "Conditional break"
+            condition: .i == 2
+            command: echo "Breaking out of loop"
+            break: true
+
+      - name: "Operation after loop"
+        command: echo "After loop"
+
+      - name: "Exit operation"
+        command: echo "Exiting now"
+        exit: true
+
+      - name: "Operation after exit"
+        command: echo "This should not be executed"

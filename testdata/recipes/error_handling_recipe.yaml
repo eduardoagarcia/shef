@@ -1,0 +1,26 @@
+recipes:
+  - name: "error_handling_recipe"
+    description: "A recipe that tests error handling and handlers"
+    category: "test"
+    operations:
+      - name: "Success operation"
+        id: "success_op"
+        command: echo "This operation succeeds"
+        on_success: "success_handler"
+
+      - name: "Failure operation"
+        id: "failure_op"
+        command: "invalid_command"
+        on_failure: "failure_handler"
+
+      - name: "Success handler"
+        id: "success_handler"
+        command: echo "Success handler executed"
+
+      - name: "Failure handler"
+        id: "failure_handler"
+        command: echo "Failure handler executed"
+
+      - name: "Check operation results"
+        condition: success_op.success && failure_op.failure
+        command: echo "Operation results verified"

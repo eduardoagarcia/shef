@@ -13,6 +13,8 @@ cp foreach_recipe.yaml .shef/
 
 # Test running the recipe
 exec shef foreach_recipe
+
+# Validate test
 stdout 'apple'
 stdout 'banana'
 stdout 'cherry'

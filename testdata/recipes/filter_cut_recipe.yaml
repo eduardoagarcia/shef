@@ -1,0 +1,16 @@
+recipes:
+  - name: "filter_cut_recipe"
+    description: "A recipe that tests filter/grep and cut functions"
+    category: "test"
+    operations:
+      - name: "Generate sample data"
+        id: "sample_data"
+        command: echo -e "name:John:25\nname:Jane:30\nname:Bob:22"
+
+      - name: "Filter lines with 'Jane'"
+        command: echo "{{ .sample_data }}"
+        transform: '{{ filter .input "Jane" }}'
+
+      - name: "Cut fields"
+        command: echo "{{ .sample_data }}"
+        transform: 'Names: {{ cut .input ":" 1 }}'
