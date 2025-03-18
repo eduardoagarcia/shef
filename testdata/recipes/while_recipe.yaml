@@ -1,0 +1,17 @@
+recipes:
+  - name: "while_recipe"
+    description: "A recipe that uses a while loop"
+    category: "test"
+    operations:
+      - name: "While loop example"
+        control_flow:
+          type: "while"
+          condition: .complete == "false"
+        operations:
+          - name: "Process iteration"
+            command: echo "Counter value {{ .iteration }}"
+
+          - name: "Status Check"
+            id: "complete"
+            command: echo "{{ if ge .iteration 3 }}true{{ else }}false{{ end }}"
+            silent: true

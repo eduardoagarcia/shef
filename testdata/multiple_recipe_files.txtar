@@ -1,0 +1,34 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directories
+mkdir -p .shef
+mkdir -p $HOME/.shef/user
+
+# Copy recipe files for testing
+cp simple_recipe.yaml .shef/
+cp input_recipe.yaml $HOME/.shef/user/
+
+# Test listing recipes from multiple sources
+exec shef list
+
+# Validate test
+stdout '\[test\]'
+stdout 'simple_recipe: a simple test recipe'
+stdout 'input: a recipe that uses input'
+
+# Test running recipe from local directory
+exec shef simple_recipe
+
+# Validate test
+stdout 'Test successful'
+
+# Test running recipe from user directory
+exec shef input 'Testing from user dir'
+
+# Validate test
+stdout 'input = Testing from user dir'

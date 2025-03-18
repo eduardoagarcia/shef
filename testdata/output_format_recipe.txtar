@@ -1,0 +1,23 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp output_format_recipe.yaml .shef/
+
+# Test running the output format recipe
+exec shef output_format_recipe
+
+# Validate test
+stdout 'Raw output: Line1'
+stdout 'Line2'
+stdout 'Trimmed output: Trimmed'
+stdout 'Lines output: Line1'
+stdout 'Line2'
+stdout 'Line3'

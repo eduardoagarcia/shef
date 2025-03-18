@@ -1,0 +1,10 @@
+recipes:
+  - name: "template_exec_recipe"
+    description: "A recipe that tests the exec template function"
+    category: "test"
+    operations:
+      - name: "Execute shell command in template"
+        command: echo "Current directory {{ exec "pwd" | trim }}"
+
+      - name: "Process template command output"
+        command: echo "{{ exec "echo Hello | tr a-z A-Z" | trim }}"

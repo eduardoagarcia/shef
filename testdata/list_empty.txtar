@@ -7,4 +7,6 @@ rm -rf .shef
 
 # Test listing recipes when none are available
 exec shef list
+
+# Validate test
 stdout 'No recipes found.'

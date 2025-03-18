@@ -1,0 +1,48 @@
+recipes:
+  - name: "condition_types_recipe"
+    description: "A recipe that tests different condition types"
+    category: "test"
+    operations:
+      - name: "Set variables"
+        id: "test_var"
+        command: echo "true"
+
+      - name: "Variable equality (true)"
+        condition: .test_var == "true"
+        command: echo "Variable equality condition passed"
+
+      - name: "Variable inequality (true)"
+        condition: .test_var != "false"
+        command: echo "Variable inequality condition passed"
+
+      - name: "Numeric comparison (greater than)"
+        condition: 5 > 3
+        command: echo "5 is greater than 3"
+
+      - name: "Numeric comparison (less than)"
+        condition: 3 < 5
+        command: echo "3 is less than 5"
+
+      - name: "Numeric comparison (greater than or equal)"
+        condition: 5 >= 5
+        command: echo "5 is greater than or equal to 5"
+
+      - name: "Numeric comparison (less than or equal)"
+        condition: 5 <= 5
+        command: echo "5 is less than or equal to 5"
+
+      - name: "AND condition (true)"
+        condition: .test_var == "true" && 5 > 3
+        command: echo "AND condition passed"
+
+      - name: "OR condition (true)"
+        condition: .test_var == "false" || 5 > 3
+        command: echo "OR condition passed"
+
+      - name: "NOT condition (true)"
+        condition: '!(.test_var == "false")'
+        command: echo "NOT condition passed"
+
+      - name: "Skip this (false condition)"
+        condition: .test_var == "false" && 5 > 3
+        command: echo "This should be skipped"

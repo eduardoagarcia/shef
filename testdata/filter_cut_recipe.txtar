@@ -1,0 +1,24 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp filter_cut_recipe.yaml .shef/
+
+# Test running the filter cut recipe
+exec shef filter_cut_recipe
+
+# Validate test
+stdout 'name:John:25'
+stdout 'name:Jane:30'
+stdout 'name:Bob:22'
+stdout 'name:Jane:30'
+stdout 'Names: John'
+stdout 'Jane'
+stdout 'Bob'

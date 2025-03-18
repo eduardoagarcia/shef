@@ -1,0 +1,19 @@
+recipes:
+  - name: "nested_loops_recipe"
+    description: "A recipe with nested loops"
+    category: "test"
+    operations:
+      - name: "Outer for loop"
+        control_flow:
+          type: "for"
+          count: 3
+          variable: "i"
+        operations:
+          - name: "Inner for loop"
+            control_flow:
+              type: "for"
+              count: 2
+              variable: "j"
+            operations:
+              - name: "Show indices"
+                command: echo "Outer {{ .i }}, Inner {{ .j }}"

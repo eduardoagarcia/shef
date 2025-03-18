@@ -1,0 +1,23 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp nested_loops_recipe.yaml .shef/
+
+# Test running the nested loops recipe
+exec shef nested_loops_recipe
+
+# Validate test
+stdout 'Outer 0, Inner 0'
+stdout 'Outer 0, Inner 1'
+stdout 'Outer 1, Inner 0'
+stdout 'Outer 1, Inner 1'
+stdout 'Outer 2, Inner 0'
+stdout 'Outer 2, Inner 1'

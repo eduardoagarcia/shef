@@ -13,4 +13,6 @@ cp simple_recipe.yaml .shef/
 
 # Test running the simple recipe
 exec shef simple_recipe
+
+# Validate test
 stdout 'Test successful'

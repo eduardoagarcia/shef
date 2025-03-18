@@ -1,4 +1,8 @@
-# Test version output
+# Set up test
 env NO_COLOR=1
+
+# Test version output
 exec shef --version
+
+# Validate test
 stdout 'shef version v'

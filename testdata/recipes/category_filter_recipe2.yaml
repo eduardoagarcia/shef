@@ -1,0 +1,7 @@
+recipes:
+  - name: "cat_b_recipe"
+    description: "A recipe in category B"
+    category: "cat_b"
+    operations:
+      - name: "Cat B operation"
+        command: echo "Category B recipe"

@@ -1,0 +1,13 @@
+recipes:
+  - name: "silent_recipe"
+    description: "A recipe that tests silent operations"
+    category: "test"
+    operations:
+      - name: "Normal operation"
+        id: "normal_op"
+        command: echo "This output is visible"
+
+      - name: "Silent operation"
+        id: "silent_op"
+        command: echo "This output is suppressed"
+        silent: true

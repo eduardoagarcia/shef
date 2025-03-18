@@ -9,10 +9,10 @@ rm -rf .shef
 mkdir -p .shef
 
 # Copy recipe file for testing
-cp input_recipe.yaml .shef/
+cp simple_recipe.yaml .shef/
 
-# Test running the recipe with input
-exec shef test input 'Hello World'
+# Test which command
+exec shef which simple_recipe
 
 # Validate test
-stdout 'input = Hello World'
+stdout '.shef/simple_recipe.yaml'

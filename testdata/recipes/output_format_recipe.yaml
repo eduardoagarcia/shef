@@ -1,0 +1,28 @@
+recipes:
+  - name: "output_format_recipe"
+    description: "A recipe that tests different output formats"
+    category: "test"
+    operations:
+      - name: "Raw output"
+        id: "raw_output"
+        command: echo "Line1\nLine2\n"
+        output_format: "raw"
+        silent: true
+
+      - name: "Trimmed output"
+        id: "trimmed_output"
+        command: echo "  Trimmed  \n"
+        output_format: "trim"
+        silent: true
+
+      - name: "Lines output"
+        id: "lines_output"
+        command: echo "Line1\n\n  Line2  \n\nLine3"
+        output_format: "lines"
+        silent: true
+
+      - name: "Show all outputs"
+        command: |
+          echo "Raw output: {{ .raw_output }}"
+          echo "Trimmed output: {{ .trimmed_output }}"
+          echo "Lines output: {{ .lines_output }}"

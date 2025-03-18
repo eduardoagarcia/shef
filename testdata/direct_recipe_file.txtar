@@ -1,0 +1,15 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create temporary recipe file
+cp simple_recipe.yaml recipe_to_run.yaml
+
+# Test running recipe directly from file
+exec shef --recipe-file recipe_to_run.yaml
+
+# Validate test
+stdout 'Test successful'

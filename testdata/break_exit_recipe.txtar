@@ -1,0 +1,25 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp break_exit_recipe.yaml .shef/
+
+# Test running the break exit recipe
+exec shef break_exit_recipe
+
+# Validate test
+stdout 'First operation'
+stdout 'Loop iteration 0'
+stdout 'Loop iteration 1'
+stdout 'Loop iteration 2'
+stdout 'Breaking out of loop'
+stdout 'After loop'
+stdout 'Exiting now'
+! stdout 'This should not be executed'

@@ -1,0 +1,12 @@
+recipes:
+  - name: "command_input_recipe"
+    description: "A recipe that tests commands with input"
+    category: "test"
+    operations:
+      - name: "Generate data"
+        id: "input_data"
+        command: echo "line1\nline2\nline3"
+
+      - name: "Command with input"
+        command: grep "line2"
+        transform: "Found: {{ trim .input }}"
