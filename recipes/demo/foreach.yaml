@@ -2,6 +2,18 @@ recipes:
   - name: "foreach"
     description: "A simple demo of the foreach control flow"
     category: "demo"
+    help: |
+      This recipe demonstrates the 'foreach' loop control flow in Shef.
+
+      The recipe:
+        1. Defines a collection of fruit items
+        2. Processes each item in the collection one by one
+        3. Shows completion after all items are processed
+
+      Foreach loop parameters:
+        - type: "foreach"    # Specifies the foreach loop control flow
+        - collection: items  # The collection to iterate over (string with items separated by newlines)
+        - as: "variable"     # The variable name to store each item in
     operations:
       - name: "Process Each Fruit"
         control_flow:

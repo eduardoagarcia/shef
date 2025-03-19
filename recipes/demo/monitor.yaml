@@ -2,6 +2,22 @@ recipes:
   - name: "monitor"
     description: "Monitor a service until it returns a success status code"
     category: "demo"
+    help: |
+      This recipe demonstrates how to monitor a service until it returns a success status code.
+
+      The recipe simulates:
+        1. Checking a service's health status
+        2. Displaying error messages while the service is unavailable
+        3. Retrying until the service returns a success status code (200)
+        4. Displaying a success message when the service is available
+
+      This demonstrates:
+        - While loop control flow for continuous monitoring
+        - Conditional operations based on status
+        - Throttling requests with sleep
+        - Formatting output with colors and styles
+
+      Note: For demonstration purposes, the service automatically succeeds after 3 polling attempts.
     operations:
       - name: "Initialize Empty Status Code"
         id: "status_code"

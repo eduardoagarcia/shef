@@ -1,0 +1,36 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp $WORK/help_recipe.yaml .shef/
+
+# Test displaying help with -h flag
+exec shef help_test_recipe -h
+stdout 'NAME:'
+stdout '    help_test_recipe - a recipe to test help functionality'
+stdout 'CATEGORY:'
+stdout '    test'
+stdout 'USAGE:'
+stdout '    shef help_test_recipe \[input\] \[options\]'
+stdout '    shef test help_test_recipe \[input\] \[options\]'
+stdout 'OVERVIEW:'
+stdout '    This is detailed help text for testing the help functionality.'
+
+# Test displaying help with --help flag
+exec shef help_test_recipe --help
+stdout 'NAME:'
+stdout '    help_test_recipe - a recipe to test help functionality'
+stdout 'OVERVIEW:'
+stdout '    This is detailed help text for testing the help functionality.'
+
+# Test normal execution without help flag
+exec shef help_test_recipe
+stdout 'Help test recipe executed successfully'
+! stdout 'This is detailed help text'

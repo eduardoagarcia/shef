@@ -2,6 +2,28 @@ recipes:
   - name: "prompts"
     description: "A demo of all available prompt types and their options"
     category: "demo"
+    help: |
+      This recipe demonstrates all available prompt types and options in Shef.
+
+      Prompt types demonstrated:
+        - input: Basic text input
+        - select: Choose from a list of options
+        - confirm: Yes/No confirmation
+        - password: Masked password input
+        - multiselect: Select multiple options
+        - autocomplete: Filtered selection
+        - number: Numeric input with validation
+        - path: File path with validation
+        - editor: Multi-line text in your editor
+        - Dynamic options from operation output
+
+      Each prompt demonstrates:
+        - Setting default values
+        - Help text
+        - Validation where applicable
+        - Formatting and displaying collected values
+
+      This is a comprehensive reference for all available prompt types in Shef.
     operations:
       - name: "Basic Input Types Demo"
         id: "basic_inputs"

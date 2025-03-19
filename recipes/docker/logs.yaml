@@ -2,6 +2,23 @@ recipes:
   - name: "logs"
     description: "Stream logs from a Docker container"
     category: "docker"
+    help: |
+      This recipe streams logs from a Docker container.
+
+      The recipe will:
+        1. List all running Docker containers
+        2. Prompt you to select a container
+        3. Stream logs from the selected container
+        4. Display a message when log streaming ends
+
+      Requirements:
+        - Docker must be installed and running
+        - You must have permissions to access Docker
+
+      Special features:
+        - Uses the stream execution mode to display logs in real-time
+        - Automatically retrieves container names from docker ps
+        - Press Ctrl+C to stop log streaming
     operations:
       - name: "List Containers"
         id: "list_containers"

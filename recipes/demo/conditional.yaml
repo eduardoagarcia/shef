@@ -2,6 +2,20 @@ recipes:
   - name: "conditional"
     description: "A simple demo of conditional operations using direct prompt values"
     category: "demo"
+    help: |
+      This recipe demonstrates conditional operations based on user input.
+
+      The recipe will:
+        1. Prompt you to select a fruit (Apples or Oranges)
+        2. Execute a specific operation based on your selection
+
+      This shows how to use the "condition" property to run operations only when
+      specific conditions are met.
+
+      Key concepts:
+        - Prompts for user input
+        - Conditional execution based on variables
+        - Using variable values in conditions
     operations:
       - name: "Choose Fruit"
         id: "choose"

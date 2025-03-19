@@ -2,6 +2,23 @@ recipes:
   - name: "operation-order"
     description: "A simple demo to show the order of operations in a recipe"
     category: "demo"
+    help: |
+      This recipe demonstrates the order in which operations execute in a Shef recipe.
+
+      Operation execution follows this order:
+        1. Check condition (skip if not met)
+        2. Run prompts to collect user input
+        3. Execute control flow if it exists
+        4. Run the command
+        5. Apply transformations to the output
+        6. Execute on_success/on_failure handlers
+
+      This recipe shows:
+        - Complex operation structure
+        - How prompts collect user input
+        - How for loops work with a break condition
+        - How transformations modify output
+        - How success handlers chain operations
     operations:
       - name: "Hello"
         command: echo "Executing command [old text] {{ .item }}"

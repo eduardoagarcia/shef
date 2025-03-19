@@ -2,6 +2,22 @@ recipes:
   - name: "handlers"
     description: "A simple demo of error and success handlers"
     category: "demo"
+    help: |
+      This recipe demonstrates how to use error and success handlers in Shef.
+
+      The recipe will:
+        1. Check if a directory exists (provide the directory path as input)
+        2. Execute the success handler if the directory exists
+        3. Execute the error handler if the directory doesn't exist
+
+      Key concepts:
+        - on_success: Specifies an operation to run when a command succeeds
+        - on_failure: Specifies an operation to run when a command fails
+        - Conditional execution using the input variable
+
+      Examples:
+        shef handlers /tmp          # Tests if /tmp directory exists
+        shef handlers /nonexistent  # Tests a directory that doesn't exist
     operations:
       - name: "Help"
         command: echo {{ color "magenta" "Please provide a valid or invalid directory argument to test" }}
