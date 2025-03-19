@@ -1033,7 +1033,7 @@ operations:
       as: file
     operations:
       - name: "Process file with duration info"
-        command: "echo 'Processing {{ file }} (elapsed: {{ duration }})'"
+        command: "echo 'Processing {{ .file }} (elapsed: {{ .duration }})'"
 ```
 
 ##### Implementing a timeout condition:
@@ -1046,7 +1046,7 @@ operations:
       condition: .duration_s < 30  # Timeout after 30 seconds
     operations:
       - name: "Do something until timeout"
-        command: "echo 'Working... ({{ duration }} elapsed)'"
+        command: "echo 'Working... ({{ .duration }} elapsed)'"
         
       - name: "Wait a bit"
         command: "sleep 1"
@@ -1067,7 +1067,7 @@ operations:
         command: "your_command --iteration {{ i }}"
         
       - name: "Display progress"
-        command: "echo 'Completed {{ iteration }}/100 in {{ duration }}'"
+        command: "echo 'Completed {{ .iteration }}/100 in {{ .duration }}'"
         
   - name: "Show results"
     command: "echo 'Test completed in {{ perf_test.duration_ms_fmt }}'"
