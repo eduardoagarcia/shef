@@ -2,6 +2,21 @@ recipes:
   - name: "project"
     description: "Select a GCP project"
     category: "gcp"
+    help: |
+      This recipe helps you select a Google Cloud Platform (GCP) project.
+
+      The recipe will:
+        1. List all available GCP projects (excluding system projects)
+        2. Prompt you to select a project
+        3. Set the selected project as active in your gcloud config
+        4. Display the selected project
+
+      Requirements:
+        - Google Cloud SDK (gcloud) must be installed
+        - You must be authenticated with gcloud
+
+      Options:
+        -w, --which    Show the currently selected project without changing it
     operations:
       - name: "Which"
         command: echo "which"

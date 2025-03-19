@@ -2,6 +2,19 @@ recipes:
   - name: "for"
     description: "A simple demo of the for loop control flow"
     category: "demo"
+    help: |
+      This recipe demonstrates the 'for' loop control flow in Shef.
+
+      The recipe runs a loop for a fixed number of iterations (5), showing:
+        - How to define a for loop with a set count
+        - How to access the current iteration count
+        - How to use color formatting within the loop
+        - How to access the output of operations in the loop after completion
+
+      For loop parameters:
+        - type: "for"       # Specifies the for loop control flow
+        - count: n          # Number of iterations to run
+        - variable: "name"  # Variable name to store the current iteration number
     operations:
       - name: "Run a For Loop"
         control_flow:

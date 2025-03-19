@@ -44,7 +44,7 @@ recipes:
 ```
 
 > [!TIP]
-> Want to see more before diving deeper? [Check out the demo recipes!](https://github.com/eduardoagarcia/shef/tree/main/recipes/demo)
+> Want to see more before diving deeper? [Check out the demo recipes.](https://github.com/eduardoagarcia/shef/tree/main/recipes/demo)
 
 ## Table of Contents
 
@@ -64,6 +64,7 @@ recipes:
 - [Data Flow Between Operations](#data-flow-between-operations)
 - [Control Flow Structures](#control-flow-structures)
 - [Arguments and Flags](#arguments-and-flags)
+- [Recipe Help Documentation](#recipe-help-documentation)
 - [Example Recipes](#example-recipes)
 - [Creating Recipes](#creating-recipes)
 - [AI-Assisted Recipe Creation](#ai-assisted-recipe-creation)
@@ -222,6 +223,9 @@ shef ls
 
 # List all recipes within a category
 shef ls demo
+
+# View help information about a recipe
+shef demo arguments -h
 ```
 
 ## Shef Command Reference
@@ -244,6 +248,19 @@ shef [category] [recipe-name]
 | `-U, --user`          | Force user recipes first   |
 | `-P, --public`        | Force public recipes first |
 | `-r, --recipe-file`   | Path to the recipe file    |
+
+### Recipe Input and Flags
+
+When running a recipe, you can provide both positional input text and custom flags:
+
+| Input Type                 | Example                        | Access in Recipe  | Description                                             |
+|----------------------------|--------------------------------|-------------------|---------------------------------------------------------|
+| `-h, --help`               | `shef recipe -h`               | N/A               | Show help information for the recipe                    |
+| Text Input                 | `shef recipe "My text"`        | `{{ .input }}`    | First argument after recipe name becomes input variable |
+| Any short flag `-x`        | `shef recipe -x`               | `{{ .x }}`        | Any short flag becomes available as a boolean variable  |
+| Any long flag `--var-name` | `shef recipe --var-name=value` | `{{ .var_name }}` | Any long flag becomes available as variable             |
+
+For more details on argument types and usage, see the [Arguments and Flags](#arguments-and-flags) section.
 
 ### Utility Commands
 
@@ -291,6 +308,11 @@ recipes:
   - name: "example"
     description: "An example recipe"
     category: "demo"
+    help: |
+      This is detailed help text for the example recipe.
+
+      It can include multiple paragraphs and shows when users run:
+        shef demo example -h
     operations:
       - name: "First Operation"
         id: "first_op"
@@ -307,6 +329,7 @@ recipes:
 - **description**: Human-readable description
 - **category**: Used for organization and filtering
 - **author**: Optional author attribution
+- **help**: Detailed help documentation shown when using `-h` or `--help` flags
 - **operations**: List of operations to execute in sequence
 
 ### Operations
@@ -1110,6 +1133,86 @@ You can access these values in your recipe operations:
 - name: "Conditional based on flag"
   command: echo "Flag was set!"
   condition: .f == true
+```
+
+## Recipe Help Documentation
+
+Shef provides a built-in help system for recipes, allowing users to get detailed information about a recipe's purpose,
+requirements, and usage without having to read the recipe code.
+
+### Accessing Recipe Help
+
+Help for any recipe can be accessed in two ways:
+
+```bash
+# Using the -h flag
+shef demo hello-world -h
+
+# Using the --help flag
+shef demo hello-world --help
+```
+
+### Help Output Format
+
+When a user requests help for a recipe, they receive formatted information:
+
+```
+NAME:
+    recipe-name - short description from the description field
+
+CATEGORY:
+    recipe-category
+
+USAGE:
+    shef recipe-name [input] [options]
+    shef category recipe-name [input] [options]
+
+OVERVIEW:
+    Detailed help text from the help field.
+    If no help field is provided, Shef shows a default message.
+```
+
+### Writing Effective Help Documentation
+
+When creating recipes, consider including comprehensive help text that covers:
+
+1. **Purpose**: What the recipe does and when to use it
+2. **Requirements**: Any prerequisites or dependencies
+3. **Examples**: Sample usages with different options
+4. **Parameters**: Available flags and arguments with explanations
+5. **Expected Output**: What users should expect to see
+6. **Troubleshooting**: Common issues and how to resolve them
+
+#### Example Recipe with Help Documentation
+
+```yaml
+recipes:
+  - name: "database-backup"
+    description: "Backup a MySQL database"
+    category: "database"
+    help: |
+      This recipe creates a backup of a MySQL database and stores it in a
+      timestamped file.
+
+      Requirements:
+        - MySQL client tools must be installed
+        - Database credentials with read permissions
+
+      Examples:
+        shef database-backup                    # Uses interactive prompts
+        shef database-backup --db=mydb          # Specify database name
+        shef database-backup --no-compress      # Skip compression
+        shef database-backup --output=/backups  # Custom output directory
+
+      Flags:
+        --db=NAME      # Database name
+        --user=USER    # Database username
+        --pass=PASS    # Database password
+        --host=HOST    # Database host (default: localhost)
+        --no-compress  # Skip compression
+        --output=DIR   # Output directory (default: ./backups)
+    operations:
+      # Operations follow here
 ```
 
 ## Example Recipes

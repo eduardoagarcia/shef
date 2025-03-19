@@ -2,6 +2,22 @@ recipes:
   - name: "while"
     description: "A simple demo of the while loop control flow"
     category: "demo"
+    help: |
+      This recipe demonstrates the 'while' loop control flow in Shef.
+
+      The recipe simulates:
+        1. A service running for a number of iterations
+        2. Checking the status on each iteration
+        3. Completing when the status changes (after 3 iterations)
+
+      While loop parameters:
+        - type: "while"    # Specifies the while loop control flow
+        - condition: expr  # Expression that must be true for the loop to continue
+
+      This shows:
+        - How to define a while loop with a condition
+        - How to access the current iteration count
+        - How to change the condition to exit the loop
     operations:
       - name: "Loop While Status is Running"
         control_flow:

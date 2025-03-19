@@ -2,6 +2,26 @@ recipes:
   - name: "update"
     description: "Update all git repositories within the current directory"
     category: "git"
+    help: |
+      This recipe updates all Git repositories within the current directory.
+
+      The recipe will:
+        1. Find all subdirectories in the current directory
+        2. Check if each subdirectory is a Git repository
+        3. Update each Git repository with 'git pull'
+        4. Skip directories that are not Git repositories
+        5. Display a summary when complete
+
+      Requirements:
+        - Git must be installed
+        - You must have permission to access the repositories
+
+      Note: This recipe only looks for Git repositories in the immediate subdirectories
+      of the current directory (depth=1). It doesn't recurse into nested directories.
+
+      Usage examples:
+        - Run from a directory containing multiple repositories
+        - Use in a projects directory to update all projects at once
     operations:
       - name: "Find Subdirectories"
         id: "find_dirs"

@@ -1,0 +1,15 @@
+recipes:
+  - name: "help_test_recipe"
+    description: "A recipe to test help functionality"
+    category: "test"
+    help: |
+      This is detailed help text for testing the help functionality.
+
+      It includes multiple lines and examples:
+        - Example 1: shef help_test_recipe input.txt
+        - Example 2: shef help_test_recipe --option=value
+
+      The help text should be properly formatted and indented.
+    operations:
+      - name: "Simple operation"
+        command: echo "Help test recipe executed successfully"

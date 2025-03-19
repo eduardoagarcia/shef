@@ -37,6 +37,7 @@ type Recipe struct {
 	Description string      `yaml:"description"`
 	Category    string      `yaml:"category,omitempty"`
 	Author      string      `yaml:"author,omitempty"`
+	Help        string      `yaml:"help,omitempty"`
 	Operations  []Operation `yaml:"operations"`
 }
 
@@ -1467,6 +1468,47 @@ func findRecipeByName(recipes []Recipe, name string) (*Recipe, error) {
 	return nil, fmt.Errorf("recipe not found: %s", name)
 }
 
+func displayRecipeHelp(recipe *Recipe) {
+	name := strings.ToLower(recipe.Name)
+	category := strings.ToLower(recipe.Category)
+	description := strings.ToLower(recipe.Description)
+
+	fmt.Printf("%s:\n    %s - %s\n", "NAME", name, description)
+
+	if recipe.Category != "" {
+		fmt.Printf("\n%s:\n    %s\n", "CATEGORY", category)
+	}
+
+	if recipe.Author != "" {
+		fmt.Printf("\n%s:\n    %s\n", "AUTHOR", recipe.Author)
+	}
+
+	fmt.Printf("\n%s:\n    shef %s [input] [options]\n", "USAGE", name)
+	if recipe.Category != "" {
+		fmt.Printf("    shef %s %s [input] [options]\n", category, name)
+	}
+
+	if recipe.Help != "" {
+		indentedText := indentText(recipe.Help, 4)
+		fmt.Printf("\n%s:\n%s\n", "OVERVIEW", indentedText)
+	} else {
+		fmt.Printf("\n%s:\n    %s\n", "OVERVIEW", "No detailed help available for this recipe.")
+	}
+
+	fmt.Println("")
+}
+
+func indentText(text string, spaces int) string {
+	indent := strings.Repeat(" ", spaces)
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		if line != "" {
+			lines[i] = indent + line
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 func main() {
 	log.SetFlags(0)
 
@@ -1766,10 +1808,26 @@ func handleRunCommand(c *cli.Context, args []string, sourcePriority []string) er
 			return err
 		}
 
+		for _, arg := range remainingArgs {
+			if arg == "-h" || arg == "--help" {
+				displayRecipeHelp(recipe)
+				return nil
+			}
+		}
+
 		recipes = []Recipe{*recipe}
 	}
 
 	input, vars := processRemainingArgs(remainingArgs)
+
+	if help, ok := vars["help"]; ok && help == true {
+		displayRecipeHelp(&recipes[0])
+		return nil
+	}
+	if h, ok := vars["h"]; ok && h == true {
+		displayRecipeHelp(&recipes[0])
+		return nil
+	}
 
 	for _, recipe := range recipes {
 		if debug {
