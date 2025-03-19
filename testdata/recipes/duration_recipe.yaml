@@ -1,0 +1,31 @@
+recipes:
+  - name: "duration_test"
+    description: "Tests duration tracking in loops"
+    category: "test"
+    operations:
+      - name: "For loop with duration tracking"
+        id: "duration_loop"
+        control_flow:
+          type: "for"
+          count: "3"
+          variable: "i"
+        operations:
+          - name: "Add a delay"
+            command: "sleep 1"
+
+          - name: "Output iteration with durations"
+            command: |
+              echo "Iteration {{ .iteration }}/3:"
+              echo "  duration_ms: {{ .duration_ms }}"
+              echo "  duration_s: {{ .duration_s }}"
+              echo "  duration: {{ .duration }}"
+              echo "  duration_ms_fmt: {{ .duration_ms_fmt }}"
+
+      - name: "Verify variables still accessible after loop"
+        command: |
+          echo "After loop completion:"
+          echo "  duration_ms: {{ .duration_ms }}"
+          echo "  duration_s: {{ .duration_s }}"
+          echo "  duration: {{ .duration }}"
+          echo "  duration_ms_fmt: {{ .duration_ms_fmt }}"
+          echo "Successfully accessed all duration variables!"

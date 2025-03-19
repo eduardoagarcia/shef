@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type WhileFlow struct {
 	Type      string `yaml:"type"`
@@ -38,6 +41,8 @@ func (op *Operation) GetWhileFlow() (*WhileFlow, error) {
 }
 
 func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
+	startTime := time.Now()
+
 	maxIterations := 1000
 	iterations := 0
 	breakLoop := false
@@ -46,6 +51,8 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		if breakLoop {
 			break
 		}
+
+		updateDurationVars(ctx, startTime)
 
 		renderedCondition, err := renderTemplate(whileFlow.Condition, ctx.templateVars())
 		if err != nil {
@@ -67,7 +74,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		}
 
 		if debug {
-			fmt.Printf("While iteration %d, condition: %s\n", iterations, whileFlow.Condition)
+			fmt.Printf("While iteration %d, condition: %s (elapsed: %s)\n", iterations, whileFlow.Condition, ctx.Vars["duration"])
 		}
 
 		ctx.Vars["iteration"] = iterations
@@ -108,6 +115,8 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 			}
 		}
 	}
+
+	updateDurationVars(ctx, startTime)
 
 	delete(ctx.Vars, "iteration")
 
