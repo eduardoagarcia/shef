@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"time"
 )
 
 type ForFlow struct {
@@ -49,6 +50,8 @@ func (op *Operation) GetForFlow() (*ForFlow, error) {
 }
 
 func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
+	startTime := time.Now()
+
 	countStr, err := renderTemplate(forFlow.Count, ctx.templateVars())
 	if err != nil {
 		return false, fmt.Errorf("failed to render count template: %w", err)
@@ -65,8 +68,10 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 
 	breakLoop := false
 	for i := 0; i < count && !breakLoop; i++ {
+		updateDurationVars(ctx, startTime)
+
 		if debug {
-			fmt.Printf("For iteration %d/%d: %s = %d\n", i+1, count, forFlow.Variable, i)
+			fmt.Printf("For iteration %d/%d: %s = %d (elapsed: %s)\n", i+1, count, forFlow.Variable, i, ctx.Vars["duration"])
 		}
 
 		ctx.Vars[forFlow.Variable] = i
@@ -108,6 +113,8 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 			}
 		}
 	}
+
+	updateDurationVars(ctx, startTime)
 
 	delete(ctx.Vars, forFlow.Variable)
 	delete(ctx.Vars, "iteration")

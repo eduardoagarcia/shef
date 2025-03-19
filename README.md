@@ -981,6 +981,79 @@ Real-world polling example:
       transform: "{{ trim .output }}"
 ```
 
+### Duration Tracking in Loops
+
+All loop types in Shef (`for`, `foreach`, and `while`) automatically track duration. This allows you to measure
+execution time, implement timeouts, or provide progress feedback in your recipes.
+
+#### Available Duration Variables
+
+Inside any loop, the following variables are available:
+
+| Variable          | Type   | Description                             | Example                      |
+|-------------------|--------|-----------------------------------------|------------------------------|
+| `duration_ms`     | String | Total milliseconds elapsed              | "12345"                      |
+| `duration_s`      | String | Total seconds elapsed (as whole number) | "12"                         |
+| `duration`        | String | Formatted time (MM:SS or HH:MM:SS)      | "00:12" or "1:23:45"         |
+| `duration_ms_fmt` | String | Formatted time with milliseconds        | "00:12.345" or "1:23:45.678" |
+
+#### Usage Examples
+
+##### Displaying progress with timing:
+
+```yaml
+operations:
+  - name: "Process Files with Duration Tracking"
+    control_flow:
+      type: foreach
+      collection: "{{ exec `find . -type f -name '*.txt' | sort` }}"
+      as: file
+    operations:
+      - name: "Process file with duration info"
+        command: "echo 'Processing {{ file }} (elapsed: {{ duration }})'"
+```
+
+##### Implementing a timeout condition:
+
+```yaml
+operations:
+  - name: "Loop with timeout"
+    control_flow:
+      type: while
+      condition: .duration_s < 30  # Timeout after 30 seconds
+    operations:
+      - name: "Do something until timeout"
+        command: "echo 'Working... ({{ duration }} elapsed)'"
+        
+      - name: "Wait a bit"
+        command: "sleep 1"
+```
+
+##### Using duration for performance testing:
+
+```yaml
+operations:
+  - name: "Performance test"
+    id: perf_test
+    control_flow:
+      type: for
+      count: "100"
+      variable: i
+    operations:
+      - name: "Run test iteration"
+        command: "your_command --iteration {{ i }}"
+        
+      - name: "Display progress"
+        command: "echo 'Completed {{ iteration }}/100 in {{ duration }}'"
+        
+  - name: "Show results"
+    command: "echo 'Test completed in {{ perf_test.duration_ms_fmt }}'"
+```
+
+> [!NOTE]
+> Duration variables persist after the loop completes, allowing you to access the total execution time of the loop in
+> subsequent operations.
+
 ## Arguments and Flags
 
 Shef allows you to pass arguments and flags directly to your recipes from the command line.

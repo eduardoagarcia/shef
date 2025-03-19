@@ -1,0 +1,30 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp duration_recipe.yaml .shef/
+
+# Test running the duration test recipe
+exec shef duration_test
+
+# Validate that all iterations ran
+stdout 'Iteration 1/3:'
+stdout 'Iteration 2/3:'
+stdout 'Iteration 3/3:'
+
+# Validate that each duration variable appears
+stdout 'duration_ms:'
+stdout 'duration_s:'
+stdout 'duration:'
+stdout 'duration_ms_fmt:'
+
+# Validate that variables are accessible after loop completion
+stdout 'After loop completion:'
+stdout 'Successfully accessed all duration variables!'

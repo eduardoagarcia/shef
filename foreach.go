@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type ForEachFlow struct {
 	Type       string `yaml:"type"`
@@ -45,6 +48,8 @@ func (op *Operation) GetForEachFlow() (*ForEachFlow, error) {
 }
 
 func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
+	startTime := time.Now()
+
 	collectionExpr, err := renderTemplate(forEach.Collection, ctx.templateVars())
 	if err != nil {
 		return false, fmt.Errorf("failed to render collection template: %w", err)
@@ -62,8 +67,10 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 			break
 		}
 
+		updateDurationVars(ctx, startTime)
+
 		if debug {
-			fmt.Printf("Foreach iteration %d/%d: %s = %s\n", idx+1, len(items), forEach.As, item)
+			fmt.Printf("Foreach iteration %d/%d: %s = %s (elapsed: %s)\n", idx+1, len(items), forEach.As, item, ctx.Vars["duration"])
 		}
 
 		ctx.Vars[forEach.As] = item
@@ -105,6 +112,8 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 			}
 		}
 	}
+
+	updateDurationVars(ctx, startTime)
 
 	delete(ctx.Vars, forEach.As)
 	delete(ctx.Vars, "iteration")

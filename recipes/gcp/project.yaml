@@ -3,6 +3,12 @@ recipes:
     description: "Select a GCP project"
     category: "gcp"
     operations:
+      - name: "Which"
+        command: echo "which"
+        condition: .w == "true" || .which == "true"
+        on_success: "selected_project"
+        silent: true
+
       - name: "List Projects"
         id: "list_projects"
         command: gcloud projects list --filter="NOT project_id:sys-*" --format="value(name,project_id)" | awk '{print $1 " (" $2 ")|" $2}'
@@ -40,12 +46,16 @@ recipes:
 
       - name: "Set Project"
         command: gcloud config set project {{ .project_id }}
+        on_success: "selected_project"
         silent: true
 
       - name: "Get Selected Project"
         id: "selected_project"
         command: gcloud config get-value project
+        on_success: "exit"
         silent: true
 
       - name: "Show Selected Project"
+        id: "exit"
         command: echo "Selected project:" {{ style "bold" (color "green" .selected_project) }}
+        exit: true
