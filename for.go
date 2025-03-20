@@ -7,13 +7,10 @@ import (
 )
 
 type ForFlow struct {
-	Type     string `yaml:"type"`
-	Count    string `yaml:"count"`
-	Variable string `yaml:"variable"`
-}
-
-func (f *ForFlow) GetType() string {
-	return f.Type
+	Type         string `yaml:"type"`
+	Count        string `yaml:"count"`
+	Variable     string `yaml:"variable"`
+	ProgressMode bool   `yaml:"progress_mode,omitempty"`
 }
 
 func (op *Operation) GetForFlow() (*ForFlow, error) {
@@ -42,23 +39,34 @@ func (op *Operation) GetForFlow() (*ForFlow, error) {
 		variable = "i"
 	}
 
+	carrReturn, _ := flowMap["progress_mode"].(bool)
+
 	return &ForFlow{
-		Type:     "for",
-		Count:    count,
-		Variable: variable,
+		Type:         "for",
+		Count:        count,
+		Variable:     variable,
+		ProgressMode: carrReturn,
 	}, nil
 }
 
 func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
 	startTime := time.Now()
 
+	originalProgressMode := ctx.ProgressMode
+	useCarriageReturn := forFlow.ProgressMode
+	if useCarriageReturn {
+		ctx.ProgressMode = true
+	}
+
 	countStr, err := renderTemplate(forFlow.Count, ctx.templateVars())
 	if err != nil {
+		ctx.ProgressMode = originalProgressMode
 		return false, fmt.Errorf("failed to render count template: %w", err)
 	}
 
 	count, err := strconv.Atoi(countStr)
 	if err != nil {
+		ctx.ProgressMode = originalProgressMode
 		return false, fmt.Errorf("invalid count value after rendering: %s", countStr)
 	}
 
@@ -71,7 +79,7 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 		updateDurationVars(ctx, startTime)
 
 		if debug {
-			fmt.Printf("For iteration %d/%d: %s = %d (elapsed: %s)\n", i+1, count, forFlow.Variable, i, ctx.Vars["duration"])
+			fmt.Printf("For iteration %d/%d: %s = %d (elapsed: %s)\n", i+1, count, forFlow.Variable, i, ctx.Vars["duration_fmt"])
 		}
 
 		ctx.Vars[forFlow.Variable] = i
@@ -81,6 +89,7 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 			if subOp.Condition != "" {
 				condResult, err := evaluateCondition(subOp.Condition, ctx)
 				if err != nil {
+					ctx.ProgressMode = originalProgressMode
 					return false, fmt.Errorf("condition evaluation failed: %w", err)
 				}
 
@@ -94,6 +103,11 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 
 			shouldExit, err := executeOp(subOp, depth+1)
 			if err != nil {
+				ctx.ProgressMode = originalProgressMode
+				if useCarriageReturn {
+					fmt.Println()
+				}
+
 				return shouldExit, err
 			}
 
@@ -101,6 +115,12 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 				if debug {
 					fmt.Printf("Exiting entire recipe due to exit flag in '%s'\n", subOp.Name)
 				}
+
+				ctx.ProgressMode = originalProgressMode
+				if useCarriageReturn {
+					fmt.Println()
+				}
+
 				return true, nil
 			}
 
@@ -121,6 +141,11 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 
 	if op.ID != "" {
 		ctx.OperationResults[op.ID] = true
+	}
+
+	ctx.ProgressMode = originalProgressMode
+	if useCarriageReturn {
+		fmt.Println()
 	}
 
 	return false, nil

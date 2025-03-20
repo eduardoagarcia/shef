@@ -1077,6 +1077,79 @@ operations:
 > Duration variables persist after the loop completes, allowing you to access the total execution time of the loop in
 > subsequent operations.
 
+### Progress Mode
+
+Progress mode allows operations within loops to update in-place on a single line, creating a cleaner interface for status updates and progress indicators.
+
+#### Key Progress Mode Features
+
+- **control_flow**
+  - **progress_mode**: When set to `true`, enables single-line updates for all operations in the loop
+- **Behavior**: Each operation's output replaces the previous output on the same line rather than printing new lines
+- **Limitations**: Only the first line of output is displayed; additional lines are ignored
+
+#### Mechanics of Progress Mode
+
+1. When a loop has `progress_mode: true`, all operations within the loop display their output on a single line
+2. Each new output overwrites the previous output (returning to the start of the line)
+3. At the end of the loop, a newline is automatically added to maintain clean formatting
+
+#### Common Uses
+
+- Displaying progress counters (e.g., "Processing 5/100...")
+- Showing status updates for long-running operations
+- Creating animated loading indicators
+- Providing real-time feedback without cluttering the terminal
+
+> [!TIP]
+> Progress mode works best for simple, concise status messages. For complex multi-line output, standard mode is more appropriate.
+
+#### Example Progress Mode Recipes
+
+With a for loop:
+
+```yaml
+- name: "Download Progress Example"
+  control_flow:
+    type: "for"
+    count: 100
+    variable: "i"
+    progress_mode: true
+  operations:
+    - name: "Update Progress"
+      command: echo "Downloading... {{ .i }}% complete"
+```
+
+With a while loop:
+
+```yaml
+- name: "Service Monitor Example"
+  control_flow:
+    type: "while"
+    condition: .duration_s < 60  # Monitor for 60 seconds
+    progress_mode: true
+  operations:
+    - name: "Check Service Status"
+      command: echo "Monitoring service... ({{ .duration_fmt }} elapsed)"
+
+    - name: "Wait"
+      command: sleep 1
+```
+
+With a foreach loop:
+
+```yaml
+- name: "Batch Processing Example"
+  control_flow:
+    type: "foreach"
+    collection: "{{ .files }}"
+    as: "file"
+    progress_mode: true
+  operations:
+    - name: "Process File"
+      command: echo "Processing {{ .file }}"
+```
+
 ## Arguments and Flags
 
 Shef allows you to pass arguments and flags directly to your recipes from the command line.

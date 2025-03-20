@@ -91,6 +91,7 @@ type ExecutionContext struct {
 	Vars             map[string]interface{}
 	OperationOutputs map[string]string
 	OperationResults map[string]bool
+	ProgressMode     bool
 }
 
 func (ctx *ExecutionContext) templateVars() map[string]interface{} {
@@ -773,41 +774,38 @@ func executeCommand(cmdStr string, input string, executionMode string, outputFor
 		executionMode = "standard"
 	}
 
-	if executionMode == "standard" {
-		cmd := exec.Command("sh", "-c", cmdStr)
+	switch executionMode {
+	case "standard":
+		return executeStandardCommand(cmdStr, input, outputFormat)
+	case "carriage_return":
+		return executeStandardCommand(cmdStr, input, "trim")
+	case "interactive", "streaming":
+		return executeInteractiveCommand(cmdStr)
+	default:
+		return "", fmt.Errorf("unknown execution mode: %s", executionMode)
+	}
+}
 
-		if input != "" {
-			cmd.Stdin = strings.NewReader(input)
-		}
+func executeStandardCommand(cmdStr string, input string, outputFormat string) (string, error) {
+	cmd := exec.Command("sh", "-c", cmdStr)
 
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-
-		err := cmd.Run()
-		if err != nil {
-			return "", fmt.Errorf("command failed: %w\nStderr: %s", err, stderr.String())
-		}
-
-		switch outputFormat {
-		case "trim":
-			return strings.TrimSpace(stdout.String()), nil
-		case "lines":
-			var lines []string
-			for _, line := range strings.Split(stdout.String(), "\n") {
-				if trimmedLine := strings.TrimSpace(line); trimmedLine != "" {
-					lines = append(lines, trimmedLine)
-				}
-			}
-			return strings.Join(lines, "\n"), nil
-		case "raw", "":
-			return stdout.String(), nil
-		default:
-			return stdout.String(), nil
-		}
+	if input != "" {
+		cmd.Stdin = strings.NewReader(input)
 	}
 
-	// Execute command with interactive or streaming mode
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("command failed: %w\nStderr: %s", err, stderr.String())
+	}
+
+	return formatOutput(stdout.String(), outputFormat)
+}
+
+func executeInteractiveCommand(cmdStr string) (string, error) {
 	cmd := exec.Command("sh", "-c", cmdStr)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -843,6 +841,25 @@ func executeCommand(cmdStr string, input string, executionMode string, outputFor
 
 	case err := <-done:
 		return "", err
+	}
+}
+
+func formatOutput(output string, outputFormat string) (string, error) {
+	switch outputFormat {
+	case "trim":
+		return strings.TrimSpace(output), nil
+	case "lines":
+		var lines []string
+		for _, line := range strings.Split(output, "\n") {
+			if trimmedLine := strings.TrimSpace(line); trimmedLine != "" {
+				lines = append(lines, trimmedLine)
+			}
+		}
+		return strings.Join(lines, "\n"), nil
+	case "raw", "":
+		return output, nil
+	default:
+		return output, nil
 	}
 }
 
@@ -1167,6 +1184,11 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			return false, fmt.Errorf("possible infinite loop detected (max depth reached)")
 		}
 
+		if depth == 0 && ctx.ProgressMode {
+			fmt.Println()
+			ctx.ProgressMode = false
+		}
+
 		// 1. Check the condition first
 		if op.Condition != "" {
 			if debug {
@@ -1326,10 +1348,19 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 		}
 
 		if output != "" && !op.Silent {
-			fmt.Println(output)
+			if ctx.ProgressMode {
+				firstLine := output
+				if idx := strings.Index(output, "\n"); idx >= 0 {
+					firstLine = output[:idx]
+				}
+				fmt.Print("\r" + firstLine + "\033[K")
+				//fmt.Print("\r" + strings.TrimRight(output, "\n") + "\033[K")
+			} else {
+				fmt.Println(output)
+			}
 		}
 
-		// 6. Run the on_success handler
+		// 7. Run the on_success handler
 		if op.OnSuccess != "" && operationSuccess {
 			nextOp, exists := opMap[op.OnSuccess]
 			if !exists {
@@ -1377,6 +1408,15 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			}
 			return nil
 		}
+	}
+
+	if ctx.ProgressMode {
+		if debug {
+			fmt.Printf("Warning: ProgressMode still active at end of recipe execution\n")
+		}
+		fmt.Println()
+		fmt.Println()
+		ctx.ProgressMode = false
 	}
 
 	return nil

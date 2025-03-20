@@ -6,9 +6,10 @@ import (
 )
 
 type ForEachFlow struct {
-	Type       string `yaml:"type"`
-	Collection string `yaml:"collection"`
-	As         string `yaml:"as"`
+	Type         string `yaml:"type"`
+	Collection   string `yaml:"collection"`
+	As           string `yaml:"as"`
+	ProgressMode bool   `yaml:"progress_mode,omitempty"`
 }
 
 func (f *ForEachFlow) GetType() string {
@@ -40,18 +41,28 @@ func (op *Operation) GetForEachFlow() (*ForEachFlow, error) {
 		return nil, fmt.Errorf("foreach requires an 'as' field")
 	}
 
+	carrReturn, _ := flowMap["progress_mode"].(bool)
+
 	return &ForEachFlow{
-		Type:       "foreach",
-		Collection: collection,
-		As:         as,
+		Type:         "foreach",
+		Collection:   collection,
+		As:           as,
+		ProgressMode: carrReturn,
 	}, nil
 }
 
 func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
 	startTime := time.Now()
 
+	originalProgressMode := ctx.ProgressMode
+	useCarriageReturn := forEach.ProgressMode
+	if useCarriageReturn {
+		ctx.ProgressMode = true
+	}
+
 	collectionExpr, err := renderTemplate(forEach.Collection, ctx.templateVars())
 	if err != nil {
+		ctx.ProgressMode = originalProgressMode
 		return false, fmt.Errorf("failed to render collection template: %w", err)
 	}
 
@@ -70,7 +81,7 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 		updateDurationVars(ctx, startTime)
 
 		if debug {
-			fmt.Printf("Foreach iteration %d/%d: %s = %s (elapsed: %s)\n", idx+1, len(items), forEach.As, item, ctx.Vars["duration"])
+			fmt.Printf("Foreach iteration %d/%d: %s = %s (elapsed: %s)\n", idx+1, len(items), forEach.As, item, ctx.Vars["duration_fmt"])
 		}
 
 		ctx.Vars[forEach.As] = item
@@ -80,6 +91,11 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 			if subOp.Condition != "" {
 				condResult, err := evaluateCondition(subOp.Condition, ctx)
 				if err != nil {
+					ctx.ProgressMode = originalProgressMode
+					if useCarriageReturn {
+						fmt.Println()
+					}
+
 					return false, fmt.Errorf("condition evaluation failed: %w", err)
 				}
 
@@ -93,6 +109,11 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 
 			shouldExit, err := executeOp(subOp, depth+1)
 			if err != nil {
+				ctx.ProgressMode = originalProgressMode
+				if useCarriageReturn {
+					fmt.Println()
+				}
+
 				return shouldExit, err
 			}
 
@@ -100,6 +121,12 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 				if debug {
 					fmt.Printf("Exiting entire recipe due to exit flag in '%s'\n", subOp.Name)
 				}
+
+				ctx.ProgressMode = originalProgressMode
+				if useCarriageReturn {
+					fmt.Println()
+				}
+
 				return true, nil
 			}
 
@@ -120,6 +147,11 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 
 	if op.ID != "" {
 		ctx.OperationResults[op.ID] = true
+	}
+
+	ctx.ProgressMode = originalProgressMode
+	if useCarriageReturn {
+		fmt.Println()
 	}
 
 	return false, nil
