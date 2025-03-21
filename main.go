@@ -177,7 +177,6 @@ func init() {
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
-// Helper function to convert any value to float64
 func toFloat64(val interface{}) float64 {
 	switch v := val.(type) {
 	case int:
@@ -1295,11 +1294,6 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			return false, fmt.Errorf("possible infinite loop detected (max depth reached)")
 		}
 
-		if depth == 0 && ctx.ProgressMode {
-			fmt.Println()
-			ctx.ProgressMode = false
-		}
-
 		// 1. Check the condition first
 		if op.Condition != "" {
 			if debug {
@@ -1518,15 +1512,6 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			}
 			return nil
 		}
-	}
-
-	if ctx.ProgressMode {
-		if debug {
-			fmt.Printf("Warning: ProgressMode still active at end of recipe execution\n")
-		}
-		fmt.Println()
-		fmt.Println()
-		ctx.ProgressMode = false
 	}
 
 	return nil
