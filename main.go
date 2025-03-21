@@ -1922,6 +1922,8 @@ func findRecipeWithOptions(args []string, sourcePriority []string, debug bool) (
 	recipe, err = handleCategorySelection(args[0], sourcePriority, debug)
 	if err == nil {
 		return recipe, args[1:], nil
+	} else if err.Error() == "recipe selection aborted by user" {
+		os.Exit(0)
 	}
 
 	// 5. try to fuzzy match without category
@@ -1963,10 +1965,11 @@ func handleCategorySelection(categoryName string, sourcePriority []string, debug
 		return allRecipes[i].Name < allRecipes[j].Name
 	})
 
-	options := make([]string, len(allRecipes))
+	options := make([]string, len(allRecipes)+1)
 	for i, recipe := range allRecipes {
 		options[i] = recipe.Name
 	}
+	options[len(allRecipes)] = "exit"
 
 	prompt := &survey.Select{
 		Message: fmt.Sprintf("Choose a recipe from %s:", categoryName),
@@ -1976,6 +1979,10 @@ func handleCategorySelection(categoryName string, sourcePriority []string, debug
 	var selected string
 	if err := survey.AskOne(prompt, &selected); err != nil {
 		return nil, err
+	}
+
+	if selected == "exit" {
+		return nil, fmt.Errorf("recipe selection aborted by user")
 	}
 
 	selectedRecipe := recipeMap[selected]
