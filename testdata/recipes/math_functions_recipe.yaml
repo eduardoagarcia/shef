@@ -22,7 +22,7 @@ recipes:
       - name: "Abs function (float)"
         transform: '{{ abs -4.5 }}'
 
-      - name: "AbsInt function"
+      - name: "Abs function (int)"
         transform: '{{ absInt -7 }}'
 
       - name: "Max function"
@@ -31,11 +31,11 @@ recipes:
       - name: "Min function"
         transform: '{{ min 5 10 }}'
 
-      - name: "MaxFloat function"
-        transform: '{{ maxFloat 5.5 10.1 }}'
+      - name: "Max function (float)"
+        transform: '{{ max 5.5 10.1 }}'
 
-      - name: "MinFloat function"
-        transform: '{{ minFloat 5.5 10.1 }}'
+      - name: "Min function (float)"
+        transform: '{{ min 5.5 10.1 }}'
 
       - name: "Pow function"
         transform: '{{ pow 2 3 }}'

@@ -1188,62 +1188,44 @@ func TestMathTemplateFunctions(t *testing.T) {
 
 	t.Run("abs function", func(t *testing.T) {
 		tests := []struct {
-			value float64
-			want  float64
+			value interface{}
+			want  interface{}
 		}{
+			{3, 3},
+			{0, 0},
+			{-3, 3},
 			{3.2, 3.2},
-			{0.0, 0.0},
+			{0.0, 0},
 			{-3.2, 3.2},
 		}
 
 		absFunc := templateFuncs["abs"].(func(interface{}) interface{})
 		for _, tt := range tests {
 			got := absFunc(tt.value)
-			if tt.value == 0.0 {
-				intVal, ok := got.(int)
-				assert.True(t, ok, "Expected int result for abs(0.0)")
-				assert.Equal(t, int(tt.want), intVal, "abs(%f)", tt.value)
-			} else {
-				floatVal, ok := got.(float64)
-				assert.True(t, ok, "Expected float64 result from abs(%f)", tt.value)
-				assert.Equal(t, tt.want, floatVal, "abs(%f)", tt.value)
-			}
-		}
-	})
-
-	t.Run("absInt function", func(t *testing.T) {
-		tests := []struct {
-			value int
-			want  int
-		}{
-			{3, 3},
-			{0, 0},
-			{-3, 3},
-		}
-
-		absIntFunc := templateFuncs["absInt"].(func(interface{}) int)
-		for _, tt := range tests {
-			got := absIntFunc(tt.value)
-			assert.Equal(t, tt.want, got, "absInt(%d)", tt.value)
+			assert.Equal(t, tt.want, got, "abs(%d)", tt.value)
 		}
 	})
 
 	t.Run("max function", func(t *testing.T) {
 		tests := []struct {
-			a    int
-			b    int
-			want int
+			a    interface{}
+			b    interface{}
+			want interface{}
 		}{
+			{0, 0, 0},
 			{5, 10, 10},
 			{10, 5, 10},
 			{-5, -10, -5},
-			{0, 0, 0},
+			{5.9, 10.2, 10.2},
+			{10.2, 5.9, 10.2},
+			{-3.2, -25.2, -3.2},
+			{-25.2, -3.2, -3.2},
 		}
 
 		maxFunc := templateFuncs["max"].(func(interface{}, interface{}) interface{})
 		for _, tt := range tests {
 			got := maxFunc(tt.a, tt.b)
-			intResult, ok := got.(int)
+			intResult, ok := got.(interface{})
 			assert.True(t, ok, "Expected int result from max(%d, %d)", tt.a, tt.b)
 			assert.Equal(t, tt.want, intResult, "max(%d, %d)", tt.a, tt.b)
 		}
@@ -1251,21 +1233,25 @@ func TestMathTemplateFunctions(t *testing.T) {
 
 	t.Run("min function", func(t *testing.T) {
 		tests := []struct {
-			a    int
-			b    int
-			want int
+			a    interface{}
+			b    interface{}
+			want interface{}
 		}{
+			{0, 0, 0},
 			{5, 10, 5},
 			{10, 5, 5},
 			{-5, -10, -10},
-			{0, 0, 0},
+			{5.9, 10.2, 5.9},
+			{10.2, 5.9, 5.9},
+			{-3.2, -25.2, -25.2},
+			{-25.2, -3.2, -25.2},
 		}
 
 		minFunc := templateFuncs["min"].(func(interface{}, interface{}) interface{})
 		for _, tt := range tests {
 			got := minFunc(tt.a, tt.b)
-			intResult, ok := got.(int)
-			assert.True(t, ok, "Expected int result from min(%d, %d)", tt.a, tt.b)
+			intResult, ok := got.(interface{})
+			assert.True(t, ok, "Expected result from min(%d, %d)", tt.a, tt.b)
 			assert.Equal(t, tt.want, intResult, "min(%d, %d)", tt.a, tt.b)
 		}
 	})
@@ -1443,7 +1429,8 @@ func TestMathTemplateFunctions(t *testing.T) {
 			{"round", "{{round .val}}", "3"},
 			{"ceil", "{{ceil .val}}", "4"},
 			{"floor", "{{floor .val}}", "3"},
-			{"abs", "{{absInt (sub 5 10)}}", "5"},
+			{"abs", "{{abs (sub 5 10)}}", "5"},
+			{"abs_float", "{{abs (sub 5.3 10.1)}}", "4.8"},
 			{"percent", "{{percent 25 100}}", "25"},
 			{"formatPercent", "{{formatPercent 33.333 1}}", "33.3%"},
 			{"roundTo", "{{roundTo .val 2}}", "3.14"},

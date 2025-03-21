@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	Version               = "v0.1.14"
+	Version               = "v0.1.15"
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"
 	PublicRecipesFolder   = "recipes"
@@ -280,24 +280,11 @@ var templateFuncs = template.FuncMap{
 	"abs": func(value interface{}) interface{} {
 		return normalizeNumber(math.Abs(toFloat64(value)))
 	},
-	"absInt": func(value interface{}) int {
-		val := int(toFloat64(value))
-		if val < 0 {
-			return -val
-		}
-		return val
-	},
 	"max": func(a, b interface{}) interface{} {
 		return normalizeNumber(math.Max(toFloat64(a), toFloat64(b)))
 	},
-	"maxFloat": func(a, b interface{}) float64 {
-		return math.Max(toFloat64(a), toFloat64(b))
-	},
 	"min": func(a, b interface{}) interface{} {
 		return normalizeNumber(math.Min(toFloat64(a), toFloat64(b)))
-	},
-	"minFloat": func(a, b interface{}) float64 {
-		return math.Min(toFloat64(a), toFloat64(b))
 	},
 	"pow": func(base, exponent interface{}) interface{} {
 		return normalizeNumber(math.Pow(toFloat64(base), toFloat64(exponent)))

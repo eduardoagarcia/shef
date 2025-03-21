@@ -635,11 +635,8 @@ transform: "{{ param1 | function1 .output }}"
 | `ceil`          | Round up to next integer          | (value)           | `{{ ceil 3.1 }}`                    | `{{ 3.1 \| ceil }}`          | `3.1`             | `4`                |
 | `floor`         | Round down to integer             | (value)           | `{{ floor 3.9 }}`                   | `{{ 3.9 \| floor }}`         | `3.9`             | `3`                |
 | `abs`           | Absolute value for floats         | (value)           | `{{ abs -3.5 }}`                    | `{{ -3.5 \| abs }}`          | `-3.5`            | `3.5`              |
-| `absInt`        | Absolute value for integers       | (value)           | `{{ absInt -5 }}`                   | `{{ -5 \| absInt }}`         | `-5`              | `5`                |
 | `max`           | Maximum of two integers           | (a, b)            | `{{ max 5 10 }}`                    | `{{ 10 \| max 5 }}`          | `5, 10`           | `10`               |
 | `min`           | Minimum of two integers           | (a, b)            | `{{ min 5 10 }}`                    | `{{ 10 \| min 5 }}`          | `5, 10`           | `5`                |
-| `maxFloat`      | Maximum of two floats             | (a, b)            | `{{ maxFloat 5.5 10.1 }}`           | `{{ 10.1 \| maxFloat 5.5 }}` | `5.5, 10.1`       | `10.1`             |
-| `minFloat`      | Minimum of two floats             | (a, b)            | `{{ minFloat 5.5 10.1 }}`           | `{{ 10.1 \| minFloat 5.5 }}` | `5.5, 10.1`       | `5.5`              |
 | `pow`           | Power function                    | (base, exponent)  | `{{ pow 2 3 }}`                     | `{{ 3 \| pow 2 }}`           | `2, 3`            | `8.0`              |
 | `sqrt`          | Square root                       | (value)           | `{{ sqrt 9 }}`                      | `{{ 9 \| sqrt }}`            | `9`               | `3.0`              |
 | `log`           | Natural logarithm                 | (value)           | `{{ log 2.718 }}`                   | `{{ 2.718 \| log }}`         | `2.718`           | `1.0`              |
@@ -684,7 +681,7 @@ transform: "{{ param1 | function1 .output }}"
 
 #### Math Operations
 
-- `mod`, `round`, `ceil`, `floor`, `abs`, `absInt`, `max`, `min`, `maxFloat`, `minFloat`, `pow`, `sqrt`, `log`, `log10`, `percent`, `formatPercent`, `rand`, `roundTo`, `formatNumber`
+- `mod`, `round`, `ceil`, `floor`, `abs`, `max`, `min`, `pow`, `sqrt`, `log`, `log10`, `percent`, `formatPercent`, `rand`, `roundTo`, `formatNumber`
 
 #### Shell Integration
 

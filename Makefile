@@ -29,6 +29,9 @@ update-local:
 	@echo "Example: export PATH=\"\$PATH:\$HOME/bin\""
 
 test:
+	@go test
+
+test-verbose:
 	@go test -v > test_output.tmp
 	@grep -v "WORK=" test_output.tmp | \
 	grep -v "PATH=" | \
