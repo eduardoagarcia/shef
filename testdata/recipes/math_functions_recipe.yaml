@@ -1,0 +1,65 @@
+recipes:
+  - name: "math_functions_recipe"
+    description: "A recipe that tests all new math functions"
+    category: "test"
+    operations:
+      - name: "Create test values"
+        id: "test_values"
+        command: echo "10.7,3.2"
+
+      - name: "Mod function"
+        transform: '{{ mod 10 3 }}'
+
+      - name: "Round function"
+        transform: '{{ round 3.7 }}'
+
+      - name: "Ceil function"
+        transform: '{{ ceil 3.2 }}'
+
+      - name: "Floor function"
+        transform: '{{ floor 3.7 }}'
+
+      - name: "Abs function (float)"
+        transform: '{{ abs -4.5 }}'
+
+      - name: "AbsInt function"
+        transform: '{{ absInt -7 }}'
+
+      - name: "Max function"
+        transform: '{{ max 5 10 }}'
+
+      - name: "Min function"
+        transform: '{{ min 5 10 }}'
+
+      - name: "MaxFloat function"
+        transform: '{{ maxFloat 5.5 10.1 }}'
+
+      - name: "MinFloat function"
+        transform: '{{ minFloat 5.5 10.1 }}'
+
+      - name: "Pow function"
+        transform: '{{ pow 2 3 }}'
+
+      - name: "Sqrt function"
+        transform: '{{ sqrt 16 }}'
+
+      - name: "Log function"
+        transform: '{{ round (log 2.718) }}'
+
+      - name: "Log10 function"
+        transform: '{{ log10 100 }}'
+
+      - name: "Percent function"
+        transform: '{{ percent 25 100 }}'
+
+      - name: "FormatPercent function"
+        transform: '{{ formatPercent 33.333 1 }}'
+
+      - name: "RoundTo function"
+        transform: '{{ roundTo 3.14159 2 }}'
+
+      - name: "FormatNumber function"
+        transform: '{{ formatNumber "%.3f" 3.14159 }}'
+
+      - name: "Combined math operations"
+        transform: '{{ roundTo (sqrt (add (pow 2 3) 3)) 2 }}'

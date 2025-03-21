@@ -39,13 +39,13 @@ func (op *Operation) GetForFlow() (*ForFlow, error) {
 		variable = "i"
 	}
 
-	carrReturn, _ := flowMap["progress_mode"].(bool)
+	progressMode, _ := flowMap["progress_mode"].(bool)
 
 	return &ForFlow{
 		Type:         "for",
 		Count:        count,
 		Variable:     variable,
-		ProgressMode: carrReturn,
+		ProgressMode: progressMode,
 	}, nil
 }
 
@@ -53,8 +53,8 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 	startTime := time.Now()
 
 	originalProgressMode := ctx.ProgressMode
-	useCarriageReturn := forFlow.ProgressMode
-	if useCarriageReturn {
+	useProgressMode := forFlow.ProgressMode
+	if useProgressMode {
 		ctx.ProgressMode = true
 	}
 
@@ -104,7 +104,7 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 			shouldExit, err := executeOp(subOp, depth+1)
 			if err != nil {
 				ctx.ProgressMode = originalProgressMode
-				if useCarriageReturn {
+				if useProgressMode {
 					fmt.Println()
 				}
 
@@ -117,7 +117,7 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 				}
 
 				ctx.ProgressMode = originalProgressMode
-				if useCarriageReturn {
+				if useProgressMode {
 					fmt.Println()
 				}
 
@@ -144,7 +144,7 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 	}
 
 	ctx.ProgressMode = originalProgressMode
-	if useCarriageReturn {
+	if useProgressMode {
 		fmt.Println()
 	}
 

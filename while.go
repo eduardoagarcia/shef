@@ -35,12 +35,12 @@ func (op *Operation) GetWhileFlow() (*WhileFlow, error) {
 		return nil, fmt.Errorf("while requires a 'condition' field")
 	}
 
-	carrReturn, _ := flowMap["progress_mode"].(bool)
+	progressMode, _ := flowMap["progress_mode"].(bool)
 
 	return &WhileFlow{
 		Type:         "while",
 		Condition:    condition,
-		ProgressMode: carrReturn,
+		ProgressMode: progressMode,
 	}, nil
 }
 
@@ -48,12 +48,11 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 	startTime := time.Now()
 
 	originalProgressMode := ctx.ProgressMode
-	useCarriageReturn := whileFlow.ProgressMode
-	if useCarriageReturn {
+	useProgressMode := whileFlow.ProgressMode
+	if useProgressMode {
 		ctx.ProgressMode = true
 	}
 
-	maxIterations := 1000
 	iterations := 0
 	breakLoop := false
 
@@ -67,7 +66,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		renderedCondition, err := renderTemplate(whileFlow.Condition, ctx.templateVars())
 		if err != nil {
 			ctx.ProgressMode = originalProgressMode
-			if useCarriageReturn {
+			if useProgressMode {
 				fmt.Println()
 			}
 
@@ -77,7 +76,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		conditionResult, err := evaluateCondition(renderedCondition, ctx)
 		if err != nil {
 			ctx.ProgressMode = originalProgressMode
-			if useCarriageReturn {
+			if useProgressMode {
 				fmt.Println()
 			}
 
@@ -89,19 +88,9 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		}
 
 		iterations++
-		if iterations > maxIterations {
-			ctx.ProgressMode = originalProgressMode
-			if useCarriageReturn {
-				fmt.Println()
-			}
-
-			return false, fmt.Errorf("maximum while loop iterations exceeded (%d)", maxIterations)
-		}
-
 		if debug {
 			fmt.Printf("While iteration %d, condition: %s (elapsed: %s)\n", iterations, whileFlow.Condition, ctx.Vars["duration_fmt"])
 		}
-
 		ctx.Vars["iteration"] = iterations
 
 		for _, subOp := range op.Operations {
@@ -109,7 +98,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 				condResult, err := evaluateCondition(subOp.Condition, ctx)
 				if err != nil {
 					ctx.ProgressMode = originalProgressMode
-					if useCarriageReturn {
+					if useProgressMode {
 						fmt.Println()
 					}
 
@@ -127,7 +116,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 			shouldExit, err := executeOp(subOp, depth+1)
 			if err != nil {
 				ctx.ProgressMode = originalProgressMode
-				if useCarriageReturn {
+				if useProgressMode {
 					fmt.Println()
 				}
 
@@ -140,7 +129,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 				}
 
 				ctx.ProgressMode = originalProgressMode
-				if useCarriageReturn {
+				if useProgressMode {
 					fmt.Println()
 				}
 
@@ -166,7 +155,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 	}
 
 	ctx.ProgressMode = originalProgressMode
-	if useCarriageReturn {
+	if useProgressMode {
 		fmt.Println()
 	}
 

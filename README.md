@@ -623,6 +623,30 @@ transform: "{{ param1 | function1 .output }}"
 | `style`          | Add styling to text                | (style, text)              | `{{ style "bold" "Important!" }}`     | `{{ "Important!" \| style "bold" }}`   | `"bold", "Important!"` | Bold "Important!"        |
 | `resetFormat`    | Reset colors and styles            | ()                         | `{{ resetFormat }}`                   | N/A                                    | N/A                    | ANSI reset code          |
 
+#### Available Math Functions
+
+| Function        | Description                       | Parameters        | Direct Example                      | Pipe Example                 | Input             | Output             |
+|-----------------|-----------------------------------|-------------------|-------------------------------------|------------------------------|-------------------|--------------------|
+| `mod`           | Modulo operation                  | (a, b)            | `{{ mod 10 3 }}`                    | `{{ 3 \| mod 10 }}`          | `10, 3`           | `1`                |
+| `round`         | Round to nearest integer          | (value)           | `{{ round 3.7 }}`                   | `{{ 3.7 \| round }}`         | `3.7`             | `4`                |
+| `rand`          | Generate random integer in range  | (min, max)        | `{{ rand 1 10 }}`                   | N/A                          | `1, 10`           | Random number 1-10 |
+| `percent`       | Calculate percentage              | (part, total)     | `{{ percent 25 100 }}`              | `{{ 100 \| percent 25 }}`    | `25, 100`         | `25.0`             |
+| `formatPercent` | Format percentage with decimals   | (value, decimals) | `{{ formatPercent 33.333 1 }}`      | N/A                          | `33.333, 1`       | `"33.3%"`          |
+| `ceil`          | Round up to next integer          | (value)           | `{{ ceil 3.1 }}`                    | `{{ 3.1 \| ceil }}`          | `3.1`             | `4`                |
+| `floor`         | Round down to integer             | (value)           | `{{ floor 3.9 }}`                   | `{{ 3.9 \| floor }}`         | `3.9`             | `3`                |
+| `abs`           | Absolute value for floats         | (value)           | `{{ abs -3.5 }}`                    | `{{ -3.5 \| abs }}`          | `-3.5`            | `3.5`              |
+| `absInt`        | Absolute value for integers       | (value)           | `{{ absInt -5 }}`                   | `{{ -5 \| absInt }}`         | `-5`              | `5`                |
+| `max`           | Maximum of two integers           | (a, b)            | `{{ max 5 10 }}`                    | `{{ 10 \| max 5 }}`          | `5, 10`           | `10`               |
+| `min`           | Minimum of two integers           | (a, b)            | `{{ min 5 10 }}`                    | `{{ 10 \| min 5 }}`          | `5, 10`           | `5`                |
+| `maxFloat`      | Maximum of two floats             | (a, b)            | `{{ maxFloat 5.5 10.1 }}`           | `{{ 10.1 \| maxFloat 5.5 }}` | `5.5, 10.1`       | `10.1`             |
+| `minFloat`      | Minimum of two floats             | (a, b)            | `{{ minFloat 5.5 10.1 }}`           | `{{ 10.1 \| minFloat 5.5 }}` | `5.5, 10.1`       | `5.5`              |
+| `pow`           | Power function                    | (base, exponent)  | `{{ pow 2 3 }}`                     | `{{ 3 \| pow 2 }}`           | `2, 3`            | `8.0`              |
+| `sqrt`          | Square root                       | (value)           | `{{ sqrt 9 }}`                      | `{{ 9 \| sqrt }}`            | `9`               | `3.0`              |
+| `log`           | Natural logarithm                 | (value)           | `{{ log 2.718 }}`                   | `{{ 2.718 \| log }}`         | `2.718`           | `1.0`              |
+| `log10`         | Base-10 logarithm                 | (value)           | `{{ log10 100 }}`                   | `{{ 100 \| log10 }}`         | `100`             | `2.0`              |
+| `formatNumber`  | Format numbers with pattern       | (format, args...) | `{{ formatNumber "%.2f" 3.14159 }}` | N/A                          | `"%.2f", 3.14159` | `"3.14"`           |
+| `roundTo`       | Round to specified decimal places | (value, decimals) | `{{ roundTo 3.14159 2 }}`           | `{{ 2 \| roundTo 3.14159 }}` | `3.14159, 2`      | `3.14`             |
+
 ### Recommended Practices
 
 1. **Use direct function calls for clarity** rather than pipe syntax, especially for functions that take multiple
@@ -657,6 +681,10 @@ transform: "{{ param1 | function1 .output }}"
 #### Numeric Operations
 
 - `atoi`, `add`, `sub`, `div`, `mul`
+
+#### Math Operations
+
+- `mod`, `round`, `ceil`, `floor`, `abs`, `absInt`, `max`, `min`, `maxFloat`, `minFloat`, `pow`, `sqrt`, `log`, `log10`, `percent`, `formatPercent`, `rand`, `roundTo`, `formatNumber`
 
 #### Shell Integration
 

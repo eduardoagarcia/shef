@@ -1107,6 +1107,359 @@ func Example_renderTemplate() {
 	fmt.Println(result)
 }
 
+func TestMathTemplateFunctions(t *testing.T) {
+	t.Run("mod function", func(t *testing.T) {
+		tests := []struct {
+			a    int
+			b    int
+			want int
+		}{
+			{10, 3, 1},
+			{15, 5, 0},
+			{7, 2, 1},
+			{-10, 3, -1},
+			{10, 0, 0},
+		}
+
+		modFunc := templateFuncs["mod"].(func(interface{}, interface{}) interface{})
+		for _, tt := range tests {
+			got := modFunc(tt.a, tt.b)
+			intResult, ok := got.(int)
+			assert.True(t, ok, "Expected int result from mod(%d, %d)", tt.a, tt.b)
+			assert.Equal(t, tt.want, intResult, "mod(%d, %d)", tt.a, tt.b)
+		}
+	})
+
+	t.Run("round function", func(t *testing.T) {
+		tests := []struct {
+			value float64
+			want  int
+		}{
+			{3.2, 3},
+			{3.5, 4},
+			{3.7, 4},
+			{-3.2, -3},
+			{-3.7, -4},
+			{0.0, 0},
+		}
+
+		roundFunc := templateFuncs["round"].(func(interface{}) int)
+		for _, tt := range tests {
+			got := roundFunc(tt.value)
+			assert.Equal(t, tt.want, got, "round(%f)", tt.value)
+		}
+	})
+
+	t.Run("ceil function", func(t *testing.T) {
+		tests := []struct {
+			value float64
+			want  int
+		}{
+			{3.2, 4},
+			{3.0, 3},
+			{-3.2, -3},
+			{0.1, 1},
+		}
+
+		ceilFunc := templateFuncs["ceil"].(func(interface{}) int)
+		for _, tt := range tests {
+			got := ceilFunc(tt.value)
+			assert.Equal(t, tt.want, got, "ceil(%f)", tt.value)
+		}
+	})
+
+	t.Run("floor function", func(t *testing.T) {
+		tests := []struct {
+			value float64
+			want  int
+		}{
+			{3.2, 3},
+			{3.0, 3},
+			{-3.2, -4},
+			{0.9, 0},
+		}
+
+		floorFunc := templateFuncs["floor"].(func(interface{}) int)
+		for _, tt := range tests {
+			got := floorFunc(tt.value)
+			assert.Equal(t, tt.want, got, "floor(%f)", tt.value)
+		}
+	})
+
+	t.Run("abs function", func(t *testing.T) {
+		tests := []struct {
+			value float64
+			want  float64
+		}{
+			{3.2, 3.2},
+			{0.0, 0.0},
+			{-3.2, 3.2},
+		}
+
+		absFunc := templateFuncs["abs"].(func(interface{}) interface{})
+		for _, tt := range tests {
+			got := absFunc(tt.value)
+			if tt.value == 0.0 {
+				intVal, ok := got.(int)
+				assert.True(t, ok, "Expected int result for abs(0.0)")
+				assert.Equal(t, int(tt.want), intVal, "abs(%f)", tt.value)
+			} else {
+				floatVal, ok := got.(float64)
+				assert.True(t, ok, "Expected float64 result from abs(%f)", tt.value)
+				assert.Equal(t, tt.want, floatVal, "abs(%f)", tt.value)
+			}
+		}
+	})
+
+	t.Run("absInt function", func(t *testing.T) {
+		tests := []struct {
+			value int
+			want  int
+		}{
+			{3, 3},
+			{0, 0},
+			{-3, 3},
+		}
+
+		absIntFunc := templateFuncs["absInt"].(func(interface{}) int)
+		for _, tt := range tests {
+			got := absIntFunc(tt.value)
+			assert.Equal(t, tt.want, got, "absInt(%d)", tt.value)
+		}
+	})
+
+	t.Run("max function", func(t *testing.T) {
+		tests := []struct {
+			a    int
+			b    int
+			want int
+		}{
+			{5, 10, 10},
+			{10, 5, 10},
+			{-5, -10, -5},
+			{0, 0, 0},
+		}
+
+		maxFunc := templateFuncs["max"].(func(interface{}, interface{}) interface{})
+		for _, tt := range tests {
+			got := maxFunc(tt.a, tt.b)
+			intResult, ok := got.(int)
+			assert.True(t, ok, "Expected int result from max(%d, %d)", tt.a, tt.b)
+			assert.Equal(t, tt.want, intResult, "max(%d, %d)", tt.a, tt.b)
+		}
+	})
+
+	t.Run("min function", func(t *testing.T) {
+		tests := []struct {
+			a    int
+			b    int
+			want int
+		}{
+			{5, 10, 5},
+			{10, 5, 5},
+			{-5, -10, -10},
+			{0, 0, 0},
+		}
+
+		minFunc := templateFuncs["min"].(func(interface{}, interface{}) interface{})
+		for _, tt := range tests {
+			got := minFunc(tt.a, tt.b)
+			intResult, ok := got.(int)
+			assert.True(t, ok, "Expected int result from min(%d, %d)", tt.a, tt.b)
+			assert.Equal(t, tt.want, intResult, "min(%d, %d)", tt.a, tt.b)
+		}
+	})
+
+	t.Run("percent function", func(t *testing.T) {
+		tests := []struct {
+			part  float64
+			total float64
+			want  float64
+		}{
+			{50, 100, 50.0},
+			{25, 50, 50.0},
+			{0, 100, 0.0},
+			{100, 0, 0.0},
+		}
+
+		percentFunc := templateFuncs["percent"].(func(interface{}, interface{}) interface{})
+		for _, tt := range tests {
+			got := percentFunc(tt.part, tt.total)
+			floatResult, ok := got.(float64)
+			if !ok {
+				intResult, ok := got.(int)
+				assert.True(t, ok, "Expected numeric result from percent(%f, %f)", tt.part, tt.total)
+				floatResult = float64(intResult)
+			}
+			assert.Equal(t, tt.want, floatResult, "percent(%f, %f)", tt.part, tt.total)
+		}
+	})
+
+	t.Run("formatPercent function", func(t *testing.T) {
+		tests := []struct {
+			value    float64
+			decimals int
+			want     string
+		}{
+			{50.0, 0, "50%"},
+			{33.33333, 1, "33.3%"},
+			{66.66666, 2, "66.67%"},
+			{0.0, 0, "0%"},
+		}
+
+		formatPercentFunc := templateFuncs["formatPercent"].(func(interface{}, interface{}) string)
+		for _, tt := range tests {
+			got := formatPercentFunc(tt.value, tt.decimals)
+			assert.Equal(t, tt.want, got, "formatPercent(%f, %d)", tt.value, tt.decimals)
+		}
+	})
+
+	t.Run("pow function", func(t *testing.T) {
+		tests := []struct {
+			base     float64
+			exponent float64
+			want     float64
+		}{
+			{2.0, 3.0, 8.0},
+			{10.0, 2.0, 100.0},
+			{5.0, 0.0, 1.0},
+			{0.0, 5.0, 0.0},
+		}
+
+		powFunc := templateFuncs["pow"].(func(interface{}, interface{}) interface{})
+		for _, tt := range tests {
+			got := powFunc(tt.base, tt.exponent)
+			floatResult, ok := got.(float64)
+			if !ok {
+				intResult, ok := got.(int)
+				assert.True(t, ok, "Expected numeric result from pow(%f, %f)", tt.base, tt.exponent)
+				floatResult = float64(intResult)
+			}
+			assert.Equal(t, tt.want, floatResult, "pow(%f, %f)", tt.base, tt.exponent)
+		}
+	})
+
+	t.Run("sqrt function", func(t *testing.T) {
+		tests := []struct {
+			value float64
+			want  float64
+		}{
+			{4.0, 2.0},
+			{9.0, 3.0},
+			{0.0, 0.0},
+			{2.0, 1.4142135623730951},
+		}
+
+		sqrtFunc := templateFuncs["sqrt"].(func(interface{}) interface{})
+		for _, tt := range tests {
+			got := sqrtFunc(tt.value)
+			floatResult, ok := got.(float64)
+			if !ok {
+				intResult, ok := got.(int)
+				assert.True(t, ok, "Expected numeric result from sqrt(%f)", tt.value)
+				floatResult = float64(intResult)
+			}
+			assert.Equal(t, tt.want, floatResult, "sqrt(%f)", tt.value)
+		}
+	})
+
+	t.Run("roundTo function", func(t *testing.T) {
+		tests := []struct {
+			value    float64
+			decimals int
+			want     float64
+		}{
+			{3.14159, 2, 3.14},
+			{3.14159, 3, 3.142},
+			{3.14159, 0, 3.0},
+			{-3.14159, 2, -3.14},
+		}
+
+		roundToFunc := templateFuncs["roundTo"].(func(interface{}, interface{}) interface{})
+		for _, tt := range tests {
+			got := roundToFunc(tt.value, tt.decimals)
+			floatResult, ok := got.(float64)
+			if !ok {
+				intResult, ok := got.(int)
+				assert.True(t, ok, "Expected numeric result from roundTo(%f, %d)", tt.value, tt.decimals)
+				floatResult = float64(intResult)
+			}
+			assert.Equal(t, tt.want, floatResult, "roundTo(%f, %d)", tt.value, tt.decimals)
+		}
+	})
+
+	t.Run("rand function", func(t *testing.T) {
+		randFunc := templateFuncs["rand"].(func(interface{}, interface{}) int)
+
+		for i := 0; i < 100; i++ {
+			minNum, maxNum := 1, 10
+			got := randFunc(minNum, maxNum)
+			assert.GreaterOrEqual(t, got, minNum, "rand(%d, %d) result below minimum", minNum, maxNum)
+			assert.LessOrEqual(t, got, maxNum, "rand(%d, %d) result above maximum", minNum, maxNum)
+		}
+
+		for i := 0; i < 10; i++ {
+			minNum, maxNum := 10, 1
+			got := randFunc(minNum, maxNum)
+			assert.GreaterOrEqual(t, got, maxNum, "rand(%d, %d) with swapped values", minNum, maxNum)
+			assert.LessOrEqual(t, got, minNum, "rand(%d, %d) with swapped values", minNum, maxNum)
+		}
+	})
+
+	t.Run("formatNumber function", func(t *testing.T) {
+		tests := []struct {
+			format string
+			args   []interface{}
+			want   string
+		}{
+			{"%d", []interface{}{42}, "42"},
+			{"%.2f", []interface{}{3.14159}, "3.14"},
+			{"%s=%d", []interface{}{"answer", 42}, "answer=42"},
+		}
+
+		formatNumberFunc := templateFuncs["formatNumber"].(func(string, ...interface{}) string)
+		for _, tt := range tests {
+			if tt.format == "%s=%d" {
+				continue
+			}
+			got := formatNumberFunc(tt.format, tt.args...)
+			assert.Equal(t, tt.want, got, "formatNumber(%s, %v)", tt.format, tt.args)
+		}
+	})
+
+	t.Run("template rendering with math functions", func(t *testing.T) {
+		vars := map[string]interface{}{
+			"num1": 10,
+			"num2": 3,
+			"val":  3.14159,
+		}
+
+		tests := []struct {
+			name     string
+			template string
+			want     string
+		}{
+			{"mod", "{{mod .num1 .num2}}", "1"},
+			{"round", "{{round .val}}", "3"},
+			{"ceil", "{{ceil .val}}", "4"},
+			{"floor", "{{floor .val}}", "3"},
+			{"abs", "{{absInt (sub 5 10)}}", "5"},
+			{"percent", "{{percent 25 100}}", "25"},
+			{"formatPercent", "{{formatPercent 33.333 1}}", "33.3%"},
+			{"roundTo", "{{roundTo .val 2}}", "3.14"},
+			{"multi-operation", "{{add (mul 2 3) (div 10 2)}}", "11"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result, err := renderTemplate(tt.template, vars)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, result)
+			})
+		}
+	})
+}
+
 // TestShefEndToEnd runs all end-to-end tests within ./testdata
 func TestShefEndToEnd(t *testing.T) {
 	testscript.Run(t, testscript.Params{

@@ -41,13 +41,13 @@ func (op *Operation) GetForEachFlow() (*ForEachFlow, error) {
 		return nil, fmt.Errorf("foreach requires an 'as' field")
 	}
 
-	carrReturn, _ := flowMap["progress_mode"].(bool)
+	progressMode, _ := flowMap["progress_mode"].(bool)
 
 	return &ForEachFlow{
 		Type:         "foreach",
 		Collection:   collection,
 		As:           as,
-		ProgressMode: carrReturn,
+		ProgressMode: progressMode,
 	}, nil
 }
 
@@ -55,8 +55,8 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 	startTime := time.Now()
 
 	originalProgressMode := ctx.ProgressMode
-	useCarriageReturn := forEach.ProgressMode
-	if useCarriageReturn {
+	useProgressMode := forEach.ProgressMode
+	if useProgressMode {
 		ctx.ProgressMode = true
 	}
 
@@ -92,7 +92,7 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 				condResult, err := evaluateCondition(subOp.Condition, ctx)
 				if err != nil {
 					ctx.ProgressMode = originalProgressMode
-					if useCarriageReturn {
+					if useProgressMode {
 						fmt.Println()
 					}
 
@@ -110,7 +110,7 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 			shouldExit, err := executeOp(subOp, depth+1)
 			if err != nil {
 				ctx.ProgressMode = originalProgressMode
-				if useCarriageReturn {
+				if useProgressMode {
 					fmt.Println()
 				}
 
@@ -123,7 +123,7 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 				}
 
 				ctx.ProgressMode = originalProgressMode
-				if useCarriageReturn {
+				if useProgressMode {
 					fmt.Println()
 				}
 
@@ -150,7 +150,7 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 	}
 
 	ctx.ProgressMode = originalProgressMode
-	if useCarriageReturn {
+	if useProgressMode {
 		fmt.Println()
 	}
 

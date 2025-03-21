@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -171,6 +173,44 @@ var styleCodes = map[string]string{
 	"reset":     "\033[0m",
 }
 
+func init() {
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+}
+
+// Helper function to convert any value to float64
+func toFloat64(val interface{}) float64 {
+	switch v := val.(type) {
+	case int:
+		return float64(v)
+	case int64:
+		return float64(v)
+	case float32:
+		return float64(v)
+	case float64:
+		return v
+	case string:
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0
+		}
+		return f
+	default:
+		s := fmt.Sprintf("%v", val)
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return 0
+		}
+		return f
+	}
+}
+
+func normalizeNumber(val float64) interface{} {
+	if val == float64(int(val)) {
+		return int(val)
+	}
+	return val
+}
+
 var templateFuncs = template.FuncMap{
 	"split":      strings.Split,
 	"join":       strings.Join,
@@ -184,23 +224,109 @@ var templateFuncs = template.FuncMap{
 	"grep":       filterLines,
 	"cut":        cutFields,
 	"exec":       execCommand,
-	"atoi": func(s string) int {
-		var i int
-		_, err := fmt.Sscanf(s, "%d", &i)
-		if err != nil {
+	"atoi": func(s string) interface{} {
+		return normalizeNumber(toFloat64(s))
+	},
+	"add": func(a, b interface{}) interface{} {
+		return normalizeNumber(toFloat64(a) + toFloat64(b))
+	},
+	"sub": func(a, b interface{}) interface{} {
+		return normalizeNumber(toFloat64(a) - toFloat64(b))
+	},
+	"div": func(a, b interface{}) interface{} {
+		bVal := toFloat64(b)
+		if bVal == 0 {
 			return 0
 		}
-		return i
+		return normalizeNumber(toFloat64(a) / bVal)
 	},
-	"add": func(a, b int) int { return a + b },
-	"sub": func(a, b int) int { return a - b },
-	"div": func(a, b int) int {
-		if b == 0 {
+	"mul": func(a, b interface{}) interface{} {
+		return normalizeNumber(toFloat64(a) * toFloat64(b))
+	},
+	"mod": func(a, b interface{}) interface{} {
+		bVal := toFloat64(b)
+		if bVal == 0 {
 			return 0
 		}
-		return a / b
+		return normalizeNumber(math.Mod(toFloat64(a), bVal))
 	},
-	"mul": func(a, b int) int { return a * b },
+	"round": func(value interface{}) int {
+		return int(math.Round(toFloat64(value)))
+	},
+	"rand": func(min, max interface{}) int {
+		minVal := int(toFloat64(min))
+		maxVal := int(toFloat64(max))
+		if minVal > maxVal {
+			minVal, maxVal = maxVal, minVal
+		}
+		return minVal + rand.Intn(maxVal-minVal+1)
+	},
+	"percent": func(part, total interface{}) interface{} {
+		totalVal := toFloat64(total)
+		if totalVal == 0 {
+			return 0
+		}
+		return normalizeNumber((toFloat64(part) / totalVal) * 100)
+	},
+	"formatPercent": func(value interface{}, decimals interface{}) string {
+		return fmt.Sprintf("%.*f%%", int(toFloat64(decimals)), toFloat64(value))
+	},
+	"ceil": func(value interface{}) int {
+		return int(math.Ceil(toFloat64(value)))
+	},
+	"floor": func(value interface{}) int {
+		return int(math.Floor(toFloat64(value)))
+	},
+	"abs": func(value interface{}) interface{} {
+		return normalizeNumber(math.Abs(toFloat64(value)))
+	},
+	"absInt": func(value interface{}) int {
+		val := int(toFloat64(value))
+		if val < 0 {
+			return -val
+		}
+		return val
+	},
+	"max": func(a, b interface{}) interface{} {
+		return normalizeNumber(math.Max(toFloat64(a), toFloat64(b)))
+	},
+	"maxFloat": func(a, b interface{}) float64 {
+		return math.Max(toFloat64(a), toFloat64(b))
+	},
+	"min": func(a, b interface{}) interface{} {
+		return normalizeNumber(math.Min(toFloat64(a), toFloat64(b)))
+	},
+	"minFloat": func(a, b interface{}) float64 {
+		return math.Min(toFloat64(a), toFloat64(b))
+	},
+	"pow": func(base, exponent interface{}) interface{} {
+		return normalizeNumber(math.Pow(toFloat64(base), toFloat64(exponent)))
+	},
+	"sqrt": func(value interface{}) interface{} {
+		return normalizeNumber(math.Sqrt(toFloat64(value)))
+	},
+	"log": func(value interface{}) interface{} {
+		return normalizeNumber(math.Log(toFloat64(value)))
+	},
+	"log10": func(value interface{}) interface{} {
+		return normalizeNumber(math.Log10(toFloat64(value)))
+	},
+	"formatNumber": func(format string, args ...interface{}) string {
+		processedArgs := make([]interface{}, len(args))
+		for i, arg := range args {
+			switch arg.(type) {
+			case int, int64, float32, float64, string:
+				processedArgs[i] = normalizeNumber(toFloat64(arg))
+			default:
+				processedArgs[i] = arg
+			}
+		}
+		return fmt.Sprintf(format, processedArgs...)
+	},
+	"roundTo": func(value interface{}, decimals interface{}) interface{} {
+		precision := math.Pow(10, toFloat64(decimals))
+		return normalizeNumber(math.Round(toFloat64(value)*precision) / precision)
+	},
 	"color": func(color string, text interface{}) string {
 		if os.Getenv("NO_COLOR") != "" {
 			return fmt.Sprintf("%v", text)
@@ -777,9 +903,7 @@ func executeCommand(cmdStr string, input string, executionMode string, outputFor
 	switch executionMode {
 	case "standard":
 		return executeStandardCommand(cmdStr, input, outputFormat)
-	case "carriage_return":
-		return executeStandardCommand(cmdStr, input, "trim")
-	case "interactive", "streaming":
+	case "interactive", "stream":
 		return executeInteractiveCommand(cmdStr)
 	default:
 		return "", fmt.Errorf("unknown execution mode: %s", executionMode)
@@ -1353,8 +1477,7 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 				if idx := strings.Index(output, "\n"); idx >= 0 {
 					firstLine = output[:idx]
 				}
-				fmt.Print("\r" + firstLine + "\033[K")
-				//fmt.Print("\r" + strings.TrimRight(output, "\n") + "\033[K")
+				fmt.Print("\r" + firstLine + " " + "\033[K")
 			} else {
 				fmt.Println(output)
 			}
