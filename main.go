@@ -1124,7 +1124,7 @@ func executeBackgroundCommand(op Operation, ctx *ExecutionContext, opMap map[str
 			ctx.OperationResults[op.ID] = true
 
 			if output != "" && !op.Silent {
-				fmt.Printf("[Background task %s completed]: %s\n", op.ID, output)
+				fmt.Println(output)
 			}
 
 			if op.OnSuccess != "" {
