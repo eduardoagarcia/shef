@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -89,12 +90,32 @@ type PromptValidator struct {
 	Max     int    `yaml:"max,omitempty"`
 }
 
+type BackgroundTaskStatus string
+
+const (
+	TaskPending  BackgroundTaskStatus = "pending"
+	TaskComplete BackgroundTaskStatus = "complete"
+	TaskFailed   BackgroundTaskStatus = "failed"
+)
+
+type BackgroundTask struct {
+	ID      string
+	Command string
+	Status  BackgroundTaskStatus
+	Output  string
+	Error   string
+}
+
 type ExecutionContext struct {
 	Data             string
 	Vars             map[string]interface{}
 	OperationOutputs map[string]string
 	OperationResults map[string]bool
 	ProgressMode     bool
+	templateFuncs    template.FuncMap
+	BackgroundTasks  map[string]*BackgroundTask
+	BackgroundMutex  sync.RWMutex
+	BackgroundWg     sync.WaitGroup
 }
 
 func (ctx *ExecutionContext) templateVars() map[string]interface{} {
@@ -108,6 +129,7 @@ func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 		vars[opID] = output
 	}
 
+	vars["context"] = ctx
 	vars["operationOutputs"] = ctx.OperationOutputs
 	vars["operationResults"] = ctx.OperationResults
 
@@ -346,6 +368,54 @@ var templateFuncs = template.FuncMap{
 	},
 }
 
+func extendTemplateFuncs(baseFuncs template.FuncMap, ctx *ExecutionContext) template.FuncMap {
+	newFuncs := make(template.FuncMap)
+	for k, v := range baseFuncs {
+		newFuncs[k] = v
+	}
+
+	newFuncs["bgTaskStatus"] = func(taskID string) string {
+		ctx.BackgroundMutex.RLock()
+		defer ctx.BackgroundMutex.RUnlock()
+
+		if ctx.BackgroundTasks == nil {
+			return "unknown"
+		}
+
+		if task, exists := ctx.BackgroundTasks[taskID]; exists {
+			return string(task.Status)
+		}
+		return "unknown"
+	}
+	newFuncs["bgTaskComplete"] = func(taskID string) bool {
+		ctx.BackgroundMutex.RLock()
+		defer ctx.BackgroundMutex.RUnlock()
+
+		if ctx.BackgroundTasks == nil {
+			return false
+		}
+
+		if task, exists := ctx.BackgroundTasks[taskID]; exists {
+			return task.Status == TaskComplete
+		}
+		return false
+	}
+	newFuncs["bgTaskFailed"] = func(taskID string) bool {
+		ctx.BackgroundMutex.RLock()
+		defer ctx.BackgroundMutex.RUnlock()
+
+		if ctx.BackgroundTasks == nil {
+			return false
+		}
+
+		if task, exists := ctx.BackgroundTasks[taskID]; exists {
+			return task.Status == TaskFailed
+		}
+		return false
+	}
+	return newFuncs
+}
+
 func JoinArray(arr interface{}, sep string) string {
 	switch v := arr.(type) {
 	case []string:
@@ -391,7 +461,17 @@ func execCommand(cmd string) string {
 }
 
 func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error) {
-	tmpl, err := template.New("template").Funcs(templateFuncs).Parse(tmplStr)
+	funcs := templateFuncs
+	if ctxVal, ok := vars["context"]; ok {
+		if ctx, ok := ctxVal.(*ExecutionContext); ok && ctx != nil {
+			if ctx.templateFuncs == nil {
+				ctx.templateFuncs = extendTemplateFuncs(templateFuncs, ctx)
+			}
+			funcs = ctx.templateFuncs
+		}
+	}
+
+	tmpl, err := template.New("template").Funcs(funcs).Parse(tmplStr)
 	if err != nil {
 		return "", fmt.Errorf("template parse error: %w", err)
 	}
@@ -902,6 +982,8 @@ func executeCommand(cmdStr string, input string, executionMode string, outputFor
 		return executeStandardCommand(cmdStr, input, outputFormat)
 	case "interactive", "stream":
 		return executeInteractiveCommand(cmdStr)
+	case "background":
+		return string(TaskPending), nil
 	default:
 		return "", fmt.Errorf("unknown execution mode: %s", executionMode)
 	}
@@ -963,6 +1045,105 @@ func executeInteractiveCommand(cmdStr string) (string, error) {
 	case err := <-done:
 		return "", err
 	}
+}
+
+func executeBackgroundCommand(op Operation, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, debug bool) error {
+	if op.ID == "" {
+		return fmt.Errorf("background execution requires an operation ID")
+	}
+
+	cmd, err := renderTemplate(op.Command, ctx.templateVars())
+	if err != nil {
+		return fmt.Errorf("failed to render command template: %w", err)
+	}
+
+	if debug {
+		fmt.Printf("Starting background command: %s\n", cmd)
+	}
+
+	ctx.BackgroundMutex.Lock()
+	if ctx.BackgroundTasks == nil {
+		ctx.BackgroundTasks = make(map[string]*BackgroundTask)
+	}
+
+	task := &BackgroundTask{
+		ID:      op.ID,
+		Command: cmd,
+		Status:  TaskPending,
+	}
+
+	ctx.BackgroundTasks[op.ID] = task
+	ctx.OperationOutputs[op.ID] = string(TaskPending)
+	ctx.OperationResults[op.ID] = false
+	ctx.BackgroundMutex.Unlock()
+	ctx.BackgroundWg.Add(1)
+
+	go func() {
+		defer ctx.BackgroundWg.Done()
+
+		output, err := executeStandardCommand(cmd, ctx.Data, op.OutputFormat)
+
+		ctx.BackgroundMutex.Lock()
+		if err != nil {
+			task.Status = TaskFailed
+			task.Error = err.Error()
+			ctx.OperationResults[op.ID] = false
+			ctx.Vars["error"] = err.Error()
+
+			ctx.OperationOutputs[op.ID] = fmt.Sprintf("Error: %s", err.Error())
+
+			if debug {
+				fmt.Printf("Background task %s failed: %v\n", op.ID, err)
+			}
+
+			if op.OnFailure != "" {
+				nextOp, exists := opMap[op.OnFailure]
+				if exists {
+					if debug {
+						fmt.Printf("Executing on_failure handler %s for background task %s\n", op.OnFailure, op.ID)
+					}
+					_, executeOpErr := executeOp(nextOp, depth+1)
+					if executeOpErr != nil {
+						return
+					}
+				}
+			}
+		} else {
+			if op.Transform != "" {
+				transformedOutput, transformErr := transformOutput(output, op.Transform, ctx)
+				if transformErr == nil {
+					output = transformedOutput
+				} else if debug {
+					fmt.Printf("Transform error for background task %s: %v\n", op.ID, transformErr)
+				}
+			}
+
+			task.Status = TaskComplete
+			task.Output = output
+			ctx.OperationOutputs[op.ID] = strings.TrimSpace(output)
+			ctx.OperationResults[op.ID] = true
+
+			if output != "" && !op.Silent {
+				fmt.Printf("[Background task %s completed]: %s\n", op.ID, output)
+			}
+
+			if op.OnSuccess != "" {
+				nextOp, exists := opMap[op.OnSuccess]
+				if exists {
+					if debug {
+						fmt.Printf("Executing on_success handler %s for background task %s\n", op.OnSuccess, op.ID)
+					}
+					_, executeOpErr := executeOp(nextOp, depth+1)
+					if executeOpErr != nil {
+						return
+					}
+				}
+			}
+		}
+		ctx.BackgroundMutex.Unlock()
+	}()
+
+	return nil
 }
 
 func formatOutput(output string, outputFormat string) (string, error) {
@@ -1273,6 +1454,9 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 		OperationResults: make(map[string]bool),
 	}
 
+	ctx.templateFuncs = extendTemplateFuncs(templateFuncs, &ctx)
+	vars["context"] = &ctx
+
 	for k, v := range vars {
 		ctx.Vars[k] = v
 	}
@@ -1406,6 +1590,13 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 
 		ctx.Vars["error"] = ""
 
+		if op.ExecutionMode == "background" {
+			if err := executeBackgroundCommand(op, &ctx, opMap, executeOp, depth, debug); err != nil {
+				return false, err
+			}
+			return op.Exit, nil
+		}
+
 		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat)
 		operationSuccess := err == nil
 
@@ -1528,6 +1719,28 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			return nil
 		}
 	}
+
+	ctx.BackgroundWg.Wait()
+	ctx.BackgroundMutex.RLock()
+	for id, task := range ctx.BackgroundTasks {
+		if task.Status == TaskComplete {
+			var op *Operation
+			for _, recipe_op := range recipe.Operations {
+				if recipe_op.ID == id {
+					op = &recipe_op
+					break
+				}
+			}
+			if op == nil || !op.Silent {
+				if task.Output != "" && debug {
+					fmt.Printf("Background task %s output: %s\n", id, task.Output)
+				}
+			}
+		} else if task.Status == TaskFailed && task.Error != "" && debug {
+			fmt.Printf("Background task %s failed: %s\n", id, task.Error)
+		}
+	}
+	ctx.BackgroundMutex.RUnlock()
 
 	return nil
 }
