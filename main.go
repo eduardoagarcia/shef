@@ -1892,6 +1892,96 @@ func outputRecipesAsJSON(recipes []Recipe) error {
 	return nil
 }
 
+func findRecipeWithOptions(args []string, sourcePriority []string, debug bool) (*Recipe, []string, error) {
+	var recipe *Recipe
+	var err error
+
+	// 1. try to match a recipe with the given name
+	recipe, err = findRecipeInSources(args[0], "", sourcePriority, false)
+	if err == nil {
+		return recipe, args[1:], nil
+	}
+
+	// 2. try to match a recipe with the given category and name
+	if len(args) > 1 {
+		recipe, err = findRecipeInSources(args[1], args[0], sourcePriority, false)
+		if err == nil {
+			return recipe, args[2:], nil
+		}
+	}
+
+	// 3. try to match category to prompt for selection
+	recipe, err = handleCategorySelection(args[0], sourcePriority, debug)
+	if err == nil {
+		return recipe, args[1:], nil
+	}
+
+	// 4. try to fuzzy match with the given category
+	if len(args) > 1 {
+		recipe, err = findRecipeInSources(args[1], args[0], sourcePriority, true)
+		if err == nil {
+			return recipe, args[2:], nil
+		}
+	}
+
+	// 5. try to fuzzy match without category
+	recipe, err = findRecipeInSources(args[0], "", sourcePriority, true)
+	if err == nil {
+		return recipe, args[1:], nil
+	}
+
+	return nil, nil, fmt.Errorf("recipe not found: %s", args[0])
+}
+
+func handleCategorySelection(categoryName string, sourcePriority []string, debug bool) (*Recipe, error) {
+	var allRecipes []Recipe
+	recipeMap := make(map[string]Recipe)
+
+	for _, source := range sourcePriority {
+		useLocal := source == "local"
+		useUser := source == "user"
+		usePublic := source == "public"
+
+		sources, _ := findRecipeSourcesByType(useLocal, useUser, usePublic)
+		recipes, _ := loadRecipes(sources, categoryName)
+
+		for _, recipe := range recipes {
+			if _, exists := recipeMap[recipe.Name]; !exists {
+				recipeMap[recipe.Name] = recipe
+			}
+		}
+	}
+
+	if len(recipeMap) == 0 {
+		return nil, fmt.Errorf("no recipes found in category: %s", categoryName)
+	}
+
+	for _, recipe := range recipeMap {
+		allRecipes = append(allRecipes, recipe)
+	}
+	sort.Slice(allRecipes, func(i, j int) bool {
+		return allRecipes[i].Name < allRecipes[j].Name
+	})
+
+	options := make([]string, len(allRecipes))
+	for i, recipe := range allRecipes {
+		options[i] = recipe.Name
+	}
+
+	prompt := &survey.Select{
+		Message: fmt.Sprintf("Choose a recipe from %s:", categoryName),
+		Options: options,
+	}
+
+	var selected string
+	if err := survey.AskOne(prompt, &selected); err != nil {
+		return nil, err
+	}
+
+	selectedRecipe := recipeMap[selected]
+	return &selectedRecipe, nil
+}
+
 func handleRunCommand(c *cli.Context, args []string, sourcePriority []string) error {
 	debug := c.Bool("debug")
 	var recipes []Recipe
@@ -1913,32 +2003,7 @@ func handleRunCommand(c *cli.Context, args []string, sourcePriority []string) er
 		var recipe *Recipe
 		var err error
 
-		recipe, err = findRecipeInSources(args[0], "", sourcePriority, false)
-		if err == nil {
-			remainingArgs = args[1:]
-		} else if len(args) > 1 {
-			recipe, err = findRecipeInSources(args[1], args[0], sourcePriority, false)
-			if err == nil {
-				remainingArgs = args[2:]
-			}
-		}
-
-		if err != nil {
-			if len(args) > 1 {
-				recipe, err = findRecipeInSources(args[1], args[0], sourcePriority, true)
-				if err == nil {
-					remainingArgs = args[2:]
-				}
-			}
-
-			if err != nil {
-				recipe, err = findRecipeInSources(args[0], "", sourcePriority, true)
-				if err == nil {
-					remainingArgs = args[1:]
-				}
-			}
-		}
-
+		recipe, remainingArgs, err = findRecipeWithOptions(args, sourcePriority, debug)
 		if err != nil {
 			return err
 		}
