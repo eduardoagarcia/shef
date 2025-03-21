@@ -340,7 +340,7 @@ Operations are the building blocks of recipes:
 - name: "Operation Name"            # Operation name
   id: "var_id"                      # [Optional] Identifier for referencing the variable for the operation
   command: echo "Hello"             # [Optional] Shell command to execute
-  execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, or stream)
+  execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, stream, or background)
   output_format: "raw"              # [Optional] How to format command output (raw [default], trim, or lines)
   silent: false                     # [Optional] Flag whether to suppress output to stdout. Default is false.
   exit: false                       # [Optional] When set to true, the recipe will exit after the operation completes. Default is false.
@@ -369,8 +369,87 @@ Operations are the building blocks of recipes:
   require direct terminal interaction, but output cannot be captured for use in subsequent operations.
 - **stream**: Similar to interactive mode but optimized for long-running processes that produce continuous output. The
   command's output streams to the terminal in real-time, but output cannot be captured for use in subsequent operations.
+- **background**: Executes the command asynchronously in a separate process. The recipe execution continues immediately
+  without waiting for the command to complete. Useful for long-running tasks that don't need to block recipe execution.
 
-#### Output Format
+### Background Task Management
+
+When using `execution_mode: "background"`, Shef provides template functions to monitor and interact with background tasks:
+
+- **bgTaskStatus**: Returns the current status of a background task (`pending`, `complete`, or `failed`)
+- **bgTaskComplete**: Returns `true` if the task has completed successfully, `false` otherwise
+- **bgTaskFailed**: Returns `true` if the task has failed, `false` otherwise
+
+#### Requirements for Background Tasks
+
+- Each background task must have a unique `id` specified
+- The task's output will be available as a variable using the task's ID once completed
+
+#### Task Status Checking
+
+##### Check a task's status
+
+```yaml
+- name: "Check Status"
+  command:
+    echo 'Task status: {{ bgTaskStatus "task_id" }}'
+```
+
+> [!IMPORTANT]
+> Notice we reference the task id by a _string_ when checking status, complete, and failed states.
+
+##### Wait for task completion
+
+```yaml
+- name: "Wait For Task"
+  control_flow:
+    type: "while"
+    condition: '{{ not (bgTaskComplete "task_id") }}'
+  operations:
+    - name: "Poll Status"
+      command: echo "Waiting for task to complete..."
+
+    - name: "Small Delay"
+      command: sleep 1
+```
+
+#### Task Output Access
+
+Once a background task completes, its output is available like any other operation:
+
+```yaml
+- name: "Echo Task Output"
+  command: echo "Task result {{ .task_id }}"
+  condition: '{{ bgTaskComplete "task_id" }}'
+```
+
+#### Background Task Completion Behavior
+
+When you start a background task with `execution_mode: "background"`, it's important to understand how Shef handles task
+completion:
+
+- **Implicit Waiting**: Shef automatically waits for all background tasks to complete before terminating the recipe
+  execution, even if you don't explicitly wait for them in your operations.
+- **Output Capture**: All background tasks will have their outputs captured and made available as variables, regardless
+  of whether you explicitly check their status.
+- **Completion Order**: Background tasks complete in the order determined by their execution time, not the order they
+  were started.
+- **Recipe Exit**: The recipe won't exit until all background tasks have completed, which could cause the recipe to
+  appear to "hang" if a background task takes a very long time.
+
+Example of implicit waiting:
+
+```yaml
+- name: "Start Long Task"
+  id: "long_task"
+  command: "sleep 30 && echo 'Done!'"
+  execution_mode: "background"
+
+- name: "Immediate Feedback"
+  command: echo "Started background task! Recipe will wait for it to complete before exiting."
+```
+
+### Output Format
 
 Shef provides options for controlling how whitespace and empty lines are handled in command output:
 
@@ -401,11 +480,11 @@ operations:
     output_format: "lines"  # Result: "item1\nitem2\nitem3"
 ```
 
-#### Control Flow Configuration
+### Control Flow Configuration
 
 Control flow structures are configured as follows:
 
-##### Foreach
+#### Foreach
 
 ```yaml
 control_flow:
@@ -414,7 +493,7 @@ control_flow:
   as: "item"                    # Variable name for current item
 ```
 
-##### For
+#### For
 
 ```yaml
 control_flow:
@@ -423,7 +502,7 @@ control_flow:
   variable: "i"  # Variable name for iteration index (optional)
 ```
 
-##### While
+#### While
 
 ```yaml
 control_flow:
