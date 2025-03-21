@@ -1910,18 +1910,18 @@ func findRecipeWithOptions(args []string, sourcePriority []string, debug bool) (
 		}
 	}
 
-	// 3. try to match category to prompt for selection
-	recipe, err = handleCategorySelection(args[0], sourcePriority, debug)
-	if err == nil {
-		return recipe, args[1:], nil
-	}
-
-	// 4. try to fuzzy match with the given category
+	// 3. try to fuzzy match with the given category
 	if len(args) > 1 {
 		recipe, err = findRecipeInSources(args[1], args[0], sourcePriority, true)
 		if err == nil {
 			return recipe, args[2:], nil
 		}
+	}
+
+	// 4. try to match category to prompt for selection
+	recipe, err = handleCategorySelection(args[0], sourcePriority, debug)
+	if err == nil {
+		return recipe, args[1:], nil
 	}
 
 	// 5. try to fuzzy match without category
