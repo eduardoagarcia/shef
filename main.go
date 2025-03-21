@@ -28,6 +28,7 @@ const (
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"
 	PublicRecipesFolder   = "recipes"
+	ExitPrompt            = "Exit"
 )
 
 type Config struct {
@@ -846,6 +847,9 @@ func handlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 
 func getPromptOptions(p Prompt, ctx *ExecutionContext) ([]string, error) {
 	if p.SourceOp == "" {
+		if len(p.Options) > 0 && p.Type != "multiselect" {
+			return append(p.Options, ExitPrompt), nil
+		}
 		return p.Options, nil
 	}
 
@@ -859,7 +863,11 @@ func getPromptOptions(p Prompt, ctx *ExecutionContext) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("transformation failed: %w", err)
 		}
-		return parseOptionsFromOutput(transformedOutput), nil
+		options := parseOptionsFromOutput(transformedOutput)
+		if len(options) > 0 && p.Type != "multiselect" {
+			return append(options, ExitPrompt), nil
+		}
+		return options, nil
 	}
 
 	options := parseOptionsFromOutput(output)
@@ -867,6 +875,9 @@ func getPromptOptions(p Prompt, ctx *ExecutionContext) ([]string, error) {
 		return nil, fmt.Errorf("no options found from source operation %s", p.SourceOp)
 	}
 
+	if p.Type != "multiselect" {
+		options = append(options, ExitPrompt)
+	}
 	return options, nil
 }
 
@@ -1317,6 +1328,10 @@ func executeRecipe(recipe Recipe, input string, vars map[string]interface{}, deb
 			value, err := handlePrompt(prompt, &ctx)
 			if err != nil {
 				return false, err
+			}
+
+			if value == ExitPrompt && (prompt.Type == "select" || prompt.Type == "autocomplete") {
+				os.Exit(0)
 			}
 
 			varName := prompt.Name
@@ -1969,7 +1984,7 @@ func handleCategorySelection(categoryName string, sourcePriority []string, debug
 	for i, recipe := range allRecipes {
 		options[i] = recipe.Name
 	}
-	options[len(allRecipes)] = "exit"
+	options[len(allRecipes)] = ExitPrompt
 
 	prompt := &survey.Select{
 		Message: fmt.Sprintf("Choose a recipe from %s:", categoryName),
@@ -1981,7 +1996,7 @@ func handleCategorySelection(categoryName string, sourcePriority []string, debug
 		return nil, err
 	}
 
-	if selected == "exit" {
+	if selected == ExitPrompt {
 		return nil, fmt.Errorf("recipe selection aborted by user")
 	}
 

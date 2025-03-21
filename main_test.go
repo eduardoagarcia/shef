@@ -740,7 +740,7 @@ func TestGetPromptOptions(t *testing.T) {
 			prompt: Prompt{
 				Options: []string{"option1", "option2", "option3"},
 			},
-			want:    []string{"option1", "option2", "option3"},
+			want:    []string{"option1", "option2", "option3", ExitPrompt},
 			wantErr: false,
 		},
 		{
@@ -748,7 +748,7 @@ func TestGetPromptOptions(t *testing.T) {
 			prompt: Prompt{
 				SourceOp: "sourceOp",
 			},
-			want:    []string{"option1", "option2", "option3"},
+			want:    []string{"option1", "option2", "option3", ExitPrompt},
 			wantErr: false,
 		},
 		{
