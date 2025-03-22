@@ -1,0 +1,71 @@
+recipes:
+  - name: "background-tasks"
+    description: "A simple demo showing the background execution of three concurrent tasks"
+    category: "demo"
+    help: |
+      This recipe demonstrates how to run multiple tasks concurrently and monitor their status.
+
+      The recipe:
+        1. Starts three background tasks with different execution durations (7, 10, and 15 seconds)
+        2. Shows immediate feedback when each task is launched
+        3. Monitors all tasks simultaneously with a status loop
+        4. Displays completion status and final output when all tasks are finished
+
+      Background task features demonstrated:
+        - execution_mode: "background"  # Runs tasks asynchronously
+        - bgTaskComplete function       # Checks if a task has completed
+        - bgTaskStatus function         # Returns the current status of a task
+        - Accessing task output         # Access output after completion
+
+      This showcases:
+        - How to launch multiple operations concurrently without blocking
+        - How to monitor the status of background tasks
+        - How to create a waiting loop that checks for task completion
+        - How to access output from completed background tasks
+        - Real-time inline status updates using progress_mode: true
+    operations:
+      - name: "Start Background Task 1"
+        id: "bg_task1"
+        command: sleep 7 && echo "Background Task 1 completed after 7 seconds"
+        silent: true
+        execution_mode: "background"
+
+      - name: "Immediate Command"
+        command: echo {{ color "magenta" "Started Background Task 1!" }}
+
+      - name: "Start Background Task 2"
+        id: "bg_task2"
+        command: sleep 10 && echo "Background Task 2 completed after 10 seconds"
+        silent: true
+        execution_mode: "background"
+
+      - name: "Immediate Command"
+        command: echo {{ color "magenta" "Started Background Task 2!" }}
+
+      - name: "Start Background Task 3"
+        id: "bg_task3"
+        command: sleep 15 && echo "Background Task 3 completed after 15 seconds"
+        silent: true
+        execution_mode: "background"
+
+      - name: "Immediate Command"
+        command: echo {{ color "magenta" "Started Background Task 3!" }}
+
+      - name: "Wait Loop"
+        control_flow:
+          type: "while"
+          condition: '!{{ bgTaskComplete "bg_task1" }} || !{{ bgTaskComplete "bg_task2" }} || !{{ bgTaskComplete "bg_task3" }}'
+          progress_mode: true
+        operations:
+          - name: "Status Update"
+            command: 'echo {{ color "yellow" (printf "Current statuses: [Task 1: %s] [Task 2: %s] [Task 3: %s] %s" (bgTaskStatus "bg_task1") (bgTaskStatus "bg_task2") (bgTaskStatus "bg_task3") .duration_ms_fmt) }}'
+
+      - name: "Success"
+        command: echo {{ color "green" "All background tasks are complete!" }}
+
+      - name: "Display Background Task Results"
+        command: |
+          echo "Background Task Output:"
+          echo "Task 1 output: {{ .bg_task1 }}"
+          echo "Task 2 output: {{ .bg_task2 }}"
+          echo "Task 3 output: {{ .bg_task3 }}"
