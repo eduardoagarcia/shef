@@ -1,0 +1,26 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp progress_mode_recipe.yaml .shef/
+
+# Test running progress mode recipe
+exec shef progress_mode_recipe
+
+# Validate test
+stdout 'For loop iteration 2'
+stdout '---'
+stdout 'Processing Item 3'
+stdout '---'
+stdout 'While loop iteration 2'
+stdout 'All progress mode tests completed successfully'
+! stdout 'For loop iteration 1\nFor loop iteration 2'
+! stdout 'Processing Item 1\nProcessing Item 2'
+! stdout 'While loop iteration 1\nWhile loop iteration 2'

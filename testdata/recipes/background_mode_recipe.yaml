@@ -1,0 +1,52 @@
+recipes:
+  - name: "background_mode_recipe"
+    description: "A recipe that tests background execution mode"
+    category: "test"
+    operations:
+      - name: "Start Background Task 1"
+        id: "bg_task1"
+        command: "sleep 2 && echo 'Background task 1 completed'"
+        execution_mode: "background"
+
+      - name: "Start Background Task 2"
+        id: "bg_task2"
+        command: "sleep 4 && echo 'Background task 2 completed'"
+        execution_mode: "background"
+
+      - name: "Check Initial Status"
+        command: |
+          echo "Background tasks started"
+          echo 'Task 1 status: {{ bgTaskStatus "bg_task1" }}'
+          echo 'Task 2 status: {{ bgTaskStatus "bg_task2" }}'
+
+      - name: "Wait For Task 1"
+        control_flow:
+          type: "while"
+          condition: '{{ not (bgTaskComplete "bg_task1") }}'
+        operations:
+          - name: "Check Status"
+            command: |
+              echo "Waiting for task 1..."
+              sleep 1
+
+      - name: "Task 1 Complete"
+        command: |
+          echo "Task 1 is now complete"
+          echo "Task 1 output: {{ .bg_task1 }}"
+          echo 'Task 2 status: {{ bgTaskStatus "bg_task2" }}'
+
+      - name: "Wait For Task 2"
+        control_flow:
+          type: "while"
+          condition: '{{ not (bgTaskComplete "bg_task2") }}'
+        operations:
+          - name: "Check Status"
+            command: |
+              echo "Waiting for task 2..."
+              sleep 1
+
+      - name: "All Tasks Complete"
+        command: |
+          echo "All background tasks completed"
+          echo "Task 1 output: {{ .bg_task1 }}"
+          echo "Task 2 output: {{ .bg_task2 }}"

@@ -1,0 +1,28 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp background_mode_recipe.yaml .shef/
+
+# Test running background mode recipe
+exec shef background_mode_recipe
+
+# Validate test
+stdout 'Background tasks started'
+stdout 'Task 1 status: pending'
+stdout 'Task 2 status: pending'
+stdout 'Waiting for task 1...'
+stdout 'Task 1 is now complete'
+stdout 'Task 1 output: Background task 1 completed'
+stdout 'Task 2 status: pending'
+stdout 'Waiting for task 2...'
+stdout 'All background tasks completed'
+stdout 'Task 1 output: Background task 1 completed'
+stdout 'Task 2 output: Background task 2 completed'

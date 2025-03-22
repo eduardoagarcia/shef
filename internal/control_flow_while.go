@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"fmt"
@@ -6,8 +6,9 @@ import (
 )
 
 type WhileFlow struct {
-	Type      string `yaml:"type"`
-	Condition string `yaml:"condition"`
+	Type         string `yaml:"type"`
+	Condition    string `yaml:"condition"`
+	ProgressMode bool   `yaml:"progress_mode,omitempty"`
 }
 
 func (w *WhileFlow) GetType() string {
@@ -34,16 +35,24 @@ func (op *Operation) GetWhileFlow() (*WhileFlow, error) {
 		return nil, fmt.Errorf("while requires a 'condition' field")
 	}
 
+	progressMode, _ := flowMap["progress_mode"].(bool)
+
 	return &WhileFlow{
-		Type:      "while",
-		Condition: condition,
+		Type:         "while",
+		Condition:    condition,
+		ProgressMode: progressMode,
 	}, nil
 }
 
 func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
 	startTime := time.Now()
 
-	maxIterations := 1000
+	originalProgressMode := ctx.ProgressMode
+	useProgressMode := whileFlow.ProgressMode
+	if useProgressMode {
+		ctx.ProgressMode = true
+	}
+
 	iterations := 0
 	breakLoop := false
 
@@ -56,11 +65,21 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 
 		renderedCondition, err := renderTemplate(whileFlow.Condition, ctx.templateVars())
 		if err != nil {
+			ctx.ProgressMode = originalProgressMode
+			if useProgressMode {
+				fmt.Println()
+			}
+
 			return false, fmt.Errorf("failed to render while condition template: %w", err)
 		}
 
 		conditionResult, err := evaluateCondition(renderedCondition, ctx)
 		if err != nil {
+			ctx.ProgressMode = originalProgressMode
+			if useProgressMode {
+				fmt.Println()
+			}
+
 			return false, fmt.Errorf("failed to evaluate while condition '%s': %w", renderedCondition, err)
 		}
 
@@ -69,20 +88,20 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		}
 
 		iterations++
-		if iterations > maxIterations {
-			return false, fmt.Errorf("maximum while loop iterations exceeded (%d)", maxIterations)
-		}
-
 		if debug {
-			fmt.Printf("While iteration %d, condition: %s (elapsed: %s)\n", iterations, whileFlow.Condition, ctx.Vars["duration"])
+			fmt.Printf("While iteration %d, condition: %s (elapsed: %s)\n", iterations, whileFlow.Condition, ctx.Vars["duration_fmt"])
 		}
-
 		ctx.Vars["iteration"] = iterations
 
 		for _, subOp := range op.Operations {
 			if subOp.Condition != "" {
 				condResult, err := evaluateCondition(subOp.Condition, ctx)
 				if err != nil {
+					ctx.ProgressMode = originalProgressMode
+					if useProgressMode {
+						fmt.Println()
+					}
+
 					return false, fmt.Errorf("condition evaluation failed: %w", err)
 				}
 
@@ -96,6 +115,11 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 
 			shouldExit, err := executeOp(subOp, depth+1)
 			if err != nil {
+				ctx.ProgressMode = originalProgressMode
+				if useProgressMode {
+					fmt.Println()
+				}
+
 				return shouldExit, err
 			}
 
@@ -103,6 +127,12 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 				if debug {
 					fmt.Printf("Exiting entire recipe due to exit flag in '%s'\n", subOp.Name)
 				}
+
+				ctx.ProgressMode = originalProgressMode
+				if useProgressMode {
+					fmt.Println()
+				}
+
 				return true, nil
 			}
 
@@ -122,6 +152,11 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 
 	if op.ID != "" {
 		ctx.OperationResults[op.ID] = true
+	}
+
+	ctx.ProgressMode = originalProgressMode
+	if useProgressMode {
+		fmt.Println()
 	}
 
 	return false, nil

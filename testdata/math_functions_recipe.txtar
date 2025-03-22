@@ -1,0 +1,37 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp math_functions_recipe.yaml .shef/
+
+# Test running the math functions recipe
+exec shef math_functions_recipe
+
+# Validate test
+stdout '10.7,3.2'
+stdout '1'
+stdout '4'
+stdout '4'
+stdout '3'
+stdout '4.5'
+stdout '7'
+stdout '10'
+stdout '5'
+stdout '10.1'
+stdout '5.5'
+stdout '8'
+stdout '4'
+stdout '1'
+stdout '2'
+stdout '25'
+stdout '33.3%'
+stdout '3.14'
+stdout '3.142'
+stdout '3.32'

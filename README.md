@@ -340,7 +340,7 @@ Operations are the building blocks of recipes:
 - name: "Operation Name"            # Operation name
   id: "var_id"                      # [Optional] Identifier for referencing the variable for the operation
   command: echo "Hello"             # [Optional] Shell command to execute
-  execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, or stream)
+  execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, stream, or background)
   output_format: "raw"              # [Optional] How to format command output (raw [default], trim, or lines)
   silent: false                     # [Optional] Flag whether to suppress output to stdout. Default is false.
   exit: false                       # [Optional] When set to true, the recipe will exit after the operation completes. Default is false.
@@ -369,8 +369,87 @@ Operations are the building blocks of recipes:
   require direct terminal interaction, but output cannot be captured for use in subsequent operations.
 - **stream**: Similar to interactive mode but optimized for long-running processes that produce continuous output. The
   command's output streams to the terminal in real-time, but output cannot be captured for use in subsequent operations.
+- **background**: Executes the command asynchronously in a separate process. The recipe execution continues immediately
+  without waiting for the command to complete. Useful for long-running tasks that don't need to block recipe execution.
 
-#### Output Format
+### Background Task Management
+
+When using `execution_mode: "background"`, Shef provides template functions to monitor and interact with background tasks:
+
+- **bgTaskStatus**: Returns the current status of a background task (`pending`, `complete`, or `failed`)
+- **bgTaskComplete**: Returns `true` if the task has completed successfully, `false` otherwise
+- **bgTaskFailed**: Returns `true` if the task has failed, `false` otherwise
+
+#### Requirements for Background Tasks
+
+- Each background task must have a unique `id` specified
+- The task's output will be available as a variable using the task's ID once completed
+
+#### Task Status Checking
+
+##### Check a task's status
+
+```yaml
+- name: "Check Status"
+  command:
+    echo 'Task status: {{ bgTaskStatus "task_id" }}'
+```
+
+> [!IMPORTANT]
+> Notice we reference the task id by a _string_ when checking status, complete, and failed states.
+
+##### Wait for task completion
+
+```yaml
+- name: "Wait For Task"
+  control_flow:
+    type: "while"
+    condition: '{{ not (bgTaskComplete "task_id") }}'
+  operations:
+    - name: "Poll Status"
+      command: echo "Waiting for task to complete..."
+
+    - name: "Small Delay"
+      command: sleep 1
+```
+
+#### Task Output Access
+
+Once a background task completes, its output is available like any other operation:
+
+```yaml
+- name: "Echo Task Output"
+  command: echo "Task result {{ .task_id }}"
+  condition: '{{ bgTaskComplete "task_id" }}'
+```
+
+#### Background Task Completion Behavior
+
+When you start a background task with `execution_mode: "background"`, it's important to understand how Shef handles task
+completion:
+
+- **Implicit Waiting**: Shef automatically waits for all background tasks to complete before terminating the recipe
+  execution, even if you don't explicitly wait for them in your operations.
+- **Output Capture**: All background tasks will have their outputs captured and made available as variables, regardless
+  of whether you explicitly check their status.
+- **Completion Order**: Background tasks complete in the order determined by their execution time, not the order they
+  were started.
+- **Recipe Exit**: The recipe won't exit until all background tasks have completed, which could cause the recipe to
+  appear to "hang" if a background task takes a very long time.
+
+Example of implicit waiting:
+
+```yaml
+- name: "Start Long Task"
+  id: "long_task"
+  command: "sleep 30 && echo 'Done!'"
+  execution_mode: "background"
+
+- name: "Immediate Feedback"
+  command: echo "Started background task! Recipe will wait for it to complete before exiting."
+```
+
+### Output Format
 
 Shef provides options for controlling how whitespace and empty lines are handled in command output:
 
@@ -401,11 +480,11 @@ operations:
     output_format: "lines"  # Result: "item1\nitem2\nitem3"
 ```
 
-#### Control Flow Configuration
+### Control Flow Configuration
 
 Control flow structures are configured as follows:
 
-##### Foreach
+#### Foreach
 
 ```yaml
 control_flow:
@@ -414,7 +493,7 @@ control_flow:
   as: "item"                    # Variable name for current item
 ```
 
-##### For
+#### For
 
 ```yaml
 control_flow:
@@ -423,7 +502,7 @@ control_flow:
   variable: "i"  # Variable name for iteration index (optional)
 ```
 
-##### While
+#### While
 
 ```yaml
 control_flow:
@@ -623,6 +702,27 @@ transform: "{{ param1 | function1 .output }}"
 | `style`          | Add styling to text                | (style, text)              | `{{ style "bold" "Important!" }}`     | `{{ "Important!" \| style "bold" }}`   | `"bold", "Important!"` | Bold "Important!"        |
 | `resetFormat`    | Reset colors and styles            | ()                         | `{{ resetFormat }}`                   | N/A                                    | N/A                    | ANSI reset code          |
 
+#### Available Math Functions
+
+| Function        | Description                       | Parameters        | Direct Example                      | Pipe Example                 | Input             | Output             |
+|-----------------|-----------------------------------|-------------------|-------------------------------------|------------------------------|-------------------|--------------------|
+| `mod`           | Modulo operation                  | (a, b)            | `{{ mod 10 3 }}`                    | `{{ 3 \| mod 10 }}`          | `10, 3`           | `1`                |
+| `round`         | Round to nearest integer          | (value)           | `{{ round 3.7 }}`                   | `{{ 3.7 \| round }}`         | `3.7`             | `4`                |
+| `rand`          | Generate random integer in range  | (min, max)        | `{{ rand 1 10 }}`                   | N/A                          | `1, 10`           | Random number 1-10 |
+| `percent`       | Calculate percentage              | (part, total)     | `{{ percent 25 100 }}`              | `{{ 100 \| percent 25 }}`    | `25, 100`         | `25.0`             |
+| `formatPercent` | Format percentage with decimals   | (value, decimals) | `{{ formatPercent 33.333 1 }}`      | N/A                          | `33.333, 1`       | `"33.3%"`          |
+| `ceil`          | Round up to next integer          | (value)           | `{{ ceil 3.1 }}`                    | `{{ 3.1 \| ceil }}`          | `3.1`             | `4`                |
+| `floor`         | Round down to integer             | (value)           | `{{ floor 3.9 }}`                   | `{{ 3.9 \| floor }}`         | `3.9`             | `3`                |
+| `abs`           | Absolute value for floats         | (value)           | `{{ abs -3.5 }}`                    | `{{ -3.5 \| abs }}`          | `-3.5`            | `3.5`              |
+| `max`           | Maximum of two integers           | (a, b)            | `{{ max 5 10 }}`                    | `{{ 10 \| max 5 }}`          | `5, 10`           | `10`               |
+| `min`           | Minimum of two integers           | (a, b)            | `{{ min 5 10 }}`                    | `{{ 10 \| min 5 }}`          | `5, 10`           | `5`                |
+| `pow`           | Power function                    | (base, exponent)  | `{{ pow 2 3 }}`                     | `{{ 3 \| pow 2 }}`           | `2, 3`            | `8.0`              |
+| `sqrt`          | Square root                       | (value)           | `{{ sqrt 9 }}`                      | `{{ 9 \| sqrt }}`            | `9`               | `3.0`              |
+| `log`           | Natural logarithm                 | (value)           | `{{ log 2.718 }}`                   | `{{ 2.718 \| log }}`         | `2.718`           | `1.0`              |
+| `log10`         | Base-10 logarithm                 | (value)           | `{{ log10 100 }}`                   | `{{ 100 \| log10 }}`         | `100`             | `2.0`              |
+| `formatNumber`  | Format numbers with pattern       | (format, args...) | `{{ formatNumber "%.2f" 3.14159 }}` | N/A                          | `"%.2f", 3.14159` | `"3.14"`           |
+| `roundTo`       | Round to specified decimal places | (value, decimals) | `{{ roundTo 3.14159 2 }}`           | `{{ 2 \| roundTo 3.14159 }}` | `3.14159, 2`      | `3.14`             |
+
 ### Recommended Practices
 
 1. **Use direct function calls for clarity** rather than pipe syntax, especially for functions that take multiple
@@ -657,6 +757,10 @@ transform: "{{ param1 | function1 .output }}"
 #### Numeric Operations
 
 - `atoi`, `add`, `sub`, `div`, `mul`
+
+#### Math Operations
+
+- `mod`, `round`, `ceil`, `floor`, `abs`, `max`, `min`, `pow`, `sqrt`, `log`, `log10`, `percent`, `formatPercent`, `rand`, `roundTo`, `formatNumber`
 
 #### Shell Integration
 
@@ -1076,6 +1180,79 @@ operations:
 > [!NOTE]
 > Duration variables persist after the loop completes, allowing you to access the total execution time of the loop in
 > subsequent operations.
+
+### Progress Mode
+
+Progress mode allows operations within loops to update in-place on a single line, creating a cleaner interface for status updates and progress indicators.
+
+#### Key Progress Mode Features
+
+- **control_flow**
+  - **progress_mode**: When set to `true`, enables single-line updates for all operations in the loop
+- **Behavior**: Each operation's output replaces the previous output on the same line rather than printing new lines
+- **Limitations**: Only the first line of output is displayed; additional lines are ignored
+
+#### Mechanics of Progress Mode
+
+1. When a loop has `progress_mode: true`, all operations within the loop display their output on a single line
+2. Each new output overwrites the previous output (returning to the start of the line)
+3. At the end of the loop, a newline is automatically added to maintain clean formatting
+
+#### Common Uses
+
+- Displaying progress counters (e.g., "Processing 5/100...")
+- Showing status updates for long-running operations
+- Creating animated loading indicators
+- Providing real-time feedback without cluttering the terminal
+
+> [!TIP]
+> Progress mode works best for simple, concise status messages. For complex multi-line output, standard mode is more appropriate.
+
+#### Example Progress Mode Recipes
+
+With a for loop:
+
+```yaml
+- name: "Download Progress Example"
+  control_flow:
+    type: "for"
+    count: 100
+    variable: "i"
+    progress_mode: true
+  operations:
+    - name: "Update Progress"
+      command: echo "Downloading... {{ .i }}% complete"
+```
+
+With a while loop:
+
+```yaml
+- name: "Service Monitor Example"
+  control_flow:
+    type: "while"
+    condition: .duration_s < 60  # Monitor for 60 seconds
+    progress_mode: true
+  operations:
+    - name: "Check Service Status"
+      command: echo "Monitoring service... ({{ .duration_fmt }} elapsed)"
+
+    - name: "Wait"
+      command: sleep 1
+```
+
+With a foreach loop:
+
+```yaml
+- name: "Batch Processing Example"
+  control_flow:
+    type: "foreach"
+    collection: "{{ .files }}"
+    as: "file"
+    progress_mode: true
+  operations:
+    - name: "Process File"
+      command: echo "Processing {{ .file }}"
+```
 
 ## Arguments and Flags
 

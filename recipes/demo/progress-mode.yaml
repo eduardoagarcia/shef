@@ -1,0 +1,51 @@
+recipes:
+  - name: "progress-mode"
+    description: "A simple demo to show progress mode in control flows"
+    category: "demo"
+    help: |
+      This recipe demonstrates the 'progress_mode' feature in different control flows.
+
+      Progress mode allows operations within loops to update in-place on a single line,
+      making it perfect for displaying progress indicators, counters, or status updates
+      without cluttering your terminal with multiple lines of output.
+
+      The recipe shows progress_mode in three different control flow types:
+        - for loop: Counts through iterations with a numeric counter
+        - foreach loop: Processes items from a collection with updated status
+        - while loop: Shows a running timer that updates in real-time
+
+      Usage in control_flow:
+        progress_mode: true  # Enables inline updates for all operations in the loop
+
+      Each loop's output replaces the previous output on the same line rather than
+      printing on new lines, creating a cleaner, more dynamic display of progress
+      information.
+    operations:
+      - name: "For Progress Mode"
+        control_flow:
+          type: "for"
+          count: 500
+          variable: "i"
+          progress_mode: true
+        operations:
+          - name: "Print Iteration"
+            command: echo "Running iteration... {{ color "green" .iteration }}"
+
+      - name: "Foreach Progress Mode"
+        control_flow:
+          type: "foreach"
+          collection: "Item 1\nItem 2\nItem 3\nItem 4\nItem 5"
+          as: "item"
+          progress_mode: true
+        operations:
+          - name: "Print Item"
+            command: echo {{ color "magenta" (printf "Processing... '%s'" .item) }}
+
+      - name: "While Progress Mode"
+        control_flow:
+          type: "while"
+          condition: .duration_s < 5
+          progress_mode: true
+        operations:
+          - name: "Print Duration"
+            command: echo {{ color "yellow" (printf "Build is running... '%s'" .duration_ms_fmt) }}
