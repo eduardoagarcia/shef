@@ -40,7 +40,7 @@ func handleSyncCommand() error {
 	return installRecipes(extractedDir, dirs.publicDir)
 }
 
-// setupDirectories creates the necessary directories for shef
+// setupDirectories creates the necessary directories for Shef
 func setupDirectories() (struct {
 	shefDir   string
 	publicDir string
