@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// normalizeNumber converts float values to integers when they have no fractional part
 func normalizeNumber(val float64) interface{} {
 	if val == float64(int(val)) {
 		return int(val)
@@ -13,6 +14,7 @@ func normalizeNumber(val float64) interface{} {
 	return val
 }
 
+// toFloat64 converts various types to float64 with best-effort conversion
 func toFloat64(val interface{}) float64 {
 	switch v := val.(type) {
 	case int:
@@ -39,6 +41,7 @@ func toFloat64(val interface{}) float64 {
 	}
 }
 
+// formatDuration formats a duration as HH:MM:SS or MM:SS depending on length
 func formatDuration(d time.Duration) string {
 	totalSeconds := int(d.Seconds())
 	hours := totalSeconds / 3600
@@ -51,6 +54,7 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%02d:%02d", minutes, seconds)
 }
 
+// formatDurationWithMs formats a duration with millisecond precision
 func formatDurationWithMs(d time.Duration) string {
 	baseFormat := formatDuration(d)
 	milliseconds := int(d.Milliseconds()) % 1000
@@ -58,6 +62,7 @@ func formatDurationWithMs(d time.Duration) string {
 	return fmt.Sprintf("%s.%03d", baseFormat, milliseconds)
 }
 
+// updateDurationVars updates duration-related variables in the execution context
 func updateDurationVars(ctx *ExecutionContext, startTime time.Time) {
 	elapsed := time.Since(startTime)
 

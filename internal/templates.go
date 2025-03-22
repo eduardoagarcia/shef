@@ -11,6 +11,7 @@ import (
 	"text/template"
 )
 
+// templateVars creates a map of variables available for template rendering
 func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 	vars := make(map[string]interface{})
 
@@ -29,94 +30,121 @@ func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 	return vars
 }
 
-var templateFuncs = template.FuncMap{
-	"split":      strings.Split,
-	"join":       strings.Join,
-	"joinArray":  JoinArray,
-	"trim":       strings.TrimSpace,
-	"trimPrefix": strings.TrimPrefix,
-	"trimSuffix": strings.TrimSuffix,
-	"contains":   strings.Contains,
-	"replace":    strings.ReplaceAll,
-	"filter":     filterLines,
-	"grep":       filterLines,
-	"cut":        cutFields,
-	"exec":       execCommand,
-	"atoi": func(s string) interface{} {
+// Template functions are organized by category
+var templateFuncs = buildTemplateFunctions()
+
+// buildTemplateFunctions creates the complete template function map
+func buildTemplateFunctions() template.FuncMap {
+	funcs := template.FuncMap{}
+
+	stringFunctions(funcs)
+	mathFunctions(funcs)
+	formattingFunctions(funcs)
+
+	return funcs
+}
+
+// stringFunctions adds string manipulation functions to the template function map
+func stringFunctions(funcs template.FuncMap) {
+	funcs["split"] = strings.Split
+	funcs["join"] = strings.Join
+	funcs["joinArray"] = JoinArray
+	funcs["trim"] = strings.TrimSpace
+	funcs["trimPrefix"] = strings.TrimPrefix
+	funcs["trimSuffix"] = strings.TrimSuffix
+	funcs["contains"] = strings.Contains
+	funcs["replace"] = strings.ReplaceAll
+	funcs["filter"] = filterLines
+	funcs["grep"] = filterLines
+	funcs["cut"] = cutFields
+	funcs["exec"] = execCommand
+}
+
+// mathFunctions adds mathematical functions to the template function map
+func mathFunctions(funcs template.FuncMap) {
+	funcs["atoi"] = func(s string) interface{} {
 		return normalizeNumber(toFloat64(s))
-	},
-	"add": func(a, b interface{}) interface{} {
+	}
+	funcs["add"] = func(a, b interface{}) interface{} {
 		return normalizeNumber(toFloat64(a) + toFloat64(b))
-	},
-	"sub": func(a, b interface{}) interface{} {
+	}
+	funcs["sub"] = func(a, b interface{}) interface{} {
 		return normalizeNumber(toFloat64(a) - toFloat64(b))
-	},
-	"div": func(a, b interface{}) interface{} {
+	}
+	funcs["div"] = func(a, b interface{}) interface{} {
 		bVal := toFloat64(b)
 		if bVal == 0 {
 			return 0
 		}
 		return normalizeNumber(toFloat64(a) / bVal)
-	},
-	"mul": func(a, b interface{}) interface{} {
+	}
+	funcs["mul"] = func(a, b interface{}) interface{} {
 		return normalizeNumber(toFloat64(a) * toFloat64(b))
-	},
-	"mod": func(a, b interface{}) interface{} {
+	}
+	funcs["mod"] = func(a, b interface{}) interface{} {
 		bVal := toFloat64(b)
 		if bVal == 0 {
 			return 0
 		}
 		return normalizeNumber(math.Mod(toFloat64(a), bVal))
-	},
-	"round": func(value interface{}) int {
+	}
+	funcs["round"] = func(value interface{}) int {
 		return int(math.Round(toFloat64(value)))
-	},
-	"rand": func(min, max interface{}) int {
+	}
+	funcs["rand"] = func(min, max interface{}) int {
 		minVal := int(toFloat64(min))
 		maxVal := int(toFloat64(max))
 		if minVal > maxVal {
 			minVal, maxVal = maxVal, minVal
 		}
 		return minVal + rand.Intn(maxVal-minVal+1)
-	},
-	"percent": func(part, total interface{}) interface{} {
+	}
+	funcs["percent"] = func(part, total interface{}) interface{} {
 		totalVal := toFloat64(total)
 		if totalVal == 0 {
 			return 0
 		}
 		return normalizeNumber((toFloat64(part) / totalVal) * 100)
-	},
-	"formatPercent": func(value interface{}, decimals interface{}) string {
-		return fmt.Sprintf("%.*f%%", int(toFloat64(decimals)), toFloat64(value))
-	},
-	"ceil": func(value interface{}) int {
+	}
+	funcs["ceil"] = func(value interface{}) int {
 		return int(math.Ceil(toFloat64(value)))
-	},
-	"floor": func(value interface{}) int {
+	}
+	funcs["floor"] = func(value interface{}) int {
 		return int(math.Floor(toFloat64(value)))
-	},
-	"abs": func(value interface{}) interface{} {
+	}
+	funcs["abs"] = func(value interface{}) interface{} {
 		return normalizeNumber(math.Abs(toFloat64(value)))
-	},
-	"max": func(a, b interface{}) interface{} {
+	}
+	funcs["max"] = func(a, b interface{}) interface{} {
 		return normalizeNumber(math.Max(toFloat64(a), toFloat64(b)))
-	},
-	"min": func(a, b interface{}) interface{} {
+	}
+	funcs["min"] = func(a, b interface{}) interface{} {
 		return normalizeNumber(math.Min(toFloat64(a), toFloat64(b)))
-	},
-	"pow": func(base, exponent interface{}) interface{} {
+	}
+	funcs["pow"] = func(base, exponent interface{}) interface{} {
 		return normalizeNumber(math.Pow(toFloat64(base), toFloat64(exponent)))
-	},
-	"sqrt": func(value interface{}) interface{} {
+	}
+	funcs["sqrt"] = func(value interface{}) interface{} {
 		return normalizeNumber(math.Sqrt(toFloat64(value)))
-	},
-	"log": func(value interface{}) interface{} {
+	}
+	funcs["log"] = func(value interface{}) interface{} {
 		return normalizeNumber(math.Log(toFloat64(value)))
-	},
-	"log10": func(value interface{}) interface{} {
+	}
+	funcs["log10"] = func(value interface{}) interface{} {
 		return normalizeNumber(math.Log10(toFloat64(value)))
-	},
-	"formatNumber": func(format string, args ...interface{}) string {
+	}
+	funcs["roundTo"] = func(value interface{}, decimals interface{}) interface{} {
+		precision := math.Pow(10, toFloat64(decimals))
+		return normalizeNumber(math.Round(toFloat64(value)*precision) / precision)
+	}
+}
+
+// formattingFunctions adds display formatting functions to the template function map
+func formattingFunctions(funcs template.FuncMap) {
+	funcs["formatPercent"] = func(value interface{}, decimals interface{}) string {
+		return fmt.Sprintf("%.*f%%", int(toFloat64(decimals)), toFloat64(value))
+	}
+	funcs["formatNumber"] = func(format string, args ...interface{}) string {
 		processedArgs := make([]interface{}, len(args))
 		for i, arg := range args {
 			switch arg.(type) {
@@ -127,12 +155,8 @@ var templateFuncs = template.FuncMap{
 			}
 		}
 		return fmt.Sprintf(format, processedArgs...)
-	},
-	"roundTo": func(value interface{}, decimals interface{}) interface{} {
-		precision := math.Pow(10, toFloat64(decimals))
-		return normalizeNumber(math.Round(toFloat64(value)*precision) / precision)
-	},
-	"color": func(color string, text interface{}) string {
+	}
+	funcs["color"] = func(color string, text interface{}) string {
 		if os.Getenv("NO_COLOR") != "" {
 			return fmt.Sprintf("%v", text)
 		}
@@ -143,8 +167,8 @@ var templateFuncs = template.FuncMap{
 		}
 
 		return code + fmt.Sprintf("%v", text) + colorCodes["reset"]
-	},
-	"style": func(styleType string, text interface{}) string {
+	}
+	funcs["style"] = func(styleType string, text interface{}) string {
 		if os.Getenv("NO_COLOR") != "" {
 			return fmt.Sprintf("%v", text)
 		}
@@ -155,22 +179,32 @@ var templateFuncs = template.FuncMap{
 		}
 
 		return code + fmt.Sprintf("%v", text) + styleCodes["reset"]
-	},
-	"resetFormat": func() string {
+	}
+	funcs["resetFormat"] = func() string {
 		if os.Getenv("NO_COLOR") != "" {
 			return ""
 		}
 		return colorCodes["reset"]
-	},
+	}
 }
 
+// extendTemplateFuncs adds context-specific functions like background task status
 func extendTemplateFuncs(baseFuncs template.FuncMap, ctx *ExecutionContext) template.FuncMap {
 	newFuncs := make(template.FuncMap)
 	for k, v := range baseFuncs {
 		newFuncs[k] = v
 	}
 
-	newFuncs["bgTaskStatus"] = func(taskID string) string {
+	newFuncs["bgTaskStatus"] = backgroundTaskStatusFunc(ctx)
+	newFuncs["bgTaskComplete"] = backgroundTaskCompleteFunc(ctx)
+	newFuncs["bgTaskFailed"] = backgroundTaskFailedFunc(ctx)
+
+	return newFuncs
+}
+
+// backgroundTaskStatusFunc returns a function to check background task status
+func backgroundTaskStatusFunc(ctx *ExecutionContext) func(string) string {
+	return func(taskID string) string {
 		ctx.BackgroundMutex.RLock()
 		defer ctx.BackgroundMutex.RUnlock()
 
@@ -183,7 +217,11 @@ func extendTemplateFuncs(baseFuncs template.FuncMap, ctx *ExecutionContext) temp
 		}
 		return "unknown"
 	}
-	newFuncs["bgTaskComplete"] = func(taskID string) bool {
+}
+
+// backgroundTaskCompleteFunc returns a function to check if a task is complete
+func backgroundTaskCompleteFunc(ctx *ExecutionContext) func(string) bool {
+	return func(taskID string) bool {
 		ctx.BackgroundMutex.RLock()
 		defer ctx.BackgroundMutex.RUnlock()
 
@@ -196,7 +234,11 @@ func extendTemplateFuncs(baseFuncs template.FuncMap, ctx *ExecutionContext) temp
 		}
 		return false
 	}
-	newFuncs["bgTaskFailed"] = func(taskID string) bool {
+}
+
+// backgroundTaskFailedFunc returns a function to check if a task has failed
+func backgroundTaskFailedFunc(ctx *ExecutionContext) func(string) bool {
+	return func(taskID string) bool {
 		ctx.BackgroundMutex.RLock()
 		defer ctx.BackgroundMutex.RUnlock()
 
@@ -209,9 +251,9 @@ func extendTemplateFuncs(baseFuncs template.FuncMap, ctx *ExecutionContext) temp
 		}
 		return false
 	}
-	return newFuncs
 }
 
+// JoinArray joins array elements into a string with the specified separator
 func JoinArray(arr interface{}, sep string) string {
 	switch v := arr.(type) {
 	case []string:
@@ -227,6 +269,7 @@ func JoinArray(arr interface{}, sep string) string {
 	}
 }
 
+// filterLines returns lines containing the specified pattern
 func filterLines(input, pattern string) string {
 	var result []string
 	for _, line := range strings.Split(input, "\n") {
@@ -237,6 +280,7 @@ func filterLines(input, pattern string) string {
 	return strings.Join(result, "\n")
 }
 
+// cutFields extracts a specific field from each line using the delimiter
 func cutFields(input, delimiter string, field int) string {
 	var result []string
 	for _, line := range strings.Split(input, "\n") {
@@ -248,6 +292,7 @@ func cutFields(input, delimiter string, field int) string {
 	return strings.Join(result, "\n")
 }
 
+// execCommand executes a shell command and returns its output
 func execCommand(cmd string) string {
 	output, err := exec.Command("sh", "-c", cmd).Output()
 	if err != nil {
@@ -256,6 +301,7 @@ func execCommand(cmd string) string {
 	return string(output)
 }
 
+// renderTemplate parses and executes a Go template with the provided variables
 func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error) {
 	funcs := templateFuncs
 	if ctxVal, ok := vars["context"]; ok {
@@ -283,6 +329,7 @@ func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error)
 	return result, nil
 }
 
+// transformOutput applies a template transformation to the given output
 func transformOutput(output, transform string, ctx *ExecutionContext) (string, error) {
 	vars := ctx.templateVars()
 	vars["input"] = output

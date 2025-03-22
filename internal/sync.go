@@ -10,10 +10,8 @@ import (
 	"path/filepath"
 )
 
-// syncPublicRecipes downloads and installs public recipes from the repository.
-// It creates the necessary directories, downloads the recipe tarball,
-// extracts it, and installs the recipes to the public directory.
-func syncPublicRecipes() error {
+// handleSyncCommand downloads and installs public recipes from the repository
+func handleSyncCommand() error {
 	dirs, err := setupDirectories()
 	if err != nil {
 		return err
@@ -42,7 +40,7 @@ func syncPublicRecipes() error {
 	return installRecipes(extractedDir, dirs.publicDir)
 }
 
-// setupDirectories creates the necessary directories for shef.
+// setupDirectories creates the necessary directories for shef
 func setupDirectories() (struct {
 	shefDir   string
 	publicDir string
@@ -82,7 +80,7 @@ func setupDirectories() (struct {
 	}, nil
 }
 
-// createTempDirectory creates a temporary directory for downloading and extracting recipes.
+// createTempDirectory creates a temporary directory for downloading and extracting recipes
 func createTempDirectory() (string, error) {
 	tempDir, err := os.MkdirTemp("", "shef-recipes")
 	if err != nil {
@@ -91,14 +89,14 @@ func createTempDirectory() (string, error) {
 	return tempDir, nil
 }
 
-// cleanupTempDirectory removes the temporary directory.
+// cleanupTempDirectory removes the temporary directory
 func cleanupTempDirectory(path string) {
 	if err := os.RemoveAll(path); err != nil {
 		fmt.Printf("Warning: Failed to clean up temporary directory %s: %v\n", path, err)
 	}
 }
 
-// downloadRecipes downloads the recipes tarball from the repository.
+// downloadRecipes downloads the recipes tarball from the repository
 func downloadRecipes(tempDir string) (string, error) {
 	downloadURL := fmt.Sprintf("%s/releases/download/%s/%s", GithubRepo, Version, PublicRecipesFilename)
 
@@ -126,7 +124,7 @@ func downloadRecipes(tempDir string) (string, error) {
 	return tarballPath, nil
 }
 
-// installRecipes installs the extracted recipes to the public directory.
+// installRecipes installs the extracted recipes to the public directory
 func installRecipes(extractedDir, publicDir string) error {
 	fmt.Println("Installing public recipes...")
 	if err := os.RemoveAll(publicDir); err != nil {
@@ -142,7 +140,7 @@ func installRecipes(extractedDir, publicDir string) error {
 	return nil
 }
 
-// extractTarGz extracts a tar.gz file to a destination directory.
+// extractTarGz extracts a tar.gz file to a destination directory
 func extractTarGz(tarballPath string, destDir string) error {
 	tarFile, err := os.Open(tarballPath)
 	if err != nil {
@@ -184,7 +182,7 @@ func extractTarGz(tarballPath string, destDir string) error {
 	return nil
 }
 
-// extractFile extracts a single file from a tar archive.
+// extractFile extracts a single file from a tar archive
 func extractFile(tarReader io.Reader, header *tar.Header, target string) error {
 	dir := filepath.Dir(target)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -204,7 +202,7 @@ func extractFile(tarReader io.Reader, header *tar.Header, target string) error {
 	return nil
 }
 
-// copyDir recursively copies a directory from src to dst.
+// copyDir recursively copies a directory from src to dst
 func copyDir(src, dst string) error {
 	srcInfo, err := os.Stat(src)
 	if err != nil {
@@ -244,7 +242,7 @@ func copyDir(src, dst string) error {
 	return nil
 }
 
-// copyFile copies a file from src to dst, preserving file permissions.
+// copyFile copies a file from src to dst, preserving file permissions
 func copyFile(src, dst string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
@@ -269,7 +267,7 @@ func copyFile(src, dst string) error {
 	return os.Chmod(dst, srcInfo.Mode())
 }
 
-// safeClose safely closes an io.Closer and logs any errors.
+// safeClose safely closes an io.Closer and logs any errors
 func safeClose(c io.Closer, name string) {
 	if err := c.Close(); err != nil {
 		fmt.Printf("Warning: Failed to close %s: %v\n", name, err)

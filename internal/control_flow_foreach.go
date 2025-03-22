@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// ForEachFlow defines the structure for a foreach loop control flow
 type ForEachFlow struct {
 	Type         string `yaml:"type"`
 	Collection   string `yaml:"collection"`
@@ -12,10 +13,12 @@ type ForEachFlow struct {
 	ProgressMode bool   `yaml:"progress_mode,omitempty"`
 }
 
+// GetType returns the control flow type
 func (f *ForEachFlow) GetType() string {
 	return f.Type
 }
 
+// GetForEachFlow extracts foreach loop configuration from an operation
 func (op *Operation) GetForEachFlow() (*ForEachFlow, error) {
 	if op.ControlFlow == nil {
 		return nil, fmt.Errorf("operation does not have control_flow")
@@ -51,18 +54,20 @@ func (op *Operation) GetForEachFlow() (*ForEachFlow, error) {
 	}, nil
 }
 
+// ExecuteForEach runs a foreach loop with the given parameters
 func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
 	startTime := time.Now()
 
-	originalProgressMode := ctx.ProgressMode
-	useProgressMode := forEach.ProgressMode
-	if useProgressMode {
-		ctx.ProgressMode = true
-	}
+	originalMode := setupProgressMode(ctx, forEach.ProgressMode)
+	defer func() {
+		ctx.ProgressMode = originalMode
+		if forEach.ProgressMode {
+			fmt.Println()
+		}
+	}()
 
 	collectionExpr, err := renderTemplate(forEach.Collection, ctx.templateVars())
 	if err != nil {
-		ctx.ProgressMode = originalProgressMode
 		return false, fmt.Errorf("failed to render collection template: %w", err)
 	}
 
@@ -72,87 +77,27 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 		fmt.Printf("Foreach loop over %d items\n", len(items))
 	}
 
-	breakLoop := false
 	for idx, item := range items {
-		if breakLoop {
-			break
-		}
-
 		updateDurationVars(ctx, startTime)
-
-		if debug {
-			fmt.Printf("Foreach iteration %d/%d: %s = %s (elapsed: %s)\n", idx+1, len(items), forEach.As, item, ctx.Vars["duration_fmt"])
-		}
-
 		ctx.Vars[forEach.As] = item
 		ctx.Vars["iteration"] = idx + 1
 
-		for _, subOp := range op.Operations {
-			if subOp.Condition != "" {
-				condResult, err := evaluateCondition(subOp.Condition, ctx)
-				if err != nil {
-					ctx.ProgressMode = originalProgressMode
-					if useProgressMode {
-						fmt.Println()
-					}
+		if debug {
+			fmt.Printf("Foreach iteration %d/%d: %s = %s (elapsed: %s)\n",
+				idx+1, len(items), forEach.As, item, ctx.Vars["duration_fmt"])
+		}
 
-					return false, fmt.Errorf("condition evaluation failed: %w", err)
-				}
-
-				if !condResult {
-					if debug {
-						fmt.Printf("Skipping operation '%s' (condition not met)\n", subOp.Name)
-					}
-					continue
-				}
-			}
-
-			shouldExit, err := executeOp(subOp, depth+1)
-			if err != nil {
-				ctx.ProgressMode = originalProgressMode
-				if useProgressMode {
-					fmt.Println()
-				}
-
-				return shouldExit, err
-			}
-
-			if shouldExit || subOp.Exit {
-				if debug {
-					fmt.Printf("Exiting entire recipe due to exit flag in '%s'\n", subOp.Name)
-				}
-
-				ctx.ProgressMode = originalProgressMode
-				if useProgressMode {
-					fmt.Println()
-				}
-
-				return true, nil
-			}
-
-			if subOp.Break {
-				if debug {
-					fmt.Printf("Breaking out of foreach loop due to break flag in '%s'\n", subOp.Name)
-				}
-				breakLoop = true
-				break
-			}
+		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp, debug)
+		if exit {
+			return true, nil
+		}
+		if breakLoop {
+			break
 		}
 	}
 
 	updateDurationVars(ctx, startTime)
-
-	delete(ctx.Vars, forEach.As)
-	delete(ctx.Vars, "iteration")
-
-	if op.ID != "" {
-		ctx.OperationResults[op.ID] = true
-	}
-
-	ctx.ProgressMode = originalProgressMode
-	if useProgressMode {
-		fmt.Println()
-	}
+	cleanupLoopState(ctx, op.ID, forEach.As)
 
 	return false, nil
 }

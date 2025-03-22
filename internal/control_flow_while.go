@@ -5,16 +5,19 @@ import (
 	"time"
 )
 
+// WhileFlow defines the structure for a while loop control flow
 type WhileFlow struct {
 	Type         string `yaml:"type"`
 	Condition    string `yaml:"condition"`
 	ProgressMode bool   `yaml:"progress_mode,omitempty"`
 }
 
+// GetType returns the control flow type
 func (w *WhileFlow) GetType() string {
 	return w.Type
 }
 
+// GetWhileFlow extracts while loop configuration from an operation
 func (op *Operation) GetWhileFlow() (*WhileFlow, error) {
 	if op.ControlFlow == nil {
 		return nil, fmt.Errorf("operation does not have control_flow")
@@ -44,120 +47,66 @@ func (op *Operation) GetWhileFlow() (*WhileFlow, error) {
 	}, nil
 }
 
+// ExecuteWhile runs a while loop with the given parameters
 func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
 	startTime := time.Now()
 
-	originalProgressMode := ctx.ProgressMode
-	useProgressMode := whileFlow.ProgressMode
-	if useProgressMode {
-		ctx.ProgressMode = true
-	}
+	originalMode := setupProgressMode(ctx, whileFlow.ProgressMode)
+	defer func() {
+		ctx.ProgressMode = originalMode
+		if whileFlow.ProgressMode {
+			fmt.Println()
+		}
+	}()
 
 	iterations := 0
-	breakLoop := false
 
 	for {
-		if breakLoop {
-			break
-		}
-
 		updateDurationVars(ctx, startTime)
 
-		renderedCondition, err := renderTemplate(whileFlow.Condition, ctx.templateVars())
+		shouldContinue, err := evaluateWhileCondition(whileFlow.Condition, ctx)
 		if err != nil {
-			ctx.ProgressMode = originalProgressMode
-			if useProgressMode {
-				fmt.Println()
-			}
-
-			return false, fmt.Errorf("failed to render while condition template: %w", err)
+			return false, err
 		}
 
-		conditionResult, err := evaluateCondition(renderedCondition, ctx)
-		if err != nil {
-			ctx.ProgressMode = originalProgressMode
-			if useProgressMode {
-				fmt.Println()
-			}
-
-			return false, fmt.Errorf("failed to evaluate while condition '%s': %w", renderedCondition, err)
-		}
-
-		if !conditionResult {
+		if !shouldContinue {
 			break
 		}
 
 		iterations++
-		if debug {
-			fmt.Printf("While iteration %d, condition: %s (elapsed: %s)\n", iterations, whileFlow.Condition, ctx.Vars["duration_fmt"])
-		}
 		ctx.Vars["iteration"] = iterations
 
-		for _, subOp := range op.Operations {
-			if subOp.Condition != "" {
-				condResult, err := evaluateCondition(subOp.Condition, ctx)
-				if err != nil {
-					ctx.ProgressMode = originalProgressMode
-					if useProgressMode {
-						fmt.Println()
-					}
+		if debug {
+			fmt.Printf("While iteration %d, condition: %s (elapsed: %s)\n",
+				iterations, whileFlow.Condition, ctx.Vars["duration_fmt"])
+		}
 
-					return false, fmt.Errorf("condition evaluation failed: %w", err)
-				}
-
-				if !condResult {
-					if debug {
-						fmt.Printf("Skipping operation '%s' (condition not met)\n", subOp.Name)
-					}
-					continue
-				}
-			}
-
-			shouldExit, err := executeOp(subOp, depth+1)
-			if err != nil {
-				ctx.ProgressMode = originalProgressMode
-				if useProgressMode {
-					fmt.Println()
-				}
-
-				return shouldExit, err
-			}
-
-			if shouldExit || subOp.Exit {
-				if debug {
-					fmt.Printf("Exiting entire recipe due to exit flag in '%s'\n", subOp.Name)
-				}
-
-				ctx.ProgressMode = originalProgressMode
-				if useProgressMode {
-					fmt.Println()
-				}
-
-				return true, nil
-			}
-
-			if subOp.Break {
-				if debug {
-					fmt.Printf("Breaking out of while loop due to break flag in '%s'\n", subOp.Name)
-				}
-				breakLoop = true
-				break
-			}
+		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp, debug)
+		if exit {
+			return true, nil
+		}
+		if breakLoop {
+			break
 		}
 	}
 
 	updateDurationVars(ctx, startTime)
-
-	delete(ctx.Vars, "iteration")
-
-	if op.ID != "" {
-		ctx.OperationResults[op.ID] = true
-	}
-
-	ctx.ProgressMode = originalProgressMode
-	if useProgressMode {
-		fmt.Println()
-	}
+	cleanupLoopState(ctx, op.ID, "")
 
 	return false, nil
+}
+
+// evaluateWhileCondition renders and evaluates the while loop condition
+func evaluateWhileCondition(condition string, ctx *ExecutionContext) (bool, error) {
+	renderedCondition, err := renderTemplate(condition, ctx.templateVars())
+	if err != nil {
+		return false, fmt.Errorf("failed to render while condition template: %w", err)
+	}
+
+	conditionResult, err := evaluateCondition(renderedCondition, ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to evaluate while condition '%s': %w", renderedCondition, err)
+	}
+
+	return conditionResult, nil
 }

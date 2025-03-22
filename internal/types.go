@@ -5,10 +5,12 @@ import (
 	"text/template"
 )
 
+// File represents a collection of recipes
 type File struct {
 	Recipes []Recipe `yaml:"recipes"`
 }
 
+// Recipe defines a Shef recipe with its metadata and operations
 type Recipe struct {
 	Name        string      `yaml:"name"`
 	Description string      `yaml:"description"`
@@ -18,6 +20,7 @@ type Recipe struct {
 	Operations  []Operation `yaml:"operations"`
 }
 
+// Operation defines a single executable step in a recipe
 type Operation struct {
 	Name          string      `yaml:"name"`
 	ID            string      `yaml:"id,omitempty"`
@@ -36,6 +39,7 @@ type Operation struct {
 	Exit          bool        `yaml:"exit,omitempty"`
 }
 
+// Prompt defines interactive user input required during recipe execution
 type Prompt struct {
 	Name            string            `yaml:"name"`
 	ID              string            `yaml:"id,omitempty"`
@@ -55,6 +59,7 @@ type Prompt struct {
 	Validators      []PromptValidator `yaml:"validators,omitempty"`
 }
 
+// PromptValidator defines validation rules for prompt inputs
 type PromptValidator struct {
 	Type    string `yaml:"type"`
 	Pattern string `yaml:"pattern,omitempty"`
@@ -63,14 +68,17 @@ type PromptValidator struct {
 	Max     int    `yaml:"max,omitempty"`
 }
 
+// BackgroundTaskStatus represents the current state of a background task
 type BackgroundTaskStatus string
 
+// Background task status constants.
 const (
 	TaskPending  BackgroundTaskStatus = "pending"
 	TaskComplete BackgroundTaskStatus = "complete"
 	TaskFailed   BackgroundTaskStatus = "failed"
 )
 
+// BackgroundTask represents an asynchronous command execution
 type BackgroundTask struct {
 	ID      string
 	Command string
@@ -79,6 +87,7 @@ type BackgroundTask struct {
 	Error   string
 }
 
+// ExecutionContext maintains state during recipe execution
 type ExecutionContext struct {
 	Data             string
 	Vars             map[string]interface{}

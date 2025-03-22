@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// ForFlow defines the structure for a for loop control flow
 type ForFlow struct {
 	Type         string `yaml:"type"`
 	Count        string `yaml:"count"`
@@ -13,6 +14,7 @@ type ForFlow struct {
 	ProgressMode bool   `yaml:"progress_mode,omitempty"`
 }
 
+// GetForFlow extracts for loop configuration from an operation
 func (op *Operation) GetForFlow() (*ForFlow, error) {
 	if op.ControlFlow == nil {
 		return nil, fmt.Errorf("operation does not have control_flow")
@@ -49,104 +51,63 @@ func (op *Operation) GetForFlow() (*ForFlow, error) {
 	}, nil
 }
 
+// ExecuteFor runs a for loop with the given parameters
 func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
 	startTime := time.Now()
 
-	originalProgressMode := ctx.ProgressMode
-	useProgressMode := forFlow.ProgressMode
-	if useProgressMode {
-		ctx.ProgressMode = true
-	}
+	originalMode := setupProgressMode(ctx, forFlow.ProgressMode)
+	defer func() {
+		ctx.ProgressMode = originalMode
+		if forFlow.ProgressMode {
+			fmt.Println()
+		}
+	}()
 
-	countStr, err := renderTemplate(forFlow.Count, ctx.templateVars())
+	count, err := getIterationCount(forFlow, ctx)
 	if err != nil {
-		ctx.ProgressMode = originalProgressMode
-		return false, fmt.Errorf("failed to render count template: %w", err)
-	}
-
-	count, err := strconv.Atoi(countStr)
-	if err != nil {
-		ctx.ProgressMode = originalProgressMode
-		return false, fmt.Errorf("invalid count value after rendering: %s", countStr)
+		return false, err
 	}
 
 	if debug {
 		fmt.Printf("For loop with %d iterations\n", count)
 	}
 
-	breakLoop := false
-	for i := 0; i < count && !breakLoop; i++ {
+	for i := 0; i < count; i++ {
 		updateDurationVars(ctx, startTime)
-
-		if debug {
-			fmt.Printf("For iteration %d/%d: %s = %d (elapsed: %s)\n", i+1, count, forFlow.Variable, i, ctx.Vars["duration_fmt"])
-		}
-
 		ctx.Vars[forFlow.Variable] = i
 		ctx.Vars["iteration"] = i + 1
 
-		for _, subOp := range op.Operations {
-			if subOp.Condition != "" {
-				condResult, err := evaluateCondition(subOp.Condition, ctx)
-				if err != nil {
-					ctx.ProgressMode = originalProgressMode
-					return false, fmt.Errorf("condition evaluation failed: %w", err)
-				}
+		if debug {
+			fmt.Printf("For iteration %d/%d: %s = %d (elapsed: %s)\n",
+				i+1, count, forFlow.Variable, i, ctx.Vars["duration_fmt"])
+		}
 
-				if !condResult {
-					if debug {
-						fmt.Printf("Skipping operation '%s' (condition not met)\n", subOp.Name)
-					}
-					continue
-				}
-			}
-
-			shouldExit, err := executeOp(subOp, depth+1)
-			if err != nil {
-				ctx.ProgressMode = originalProgressMode
-				if useProgressMode {
-					fmt.Println()
-				}
-
-				return shouldExit, err
-			}
-
-			if shouldExit || subOp.Exit {
-				if debug {
-					fmt.Printf("Exiting entire recipe due to exit flag in '%s'\n", subOp.Name)
-				}
-
-				ctx.ProgressMode = originalProgressMode
-				if useProgressMode {
-					fmt.Println()
-				}
-
-				return true, nil
-			}
-
-			if subOp.Break {
-				if debug {
-					fmt.Printf("Breaking out of for loop due to break flag in '%s'\n", subOp.Name)
-				}
-				breakLoop = true
-				break
-			}
+		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp, debug)
+		if exit {
+			return true, nil
+		}
+		if breakLoop {
+			break
 		}
 	}
 
 	updateDurationVars(ctx, startTime)
-
-	delete(ctx.Vars, forFlow.Variable)
-	delete(ctx.Vars, "iteration")
-
-	if op.ID != "" {
-		ctx.OperationResults[op.ID] = true
-	}
-
-	ctx.ProgressMode = originalProgressMode
-	if useProgressMode {
-		fmt.Println()
-	}
+	cleanupLoopState(ctx, op.ID, forFlow.Variable)
 
 	return false, nil
+}
+
+// getIterationCount resolves the number of iterations for a for loop
+func getIterationCount(forFlow *ForFlow, ctx *ExecutionContext) (int, error) {
+	countStr, err := renderTemplate(forFlow.Count, ctx.templateVars())
+	if err != nil {
+		return 0, fmt.Errorf("failed to render count template: %w", err)
+	}
+
+	count, err := strconv.Atoi(countStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid count value after rendering: %s", countStr)
+	}
+
+	return count, nil
 }
