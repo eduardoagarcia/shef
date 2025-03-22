@@ -6,8 +6,26 @@ import (
 	"runtime"
 )
 
-func isLinux() bool {
-	return runtime.GOOS == "linux"
+func addXDGRecipeSources(sources []string, userDir, publicRepo bool, findYamlFiles func(string) ([]string, error)) []string {
+	if userDir {
+		xdgUserRoot := filepath.Join(getXDGConfigHome(), "shef", "user")
+		if _, err := os.Stat(xdgUserRoot); err == nil {
+			if xdgUserFiles, err := findYamlFiles(xdgUserRoot); err == nil {
+				sources = append(sources, xdgUserFiles...)
+			}
+		}
+	}
+
+	if publicRepo {
+		xdgPublicRoot := filepath.Join(getXDGDataHome(), "shef", "public")
+		if _, err := os.Stat(xdgPublicRoot); err == nil {
+			if xdgPublicFiles, err := findYamlFiles(xdgPublicRoot); err == nil {
+				sources = append(sources, xdgPublicFiles...)
+			}
+		}
+	}
+
+	return sources
 }
 
 func getXDGConfigHome() string {
@@ -34,24 +52,6 @@ func getXDGDataHome() string {
 	return dataHome
 }
 
-func addXDGRecipeSources(sources []string, userDir, publicRepo bool, findYamlFiles func(string) ([]string, error)) []string {
-	if userDir {
-		xdgUserRoot := filepath.Join(getXDGConfigHome(), "shef", "user")
-		if _, err := os.Stat(xdgUserRoot); err == nil {
-			if xdgUserFiles, err := findYamlFiles(xdgUserRoot); err == nil {
-				sources = append(sources, xdgUserFiles...)
-			}
-		}
-	}
-
-	if publicRepo {
-		xdgPublicRoot := filepath.Join(getXDGDataHome(), "shef", "public")
-		if _, err := os.Stat(xdgPublicRoot); err == nil {
-			if xdgPublicFiles, err := findYamlFiles(xdgPublicRoot); err == nil {
-				sources = append(sources, xdgPublicFiles...)
-			}
-		}
-	}
-
-	return sources
+func isLinux() bool {
+	return runtime.GOOS == "linux"
 }

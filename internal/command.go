@@ -46,6 +46,25 @@ func executeStandardCommand(cmdStr string, input string, outputFormat string) (s
 	return formatOutput(stdout.String(), outputFormat)
 }
 
+func formatOutput(output string, outputFormat string) (string, error) {
+	switch outputFormat {
+	case "trim":
+		return strings.TrimSpace(output), nil
+	case "lines":
+		var lines []string
+		for _, line := range strings.Split(output, "\n") {
+			if trimmedLine := strings.TrimSpace(line); trimmedLine != "" {
+				lines = append(lines, trimmedLine)
+			}
+		}
+		return strings.Join(lines, "\n"), nil
+	case "raw", "":
+		return output, nil
+	default:
+		return output, nil
+	}
+}
+
 func executeInteractiveCommand(cmdStr string) (string, error) {
 	cmd := exec.Command("sh", "-c", cmdStr)
 	cmd.Stdin = os.Stdin

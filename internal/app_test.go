@@ -114,7 +114,7 @@ func (m *MockCommandExecutor) Execute(cmd string, input string, mode string, out
 }
 
 // Test fixtures
-var testConfig = `
+var testFile = `
 recipes:
   - name: test-recipe
     description: A test recipe
@@ -146,10 +146,10 @@ var testRecipe = Recipe{
 	},
 }
 
-// TestLoadConfig tests the loadConfig function
-func TestLoadConfig(t *testing.T) {
+// TestLoadFile tests the loadFile function
+func TestLoadFile(t *testing.T) {
 	mockFS := new(MockFileSystem)
-	mockFS.On("ReadFile", "test-config.yaml").Return([]byte(testConfig), nil).Maybe()
+	mockFS.On("ReadFile", "test-file.yaml").Return([]byte(testFile), nil).Maybe()
 	mockFS.On("ReadFile", "non-existent.yaml").Return(nil, errors.New("file not found")).Maybe()
 	mockFS.On("ReadFile", "invalid.yaml").Return([]byte("invalid: yaml: content"), nil).Maybe()
 
@@ -157,42 +157,42 @@ func TestLoadConfig(t *testing.T) {
 	defer patches.Reset()
 
 	tests := []struct {
-		name       string
-		filename   string
-		wantConfig *Config
-		wantErr    bool
+		name     string
+		filename string
+		wantFile *File
+		wantErr  bool
 	}{
 		{
-			name:       "valid config",
-			filename:   "test-config.yaml",
-			wantConfig: &Config{Recipes: []Recipe{testRecipe, {Name: "another-recipe", Description: "Another test recipe", Operations: []Operation{{Name: "Operation 1", Command: "echo \"Operation 1\""}, {Name: "Operation 2", Command: "echo \"Operation 2\"", Condition: "$test == true"}}}}},
-			wantErr:    false,
+			name:     "valid file",
+			filename: "test-file.yaml",
+			wantFile: &File{Recipes: []Recipe{testRecipe, {Name: "another-recipe", Description: "Another test recipe", Operations: []Operation{{Name: "Operation 1", Command: "echo \"Operation 1\""}, {Name: "Operation 2", Command: "echo \"Operation 2\"", Condition: "$test == true"}}}}},
+			wantErr:  false,
 		},
 		{
-			name:       "file not found",
-			filename:   "non-existent.yaml",
-			wantConfig: nil,
-			wantErr:    true,
+			name:     "file not found",
+			filename: "non-existent.yaml",
+			wantFile: nil,
+			wantErr:  true,
 		},
 		{
-			name:       "invalid yaml",
-			filename:   "invalid.yaml",
-			wantConfig: nil,
-			wantErr:    true,
+			name:     "invalid yaml",
+			filename: "invalid.yaml",
+			wantFile: nil,
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotConfig, err := loadConfig(tt.filename)
+			gotFile, err := loadFile(tt.filename)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantConfig.Recipes[0].Name, gotConfig.Recipes[0].Name)
-				assert.Equal(t, tt.wantConfig.Recipes[0].Description, gotConfig.Recipes[0].Description)
-				assert.Equal(t, tt.wantConfig.Recipes[0].Category, gotConfig.Recipes[0].Category)
-				assert.Len(t, gotConfig.Recipes[0].Operations, len(tt.wantConfig.Recipes[0].Operations))
+				assert.Equal(t, tt.wantFile.Recipes[0].Name, gotFile.Recipes[0].Name)
+				assert.Equal(t, tt.wantFile.Recipes[0].Description, gotFile.Recipes[0].Description)
+				assert.Equal(t, tt.wantFile.Recipes[0].Category, gotFile.Recipes[0].Category)
+				assert.Len(t, gotFile.Recipes[0].Operations, len(tt.wantFile.Recipes[0].Operations))
 			}
 		})
 	}
@@ -200,19 +200,19 @@ func TestLoadConfig(t *testing.T) {
 
 // TestLoadRecipes tests the loadRecipes function
 func TestLoadRecipes(t *testing.T) {
-	testConfigData := []byte(testConfig)
+	testFileData := []byte(testFile)
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
 
 	patches.ApplyFunc(os.ReadFile, func(filename string) ([]byte, error) {
-		if filename == "test-config.yaml" {
-			return testConfigData, nil
+		if filename == "test-file.yaml" {
+			return testFileData, nil
 		}
 		return nil, fmt.Errorf("file not found: %s", filename)
 	})
 
 	t.Run("load all recipes", func(t *testing.T) {
-		recipes, err := loadRecipes([]string{"test-config.yaml"}, "")
+		recipes, err := loadRecipes([]string{"test-file.yaml"}, "")
 		assert.NoError(t, err)
 		assert.Len(t, recipes, 2, "Expected 2 recipes, got %d", len(recipes))
 
@@ -227,7 +227,7 @@ func TestLoadRecipes(t *testing.T) {
 	})
 
 	t.Run("filter by category", func(t *testing.T) {
-		recipes, err := loadRecipes([]string{"test-config.yaml"}, "test")
+		recipes, err := loadRecipes([]string{"test-file.yaml"}, "test")
 		assert.NoError(t, err)
 		assert.Len(t, recipes, 1, "Expected 1 recipe, got %d", len(recipes))
 
@@ -237,7 +237,7 @@ func TestLoadRecipes(t *testing.T) {
 	})
 
 	t.Run("no matching category", func(t *testing.T) {
-		recipes, err := loadRecipes([]string{"test-config.yaml"}, "non-existent")
+		recipes, err := loadRecipes([]string{"test-file.yaml"}, "non-existent")
 		assert.NoError(t, err)
 		assert.Len(t, recipes, 0, "Expected 0 recipes, got %d", len(recipes))
 	})
@@ -1026,7 +1026,7 @@ func TestExecuteRecipeSimple(t *testing.T) {
 
 	mockCmd.On("Execute", "echo 'Hello'", "", "", "").Return("Hello", nil).Maybe()
 
-	err := executeRecipe(recipe, "", map[string]interface{}{}, false)
+	err := evaluateRecipe(recipe, "", map[string]interface{}{}, false)
 	assert.NoError(t, err)
 
 	mockCmd.AssertCalled(t, "Execute", "echo 'Hello'", "", "", "")

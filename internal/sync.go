@@ -10,64 +10,22 @@ import (
 	"path/filepath"
 )
 
+// syncPublicRecipes downloads and installs public recipes from the repository.
+// It creates the necessary directories, downloads the recipe tarball,
+// extracts it, and installs the recipes to the public directory.
 func syncPublicRecipes() error {
-	homeDir, err := os.UserHomeDir()
+	dirs, err := setupDirectories()
 	if err != nil {
-		return fmt.Errorf("failed to determine home directory: %w", err)
+		return err
 	}
 
-	shefDir := filepath.Join(homeDir, ".shef")
-	publicDir := filepath.Join(shefDir, "public")
-	userDir := filepath.Join(shefDir, "user")
-
-	for _, dir := range []string{publicDir, userDir} {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
-		}
-	}
-
-	tempDir, err := os.MkdirTemp("", "shef-recipes")
+	tempDir, err := createTempDirectory()
 	if err != nil {
-		return fmt.Errorf("failed to create temporary directory: %w", err)
+		return err
 	}
-	defer func(path string) {
-		err := os.RemoveAll(path)
-		if err != nil {
-			fmt.Printf("Warning: Failed to clean up temporary directory %s: %v\n", path, err)
-		}
-	}(tempDir)
+	defer cleanupTempDirectory(tempDir)
 
-	downloadURL := fmt.Sprintf("%s/releases/download/%s/%s", GithubRepo, Version, PublicRecipesFilename)
-
-	resp, err := http.Get(downloadURL)
-	if err != nil {
-		return fmt.Errorf("failed to download recipes: %w", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-
-		}
-	}(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download recipes: HTTP status %d", resp.StatusCode)
-	}
-
-	tarballPath := filepath.Join(tempDir, PublicRecipesFilename)
-	tarballFile, err := os.Create(tarballPath)
-	if err != nil {
-		return fmt.Errorf("failed to create temporary file: %w", err)
-	}
-
-	if _, err = io.Copy(tarballFile, resp.Body); err != nil {
-		err := tarballFile.Close()
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("failed to save downloaded file: %w", err)
-	}
-	err = tarballFile.Close()
+	tarballPath, err := downloadRecipes(tempDir)
 	if err != nil {
 		return err
 	}
@@ -81,6 +39,95 @@ func syncPublicRecipes() error {
 		return fmt.Errorf("failed to extract recipes: %w", err)
 	}
 
+	return installRecipes(extractedDir, dirs.publicDir)
+}
+
+// setupDirectories creates the necessary directories for shef.
+func setupDirectories() (struct {
+	shefDir   string
+	publicDir string
+	userDir   string
+}, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return struct {
+			shefDir   string
+			publicDir string
+			userDir   string
+		}{}, fmt.Errorf("failed to determine home directory: %w", err)
+	}
+
+	shefDir := filepath.Join(homeDir, ".shef")
+	publicDir := filepath.Join(shefDir, "public")
+	userDir := filepath.Join(shefDir, "user")
+
+	for _, dir := range []string{publicDir, userDir} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return struct {
+				shefDir   string
+				publicDir string
+				userDir   string
+			}{}, fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
+	}
+
+	return struct {
+		shefDir   string
+		publicDir string
+		userDir   string
+	}{
+		shefDir:   shefDir,
+		publicDir: publicDir,
+		userDir:   userDir,
+	}, nil
+}
+
+// createTempDirectory creates a temporary directory for downloading and extracting recipes.
+func createTempDirectory() (string, error) {
+	tempDir, err := os.MkdirTemp("", "shef-recipes")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+	return tempDir, nil
+}
+
+// cleanupTempDirectory removes the temporary directory.
+func cleanupTempDirectory(path string) {
+	if err := os.RemoveAll(path); err != nil {
+		fmt.Printf("Warning: Failed to clean up temporary directory %s: %v\n", path, err)
+	}
+}
+
+// downloadRecipes downloads the recipes tarball from the repository.
+func downloadRecipes(tempDir string) (string, error) {
+	downloadURL := fmt.Sprintf("%s/releases/download/%s/%s", GithubRepo, Version, PublicRecipesFilename)
+
+	resp, err := http.Get(downloadURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to download recipes: %w", err)
+	}
+	defer safeClose(resp.Body, "response body")
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download recipes: HTTP status %d", resp.StatusCode)
+	}
+
+	tarballPath := filepath.Join(tempDir, PublicRecipesFilename)
+	tarballFile, err := os.Create(tarballPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	defer safeClose(tarballFile, "tarball file")
+
+	if _, err = io.Copy(tarballFile, resp.Body); err != nil {
+		return "", fmt.Errorf("failed to save downloaded file: %w", err)
+	}
+
+	return tarballPath, nil
+}
+
+// installRecipes installs the extracted recipes to the public directory.
+func installRecipes(extractedDir, publicDir string) error {
 	fmt.Println("Installing public recipes...")
 	if err := os.RemoveAll(publicDir); err != nil {
 		return fmt.Errorf("failed to clean public recipes directory: %w", err)
@@ -95,28 +142,19 @@ func syncPublicRecipes() error {
 	return nil
 }
 
+// extractTarGz extracts a tar.gz file to a destination directory.
 func extractTarGz(tarballPath string, destDir string) error {
 	tarFile, err := os.Open(tarballPath)
 	if err != nil {
 		return fmt.Errorf("failed to open downloaded tarball: %w", err)
 	}
-	defer func(tarFile *os.File) {
-		err := tarFile.Close()
-		if err != nil {
-
-		}
-	}(tarFile)
+	defer safeClose(tarFile, "tar file")
 
 	gzipReader, err := gzip.NewReader(tarFile)
 	if err != nil {
 		return fmt.Errorf("failed to create gzip reader: %w", err)
 	}
-	defer func(gzipReader *gzip.Reader) {
-		err := gzipReader.Close()
-		if err != nil {
-
-		}
-	}(gzipReader)
+	defer safeClose(gzipReader, "gzip reader")
 
 	tarReader := tar.NewReader(gzipReader)
 
@@ -137,25 +175,7 @@ func extractTarGz(tarballPath string, destDir string) error {
 				return fmt.Errorf("failed to create directory %s: %w", target, err)
 			}
 		case tar.TypeReg:
-			dir := filepath.Dir(target)
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				return fmt.Errorf("failed to create directory %s: %w", dir, err)
-			}
-
-			file, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-			if err != nil {
-				return fmt.Errorf("failed to create file %s: %w", target, err)
-			}
-
-			if _, err := io.Copy(file, tarReader); err != nil {
-				err := file.Close()
-				if err != nil {
-					return err
-				}
-				return fmt.Errorf("failed to write file %s: %w", target, err)
-			}
-			err = file.Close()
-			if err != nil {
+			if err := extractFile(tarReader, header, target); err != nil {
 				return err
 			}
 		}
@@ -164,6 +184,27 @@ func extractTarGz(tarballPath string, destDir string) error {
 	return nil
 }
 
+// extractFile extracts a single file from a tar archive.
+func extractFile(tarReader io.Reader, header *tar.Header, target string) error {
+	dir := filepath.Dir(target)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	file, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", target, err)
+	}
+	defer safeClose(file, "extracted file")
+
+	if _, err := io.Copy(file, tarReader); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", target, err)
+	}
+
+	return nil
+}
+
+// copyDir recursively copies a directory from src to dst.
 func copyDir(src, dst string) error {
 	srcInfo, err := os.Stat(src)
 	if err != nil {
@@ -178,12 +219,7 @@ func copyDir(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer func(dir *os.File) {
-		err := dir.Close()
-		if err != nil {
-
-		}
-	}(dir)
+	defer safeClose(dir, "directory")
 
 	items, err := dir.Readdir(-1)
 	if err != nil {
@@ -208,28 +244,19 @@ func copyDir(src, dst string) error {
 	return nil
 }
 
+// copyFile copies a file from src to dst, preserving file permissions.
 func copyFile(src, dst string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer func(srcFile *os.File) {
-		err := srcFile.Close()
-		if err != nil {
-
-		}
-	}(srcFile)
+	defer safeClose(srcFile, "source file")
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer func(dstFile *os.File) {
-		err := dstFile.Close()
-		if err != nil {
-
-		}
-	}(dstFile)
+	defer safeClose(dstFile, "destination file")
 
 	if _, err = io.Copy(dstFile, srcFile); err != nil {
 		return err
@@ -240,4 +267,11 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return os.Chmod(dst, srcInfo.Mode())
+}
+
+// safeClose safely closes an io.Closer and logs any errors.
+func safeClose(c io.Closer, name string) {
+	if err := c.Close(); err != nil {
+		fmt.Printf("Warning: Failed to close %s: %v\n", name, err)
+	}
 }

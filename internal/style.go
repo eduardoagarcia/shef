@@ -7,8 +7,6 @@ import (
 
 type Color string
 
-type Style string
-
 const (
 	ColorNone      Color = ""
 	ColorBlack     Color = "black"
@@ -27,14 +25,6 @@ const (
 	BgColorMagenta Color = "bg-magenta"
 	BgColorCyan    Color = "bg-cyan"
 	BgColorWhite   Color = "bg-white"
-)
-
-const (
-	StyleNone      Style = ""
-	StyleBold      Style = "bold"
-	StyleDim       Style = "dim"
-	StyleItalic    Style = "italic"
-	StyleUnderline Style = "underline"
 )
 
 var colorCodes = map[string]string{
@@ -56,6 +46,16 @@ var colorCodes = map[string]string{
 	"bg-white":   "\033[47m",
 	"reset":      "\033[0m",
 }
+
+type Style string
+
+const (
+	StyleNone      Style = ""
+	StyleBold      Style = "bold"
+	StyleDim       Style = "dim"
+	StyleItalic    Style = "italic"
+	StyleUnderline Style = "underline"
+)
 
 var styleCodes = map[string]string{
 	"bold":      "\033[1m",

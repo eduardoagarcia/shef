@@ -6,6 +6,20 @@ import (
 	"strings"
 )
 
+func evaluateAndCondition(condition string, ctx *ExecutionContext) (bool, error) {
+	parts := strings.Split(condition, "&&")
+	for _, part := range parts {
+		result, err := evaluateCondition(part, ctx)
+		if err != nil {
+			return false, err
+		}
+		if !result {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 func evaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 	if condition == "" {
 		return true, nil
@@ -57,32 +71,32 @@ func evaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
 	return false, fmt.Errorf("unsupported condition format: %s", condition)
 }
 
-func evaluateAndCondition(condition string, ctx *ExecutionContext) (bool, error) {
-	parts := strings.Split(condition, "&&")
-	for _, part := range parts {
-		result, err := evaluateCondition(part, ctx)
-		if err != nil {
-			return false, err
-		}
-		if !result {
+func evaluateOperationResult(condition string, ctx *ExecutionContext) (bool, error) {
+	if strings.Contains(condition, ".success") {
+		parts := strings.Split(condition, ".")
+		if len(parts) == 2 && parts[1] == "success" {
+			opID := strings.TrimSpace(parts[0])
+			result, exists := ctx.OperationResults[opID]
+			if exists {
+				return result, nil
+			}
 			return false, nil
 		}
 	}
-	return true, nil
-}
 
-func evaluateOrCondition(condition string, ctx *ExecutionContext) (bool, error) {
-	parts := strings.Split(condition, "||")
-	for _, part := range parts {
-		result, err := evaluateCondition(part, ctx)
-		if err != nil {
-			return false, err
-		}
-		if result {
+	if strings.Contains(condition, ".failure") {
+		parts := strings.Split(condition, ".")
+		if len(parts) == 2 && parts[1] == "failure" {
+			opID := strings.TrimSpace(parts[0])
+			result, exists := ctx.OperationResults[opID]
+			if exists {
+				return !result, nil
+			}
 			return true, nil
 		}
 	}
-	return false, nil
+
+	return false, fmt.Errorf("invalid operation result condition: %s", condition)
 }
 
 func evaluateNotCondition(condition string, ctx *ExecutionContext) (bool, error) {
@@ -170,32 +184,48 @@ func evaluateNumericComparison(condition string, ctx *ExecutionContext) (bool, e
 	}
 }
 
-func evaluateOperationResult(condition string, ctx *ExecutionContext) (bool, error) {
-	if strings.Contains(condition, ".success") {
-		parts := strings.Split(condition, ".")
-		if len(parts) == 2 && parts[1] == "success" {
-			opID := strings.TrimSpace(parts[0])
-			result, exists := ctx.OperationResults[opID]
-			if exists {
-				return result, nil
-			}
-			return false, nil
+func resolveValue(value string, ctx *ExecutionContext) (string, error) {
+	if strings.Contains(value, "{{") && strings.Contains(value, "}}") {
+		rendered, err := renderTemplate(value, ctx.templateVars())
+		if err != nil {
+			return "", err
 		}
+		return rendered, nil
 	}
 
-	if strings.Contains(condition, ".failure") {
-		parts := strings.Split(condition, ".")
-		if len(parts) == 2 && parts[1] == "failure" {
-			opID := strings.TrimSpace(parts[0])
-			result, exists := ctx.OperationResults[opID]
-			if exists {
-				return !result, nil
-			}
+	if strings.HasPrefix(value, "$") || strings.HasPrefix(value, ".") {
+		varName := value
+		if strings.HasPrefix(varName, "$") {
+			varName = varName[1:]
+		}
+		if strings.HasPrefix(varName, ".") {
+			varName = varName[1:]
+		}
+
+		if val, exists := ctx.Vars[varName]; exists {
+			return fmt.Sprintf("%v", val), nil
+		}
+		if val, exists := ctx.OperationOutputs[varName]; exists {
+			return val, nil
+		}
+		return "false", nil
+	}
+
+	return value, nil
+}
+
+func evaluateOrCondition(condition string, ctx *ExecutionContext) (bool, error) {
+	parts := strings.Split(condition, "||")
+	for _, part := range parts {
+		result, err := evaluateCondition(part, ctx)
+		if err != nil {
+			return false, err
+		}
+		if result {
 			return true, nil
 		}
 	}
-
-	return false, fmt.Errorf("invalid operation result condition: %s", condition)
+	return false, nil
 }
 
 func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, error) {

@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-type Config struct {
+type File struct {
 	Recipes []Recipe `yaml:"recipes"`
 }
 
