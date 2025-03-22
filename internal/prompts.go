@@ -1,32 +1,29 @@
 package internal
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/AlecAivazis/survey/v2"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"text/template"
-
-	"github.com/AlecAivazis/survey/v2"
 )
 
 // handlePrompt processes a prompt definition and returns the user's response
 func handlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 	vars := ctx.templateVars()
 
-	message, err := processTemplate("message", p.Message, vars)
+	message, err := renderTemplate(p.Message, vars)
 	if err != nil {
 		return nil, err
 	}
 
-	defaultValue, err := processTemplate("default", p.Default, vars)
+	defaultValue, err := renderTemplate(p.Default, vars)
 	if err != nil {
 		return nil, err
 	}
 
-	helpText, err := processTemplate("help", p.HelpText, vars)
+	helpText, err := renderTemplate(p.HelpText, vars)
 	if err != nil {
 		return nil, err
 	}
@@ -53,25 +50,6 @@ func handlePrompt(p Prompt, ctx *ExecutionContext) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("unknown prompt type: %s", p.Type)
 	}
-}
-
-// processTemplate renders a template string with the provided variables
-func processTemplate(name, templateStr string, vars map[string]interface{}) (string, error) {
-	if templateStr == "" {
-		return "", nil
-	}
-
-	tmpl, err := template.New(name).Funcs(templateFuncs).Parse(templateStr)
-	if err != nil {
-		return "", err
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, vars); err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
 }
 
 // handleInputPrompt displays a simple text input prompt
