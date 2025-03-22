@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"errors"
@@ -993,10 +993,19 @@ func TestExecuteRecipeSimple(t *testing.T) {
 	os.Stdout = w
 
 	defer func() {
-		w.Close()
+		errWClose := w.Close()
+		if errWClose != nil {
+			return
+		}
 		os.Stdout = oldStdout
-		io.Copy(io.Discard, r)
-		r.Close()
+		_, errCopy := io.Copy(io.Discard, r)
+		if errCopy != nil {
+			return
+		}
+		errRClose := r.Close()
+		if errRClose != nil {
+			return
+		}
 	}()
 
 	mockCmd := new(MockCommandExecutor)
@@ -1452,9 +1461,9 @@ func TestMathTemplateFunctions(t *testing.T) {
 // TestShefEndToEnd runs all end-to-end tests within ./testdata
 func TestShefEndToEnd(t *testing.T) {
 	testscript.Run(t, testscript.Params{
-		Dir: "testdata",
+		Dir: "../testdata",
 		Setup: func(e *testscript.Env) error {
-			recipesDir := filepath.Join("testdata", "recipes")
+			recipesDir := filepath.Join("../testdata", "recipes")
 			if _, err := os.Stat(recipesDir); err != nil {
 				if os.IsNotExist(err) {
 					return nil

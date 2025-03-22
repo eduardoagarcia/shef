@@ -29,10 +29,10 @@ update-local:
 	@echo "Example: export PATH=\"\$PATH:\$HOME/bin\""
 
 test:
-	@go test
+	@go test ./internal/...
 
 test-verbose:
-	@go test -v > test_output.tmp
+	@go test ./internal/... -v > test_output.tmp
 	@grep -v "WORK=" test_output.tmp | \
 	grep -v "PATH=" | \
 	grep -v "GOTRACEBACK=" | \
@@ -47,5 +47,5 @@ test-verbose:
 	@rm test_output.tmp
 
 test-coverage:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out
+	@go test ./internal/... -coverprofile=coverage.out ../...
+	@go tool cover -html=coverage.out
