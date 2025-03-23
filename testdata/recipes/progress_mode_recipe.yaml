@@ -1,0 +1,42 @@
+recipes:
+  - name: "progress_mode_recipe"
+    description: "A recipe that tests progress modes"
+    category: "test"
+    operations:
+      - name: "For Progress Mode"
+        control_flow:
+          type: "for"
+          count: 3
+          variable: "i"
+          progress_mode: true
+        operations:
+          - name: "Print Iteration"
+            command: echo "For loop iteration {{ .i }}"
+
+      - name: "Separator 1"
+        command: echo "---"
+
+      - name: "Foreach Progress Mode"
+        control_flow:
+          type: "foreach"
+          collection: "Item 1\nItem 2\nItem 3"
+          as: "item"
+          progress_mode: true
+        operations:
+          - name: "Print Item"
+            command: echo "Processing {{ .item }}"
+
+      - name: "Separator 2"
+        command: echo "---"
+
+      - name: "While Progress Mode"
+        control_flow:
+          type: "while"
+          condition: .iteration < 3
+          progress_mode: true
+        operations:
+          - name: "Print Counter"
+            command: echo "While loop iteration {{ .iteration }}"
+
+      - name: "Test Complete"
+        command: echo "All progress mode tests completed successfully"
