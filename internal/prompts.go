@@ -77,10 +77,11 @@ func handleSelectPrompt(p Prompt, ctx *ExecutionContext, message, defaultValue, 
 
 	var answer string
 	prompt := &survey.Select{
-		Message: message,
-		Options: options,
-		Default: defaultVal,
-		Help:    helpText,
+		Message:  message,
+		Options:  options,
+		Default:  defaultVal,
+		Help:     helpText,
+		PageSize: 10,
 	}
 
 	if len(descriptions) > 0 {
@@ -133,10 +134,11 @@ func handleMultiselectPrompt(p Prompt, ctx *ExecutionContext, message, defaultVa
 
 	var answer []string
 	prompt := &survey.MultiSelect{
-		Message: message,
-		Options: options,
-		Default: defaultOptions,
-		Help:    helpText,
+		Message:  message,
+		Options:  options,
+		Default:  defaultOptions,
+		Help:     helpText,
+		PageSize: 10,
 	}
 
 	if len(descriptions) > 0 {
@@ -215,11 +217,12 @@ func handleAutocompletePrompt(p Prompt, ctx *ExecutionContext, message, defaultV
 
 	var answer string
 	prompt := &survey.Select{
-		Message: message,
-		Options: options,
-		Default: defaultVal,
-		Help:    helpText,
-		Filter:  filterOptionsBySubstring,
+		Message:  message,
+		Options:  options,
+		Default:  defaultVal,
+		Help:     helpText,
+		Filter:   filterOptionsBySubstring,
+		PageSize: 10,
 	}
 
 	if len(descriptions) > 0 {
