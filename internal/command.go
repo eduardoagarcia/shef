@@ -129,11 +129,22 @@ func executeBackgroundCommand(op Operation, ctx *ExecutionContext, opMap map[str
 		return fmt.Errorf("failed to render command template: %w", err)
 	}
 
+	ctx.BackgroundMutex.Lock()
+	task, exists := ctx.BackgroundTasks[op.ID]
+	if exists && task.Status == TaskPending {
+		ctx.BackgroundMutex.Unlock()
+		if debug {
+			fmt.Printf("Task %s is already running, skipping duplicate execution!\n", op.ID)
+		}
+		return nil
+	}
+
 	if debug {
-		fmt.Printf("Starting background command: %s\n", cmd)
+		fmt.Printf("Starting background task: %s\n", cmd)
 	}
 
 	initializeBackgroundTask(op.ID, cmd, ctx)
+	ctx.BackgroundMutex.Unlock()
 
 	ctx.BackgroundWg.Add(1)
 	go executeBackgroundTask(op, cmd, ctx, opMap, executeOp, depth, debug)
@@ -143,9 +154,6 @@ func executeBackgroundCommand(op Operation, ctx *ExecutionContext, opMap map[str
 
 // initializeBackgroundTask sets up a new background task in the context
 func initializeBackgroundTask(taskID, cmd string, ctx *ExecutionContext) {
-	ctx.BackgroundMutex.Lock()
-	defer ctx.BackgroundMutex.Unlock()
-
 	if ctx.BackgroundTasks == nil {
 		ctx.BackgroundTasks = make(map[string]*BackgroundTask)
 	}
@@ -222,23 +230,23 @@ func handleBackgroundTaskSuccess(op Operation, task *BackgroundTask, ctx *Execut
 	}
 }
 
-// executeFailureHandler runs the specified on_failure operation
-func executeFailureHandler(op Operation, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, debug bool) {
-	nextOp, exists := opMap[op.OnFailure]
-	if exists {
-		if debug {
-			fmt.Printf("Executing on_failure handler %s for background task %s\n", op.OnFailure, op.ID)
-		}
-		_, _ = executeOp(nextOp, depth+1)
-	}
-}
-
 // executeSuccessHandler runs the specified on_success operation
 func executeSuccessHandler(op Operation, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, debug bool) {
 	nextOp, exists := opMap[op.OnSuccess]
 	if exists {
 		if debug {
 			fmt.Printf("Executing on_success handler %s for background task %s\n", op.OnSuccess, op.ID)
+		}
+		_, _ = executeOp(nextOp, depth+1)
+	}
+}
+
+// executeFailureHandler runs the specified on_failure operation
+func executeFailureHandler(op Operation, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, debug bool) {
+	nextOp, exists := opMap[op.OnFailure]
+	if exists {
+		if debug {
+			fmt.Printf("Executing on_failure handler %s for background task %s\n", op.OnFailure, op.ID)
 		}
 		_, _ = executeOp(nextOp, depth+1)
 	}
