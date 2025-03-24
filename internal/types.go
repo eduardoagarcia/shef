@@ -47,6 +47,7 @@ type Prompt struct {
 	Message         string            `yaml:"message"`
 	Default         string            `yaml:"default,omitempty"`
 	Options         []string          `yaml:"options,omitempty"`
+	Descriptions    map[string]string `yaml:"descriptions,omitempty"`
 	SourceOp        string            `yaml:"source_operation,omitempty"`
 	SourceTransform string            `yaml:"source_transform,omitempty"`
 	MinValue        int               `yaml:"min_value,omitempty"`
