@@ -763,7 +763,7 @@ func TestGetPromptOptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPromptOptions(tt.prompt, ctx)
+			got, _, err := getPromptOptions(tt.prompt, ctx)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
