@@ -27,6 +27,9 @@ func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 	vars["operationOutputs"] = ctx.OperationOutputs
 	vars["operationResults"] = ctx.OperationResults
 
+	vars["allTasksComplete"] = ctx.allTasksComplete()
+	vars["anyTasksFailed"] = ctx.anyTasksFailed()
+
 	return vars
 }
 
@@ -198,6 +201,7 @@ func extendTemplateFuncs(baseFuncs template.FuncMap, ctx *ExecutionContext) temp
 	newFuncs["bgTaskStatus"] = backgroundTaskStatusFunc(ctx)
 	newFuncs["bgTaskComplete"] = backgroundTaskCompleteFunc(ctx)
 	newFuncs["bgTaskFailed"] = backgroundTaskFailedFunc(ctx)
+	newFuncs["taskStatusMessage"] = backgroundTaskMessageFunc(ctx)
 
 	return newFuncs
 }
@@ -250,6 +254,34 @@ func backgroundTaskFailedFunc(ctx *ExecutionContext) func(string) bool {
 			return task.Status == TaskFailed
 		}
 		return false
+	}
+}
+
+// backgroundTaskMessageFunc returns a function to get a message based on task status
+func backgroundTaskMessageFunc(ctx *ExecutionContext) func(string, string, string, string, string) string {
+	return func(taskID, completeMsg, pendingMsg, failedMsg, notFoundMsg string) string {
+		ctx.BackgroundMutex.RLock()
+		defer ctx.BackgroundMutex.RUnlock()
+
+		if ctx.BackgroundTasks == nil {
+			return notFoundMsg
+		}
+
+		task, exists := ctx.BackgroundTasks[taskID]
+		if !exists {
+			return notFoundMsg
+		}
+
+		switch task.Status {
+		case TaskComplete:
+			return completeMsg
+		case TaskPending:
+			return pendingMsg
+		case TaskFailed:
+			return failedMsg
+		default:
+			return notFoundMsg
+		}
 	}
 }
 
@@ -324,7 +356,7 @@ func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error)
 	}
 
 	result := buf.String()
-	result = strings.ReplaceAll(result, "<no value>", "false")
+	result = handleDefaultEmpty(result)
 
 	return result, nil
 }

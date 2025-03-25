@@ -85,3 +85,10 @@ func parseOptionsFromOutput(output string) []string {
 	}
 	return result
 }
+
+func handleDefaultEmpty(s string) string {
+	s = strings.ReplaceAll(s, "<nil>", "")
+	s = strings.ReplaceAll(s, "<no value>", "false")
+
+	return s
+}

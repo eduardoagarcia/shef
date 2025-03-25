@@ -62,7 +62,7 @@ func evaluateTemplateCondition(condition string, ctx *ExecutionContext) (bool, e
 	if err != nil {
 		return false, fmt.Errorf("failed to render condition template: %w", err)
 	}
-	rendered = strings.ReplaceAll(rendered, "<no value>", "false")
+	rendered = handleDefaultEmpty(rendered)
 	return evaluateCondition(rendered, ctx)
 }
 
@@ -261,7 +261,7 @@ func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, 
 	}
 
 	rightPart = strings.Trim(rightPart, "\"'")
-	actualValue, _ := resolveVariableValue(leftPart, ctx)
+	actualValue := resolveVariableValue(leftPart, ctx)
 
 	if operator == "==" {
 		return actualValue == rightPart, nil
@@ -270,16 +270,32 @@ func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, 
 }
 
 // resolveVariableValue gets a variable's value from the context
-func resolveVariableValue(varRef string, ctx *ExecutionContext) (string, bool) {
+func resolveVariableValue(varRef string, ctx *ExecutionContext) string {
 	varName := normalizeVariableName(varRef)
 
+	if value, isDynamic := resolveDynamicVariable(varName, ctx); isDynamic {
+		return value
+	}
+
 	if value, ok := ctx.Vars[varName]; ok {
-		return fmt.Sprintf("%v", value), true
+		return fmt.Sprintf("%v", value)
 	}
 	if value, ok := ctx.OperationOutputs[varName]; ok {
-		return value, true
+		return value
 	}
-	return "false", false
+	return "false"
+}
+
+// resolveDynamicVariable checks if a variable is a dynamic variable and returns its value
+func resolveDynamicVariable(varName string, ctx *ExecutionContext) (string, bool) {
+	switch varName {
+	case "allTasksComplete":
+		return ctx.allTasksComplete(), true
+	case "anyTasksFailed":
+		return ctx.anyTasksFailed(), true
+	default:
+		return "", false
+	}
 }
 
 // normalizeVariableName removes $ or . prefixes from variable names
@@ -304,7 +320,7 @@ func resolveValue(value string, ctx *ExecutionContext) (string, error) {
 	}
 
 	if strings.HasPrefix(value, "$") || strings.HasPrefix(value, ".") {
-		actualValue, _ := resolveVariableValue(value, ctx)
+		actualValue := resolveVariableValue(value, ctx)
 		return actualValue, nil
 	}
 

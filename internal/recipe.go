@@ -370,3 +370,37 @@ func identifyHandlers(operations []Operation, handlerIDs map[string]bool) {
 		}
 	}
 }
+
+// allTasksComplete returns "true" if all background tasks are complete, "false" if tasks are still running
+func (ctx *ExecutionContext) allTasksComplete() string {
+	ctx.BackgroundMutex.RLock()
+	defer ctx.BackgroundMutex.RUnlock()
+
+	if ctx.BackgroundTasks == nil || len(ctx.BackgroundTasks) == 0 {
+		return "true"
+	}
+
+	for _, task := range ctx.BackgroundTasks {
+		if task.Status != TaskComplete {
+			return "false"
+		}
+	}
+	return "true"
+}
+
+// anyTasksFailed returns "true" if any background tasks fail in execution, "false" otherwise
+func (ctx *ExecutionContext) anyTasksFailed() string {
+	ctx.BackgroundMutex.RLock()
+	defer ctx.BackgroundMutex.RUnlock()
+
+	if ctx.BackgroundTasks == nil {
+		return "false"
+	}
+
+	for _, task := range ctx.BackgroundTasks {
+		if task.Status == TaskFailed {
+			return "true"
+		}
+	}
+	return "false"
+}

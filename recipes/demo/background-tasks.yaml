@@ -26,7 +26,7 @@ recipes:
     operations:
       - name: "Start Background Task 1"
         id: "bg_task1"
-        command: sleep 7 && echo "Background Task 1 completed after 7 seconds"
+        command: sleep 3 && echo "Background Task 1 completed after 3 seconds"
         silent: true
         execution_mode: "background"
 
@@ -35,7 +35,7 @@ recipes:
 
       - name: "Start Background Task 2"
         id: "bg_task2"
-        command: sleep 10 && echo "Background Task 2 completed after 10 seconds"
+        command: sleep 5 && echo "Background Task 2 completed after 5 seconds"
         silent: true
         execution_mode: "background"
 
@@ -44,7 +44,7 @@ recipes:
 
       - name: "Start Background Task 3"
         id: "bg_task3"
-        command: sleep 15 && echo "Background Task 3 completed after 15 seconds"
+        command: sleep 10 && echo "Background Task 3 completed after 10 seconds"
         silent: true
         execution_mode: "background"
 
@@ -54,7 +54,7 @@ recipes:
       - name: "Wait Loop"
         control_flow:
           type: "while"
-          condition: '!{{ bgTaskComplete "bg_task1" }} || !{{ bgTaskComplete "bg_task2" }} || !{{ bgTaskComplete "bg_task3" }}'
+          condition: .allTasksComplete != "true"
           progress_mode: true
         operations:
           - name: "Status Update"
