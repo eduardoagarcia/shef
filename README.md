@@ -280,7 +280,7 @@ tasks:
 - **bgTaskStatus**: Returns the current status of a background task (`pending`, `complete`, or `failed`)
 - **bgTaskComplete**: Returns `true` if the task has completed successfully, `false` otherwise
 - **bgTaskFailed**: Returns `true` if the task has failed, `false` otherwise
-- **allTasksComplete**: Returns `true` if all tasks are complete, `false` if one or more tasks are complete.
+- **allTasksComplete**: Returns `true` if all tasks are complete, `false` if one or more tasks are pending.
 - **anyTasksFailed**: Returns `true` if one ore more tasks fail, `false` if all tasks completed successfully.
 - **taskStatusMessage**: Returns a string based on the status of the task. `{{ taskStatusMessage "task_id" "complete message" "pending message" "failed message" "unknown task message" }}`
 
