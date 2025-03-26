@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -71,4 +72,23 @@ func updateDurationVars(ctx *ExecutionContext, startTime time.Time) {
 
 	ctx.Vars["duration_fmt"] = formatDuration(elapsed)
 	ctx.Vars["duration_ms_fmt"] = formatDurationWithMs(elapsed)
+}
+
+// parseOptionsFromOutput converts multi-line output to a string slice of options
+func parseOptionsFromOutput(output string) []string {
+	result := []string{}
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			result = append(result, line)
+		}
+	}
+	return result
+}
+
+func handleDefaultEmpty(s string) string {
+	s = strings.ReplaceAll(s, "<nil>", "")
+	s = strings.ReplaceAll(s, "<no value>", "false")
+
+	return s
 }

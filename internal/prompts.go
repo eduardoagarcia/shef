@@ -68,7 +68,7 @@ func handleInputPrompt(message, defaultValue, helpText string) (string, error) {
 
 // handleSelectPrompt displays a selection menu prompt
 func handleSelectPrompt(p Prompt, ctx *ExecutionContext, message, defaultValue, helpText string) (string, error) {
-	options, err := getPromptOptions(p, ctx)
+	options, descriptions, err := getPromptOptions(p, ctx)
 	if err != nil {
 		return "", err
 	}
@@ -77,11 +77,19 @@ func handleSelectPrompt(p Prompt, ctx *ExecutionContext, message, defaultValue, 
 
 	var answer string
 	prompt := &survey.Select{
-		Message: message,
-		Options: options,
-		Default: defaultVal,
-		Help:    helpText,
+		Message:  message,
+		Options:  options,
+		Default:  defaultVal,
+		Help:     helpText,
+		PageSize: 10,
 	}
+
+	if len(descriptions) > 0 {
+		prompt.Description = func(value string, index int) string {
+			return descriptions[value]
+		}
+	}
+
 	if err := survey.AskOne(prompt, &answer); err != nil {
 		return "", err
 	}
@@ -117,7 +125,7 @@ func handlePasswordPrompt(message, helpText string) (string, error) {
 
 // handleMultiselectPrompt displays a multi-option selection prompt
 func handleMultiselectPrompt(p Prompt, ctx *ExecutionContext, message, defaultValue, helpText string) ([]string, error) {
-	options, err := getPromptOptions(p, ctx)
+	options, descriptions, err := getPromptOptions(p, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -126,11 +134,19 @@ func handleMultiselectPrompt(p Prompt, ctx *ExecutionContext, message, defaultVa
 
 	var answer []string
 	prompt := &survey.MultiSelect{
-		Message: message,
-		Options: options,
-		Default: defaultOptions,
-		Help:    helpText,
+		Message:  message,
+		Options:  options,
+		Default:  defaultOptions,
+		Help:     helpText,
+		PageSize: 10,
 	}
+
+	if len(descriptions) > 0 {
+		prompt.Description = func(value string, index int) string {
+			return descriptions[value]
+		}
+	}
+
 	if err := survey.AskOne(prompt, &answer); err != nil {
 		return nil, err
 	}
@@ -192,7 +208,7 @@ func handlePathPrompt(p Prompt, message, defaultValue, helpText string) (string,
 
 // handleAutocompletePrompt displays a filterable selection menu
 func handleAutocompletePrompt(p Prompt, ctx *ExecutionContext, message, defaultValue, helpText string) (string, error) {
-	options, err := getPromptOptions(p, ctx)
+	options, descriptions, err := getPromptOptions(p, ctx)
 	if err != nil {
 		return "", err
 	}
@@ -201,12 +217,20 @@ func handleAutocompletePrompt(p Prompt, ctx *ExecutionContext, message, defaultV
 
 	var answer string
 	prompt := &survey.Select{
-		Message: message,
-		Options: options,
-		Default: defaultVal,
-		Help:    helpText,
-		Filter:  filterOptionsBySubstring,
+		Message:  message,
+		Options:  options,
+		Default:  defaultVal,
+		Help:     helpText,
+		Filter:   filterOptionsBySubstring,
+		PageSize: 10,
 	}
+
+	if len(descriptions) > 0 {
+		prompt.Description = func(value string, index int) string {
+			return descriptions[value]
+		}
+	}
+
 	if err := survey.AskOne(prompt, &answer); err != nil {
 		return "", err
 	}
@@ -256,61 +280,82 @@ func parseDefaultOptions(defaultValue string, options []string) []string {
 }
 
 // getPromptOptions retrieves the options for selection-type prompts
-func getPromptOptions(p Prompt, ctx *ExecutionContext) ([]string, error) {
+func getPromptOptions(p Prompt, ctx *ExecutionContext) ([]string, map[string]string, error) {
 	if p.SourceOp == "" {
+		var options []string
 		if len(p.Options) > 0 && p.Type != "multiselect" {
-			return append(p.Options, ExitPrompt), nil
+			options = append(p.Options, ExitPrompt)
+		} else {
+			options = p.Options
 		}
-		return p.Options, nil
+		return options, p.Descriptions, nil
 	}
 
 	return getOptionsFromSourceOp(p, ctx)
 }
 
 // getOptionsFromSourceOp extracts options from a source operation's output
-func getOptionsFromSourceOp(p Prompt, ctx *ExecutionContext) ([]string, error) {
+func getOptionsFromSourceOp(p Prompt, ctx *ExecutionContext) ([]string, map[string]string, error) {
 	output, exists := ctx.OperationOutputs[p.SourceOp]
 	if !exists {
-		return nil, fmt.Errorf("source operation %s not found or has no output", p.SourceOp)
+		return nil, nil, fmt.Errorf("source operation %s not found or has no output", p.SourceOp)
 	}
+
+	var options []string
+	var descriptions map[string]string
 
 	if p.SourceTransform != "" {
-		transformedOutput, err := transformOutput(output, p.SourceTransform, ctx)
+		transformed, err := transformOutput(output, p.SourceTransform, ctx)
 		if err != nil {
-			return nil, fmt.Errorf("transformation failed: %w", err)
+			return nil, nil, fmt.Errorf("transformation failed: %w", err)
 		}
-		return finalizeOptions(transformedOutput, p.Type), nil
+		options, descriptions = parseSelectOptionsFromOutput(transformed)
+	} else {
+		options, descriptions = parseSelectOptionsFromOutput(output)
+		if len(options) == 0 {
+			return nil, nil, fmt.Errorf("no options found from source operation %s", p.SourceOp)
+		}
 	}
 
-	options := parseOptionsFromOutput(output)
-	if len(options) == 0 {
-		return nil, fmt.Errorf("no options found from source operation %s", p.SourceOp)
+	if len(options) > 0 && p.Type != "multiselect" {
+		options = append(options, ExitPrompt)
 	}
 
-	return finalizeOptions(strings.Join(options, "\n"), p.Type), nil
+	return options, descriptions, nil
 }
 
 // finalizeOptions adds exit option if needed and returns the final options list
-func finalizeOptions(output string, promptType string) []string {
-	options := parseOptionsFromOutput(output)
+func finalizeOptions(output string, promptType string) ([]string, map[string]string) {
+	options, descriptions := parseSelectOptionsFromOutput(output)
 
 	if len(options) > 0 && promptType != "multiselect" {
-		return append(options, ExitPrompt)
+		options = append(options, ExitPrompt)
 	}
 
-	return options
+	return options, descriptions
 }
 
-// parseOptionsFromOutput converts multi-line output to a string slice of options
-func parseOptionsFromOutput(output string) []string {
-	result := []string{}
+// parseSelectOptionsFromOutput converts multi-line select output to a string slice of options and descriptions
+func parseSelectOptionsFromOutput(output string) ([]string, map[string]string) {
+	options := []string{}
+	descriptions := make(map[string]string)
+
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
-		if line != "" {
-			result = append(result, line)
+		if line == "" {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		optionValue := strings.TrimSpace(parts[0])
+		options = append(options, optionValue)
+
+		if len(parts) == 2 {
+			descriptions[optionValue] = strings.TrimSpace(parts[1])
 		}
 	}
-	return result
+
+	return options, descriptions
 }
 
 // getEditorCommand determines which editor to use for the prompt
