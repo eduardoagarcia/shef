@@ -77,6 +77,7 @@ const (
 	TaskPending  BackgroundTaskStatus = "pending"
 	TaskComplete BackgroundTaskStatus = "complete"
 	TaskFailed   BackgroundTaskStatus = "failed"
+	TaskUnknown  BackgroundTaskStatus = "unknown"
 )
 
 // BackgroundTask represents an asynchronous command execution

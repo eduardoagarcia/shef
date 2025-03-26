@@ -1,48 +1,34 @@
 # Shef
 
-Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI tool for cooking up advanced shell recipes.
+Shef, a wordplay on *"shell"* and *"chef"*, lets you create interactive recipes that simplify complex command-line tasks.
 
-Essentially, imagine
-that [Make](https://www.gnu.org/software/make), [GitHub Actions](https://github.com/features/actions),
+Essentially, imagine that [Make](https://www.gnu.org/software/make), [GitHub Actions](https://github.com/features/actions),
 and [CyberChef](https://gchq.github.io/CyberChef) had a weird little `<moira-rose>bea-by</>`.
 
-Shef allows you to pipe commands together, add interactive user prompts, loop using complex control structures,
-and build reusable workflows with advanced conditional logic.
+Shef allows you to pipe shell commands together, add interactive user prompts, loop using complex control structures,
+easily run and manage background tasks, and build reusable workflows with advanced logic and conditionals.
 
-## Quick Start Example
+## Quick Start Examples
 
-The following example showcases a simple Shef recipe, giving you a quick glance at the syntax and functionality.
+### Hello World
 
-![Quick Start Conditional Example](images/conditional.gif)
+![Quick Start Hello World Example](images/hello-world.gif)
 
 ```yaml
 recipes:
-  - name: "conditional"
-    description: "A simple demo of conditional operations using direct prompt values"
-    category: "demo"
+  - name: "hello-world"
+    description: "A simple hello world recipe"
     operations:
-      - name: "Choose Fruit"
-        id: "choose"
-        command: 'echo "You selected: {{ .fruit }}"'
-        prompts:
-          - name: "Fruit Select"
-            id: "fruit"
-            type: "select"
-            message: "Choose a fruit:"
-            options:
-              - "Apples"
-              - "Oranges"
-
-      - name: "Apple Operation"
-        id: "apple"
-        command: echo "This is the apple operation! 🍎"
-        condition: .fruit == "Apples"
-
-      - name: "Orange Operation"
-        id: "orange"
-        command: echo "This is the orange operation! 🍊"
-        condition: .fruit == "Oranges"
+      - name: "Run echo command"
+        command: echo "Hello, World!"
 ```
+
+### Background Tasks
+
+The following example illustrates more advanced functionality where a user selects which background tasks to run and then 
+monitors each task's progress in real-time.
+
+![Quick Start Background Tasks Example](images/tasks.gif)
 
 > [!TIP]
 > Want to see more before diving
@@ -50,7 +36,7 @@ deeper? [Check out the demo recipes.](https://github.com/eduardoagarcia/shef/tre
 
 ## Table of Contents
 
-- [Shef Features](#shef-features)
+- [Features](#features)
 - [A Note on Bash Scripts, YAML, and Shef](#a-note-on-bash-scripts-yaml-and-shef)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -116,103 +102,10 @@ brew install shef
 shef -v
 ```
 
-### Binary
+### Advanced Installation (Linux and Windows)
 
-For Linux and Windows, the simplest way to install Shef is to download the pre-built binary for your platform from
-the [latest release](https://github.com/eduardoagarcia/shef/releases/latest).
-
-#### Linux / macOS
-
-```bash
-# Download the appropriate tarball for your platform
-curl -L https://github.com/eduardoagarcia/shef/releases/latest/download/shef_[PLATFORM]_[ARCH].tar.gz -o shef.tar.gz
-
-# Extract the binary
-tar -xzf shef.tar.gz
-
-# Navigate to the extracted directory
-cd shef_[PLATFORM]_[ARCH]
-
-# Make the binary executable
-chmod +x shef
-
-# Move the binary to your PATH
-sudo mv shef /usr/local/bin/
-
-# Verify installation
-shef -v
-
-# Sync public recipes
-shef sync
-```
-
-Replace `[PLATFORM]` with `linux` or `darwin` (for macOS) and `[ARCH]` with your architecture (`amd64`, `arm64`).
-
-#### Windows
-
-1. Download the appropriate Windows ZIP file (`shef_windows_amd64.zip` or `shef_windows_arm64.zip`) from
-   the [releases page](https://github.com/eduardoagarcia/shef/releases/latest)
-2. Extract the archive using Windows Explorer, 7-Zip, WinRAR, or similar tool
-3. Move the extracted executable to a directory in your PATH
-4. Open Command Prompt or PowerShell and run `shef -v` to verify installation
-5. Run `shef sync` to download recipes
-
-### Verify Binaries
-
-> [!IMPORTANT]
-> Always verify the integrity of downloaded binaries for security. The release assets are signed with GPG, and you can
-> verify them
-using [the public key found in the repository](https://raw.githubusercontent.com/eduardoagarcia/shef/main/keys/shef-binary-gpg-public-key.asc).
-
-#### Linux / macOS
-
-```bash
-# Import the GPG public key
-curl -L https://raw.githubusercontent.com/eduardoagarcia/shef/main/keys/shef-binary-gpg-public-key.asc | gpg --import
-
-# Download the signature file
-curl -L https://github.com/eduardoagarcia/shef/releases/latest/download/shef_[OS]_[ARCH].tar.gz.asc -o shef.tar.gz.asc
-
-# Verify the tarball
-gpg --verify shef.tar.gz.asc shef.tar.gz
-```
-
-#### Windows
-
-```bash
-# Import the GPG public key (requires GPG for Windows)
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/eduardoagarcia/shef/main/keys/shef-binary-gpg-public-key.asc" -OutFile "shef-key.asc"
-gpg --import shef-key.asc
-
-# Download the signature file
-Invoke-WebRequest -Uri "https://github.com/eduardoagarcia/shef/releases/latest/download/shef_windows_amd64.zip.asc" -OutFile "shef_windows_amd64.zip.asc"
-
-# Verify the ZIP file
-gpg --verify shef_windows_amd64.zip.asc shef_windows_amd64.zip
-```
-
-### Package Managers
-
-> [!NOTE]
-> Future package manager support:
-> - APT (Debian/Ubuntu)
-> - YUM/DNF (RHEL/Fedora)
-> - Arch User Repository (AUR)
-> - Chocolatey/Scoop (Windows)
-
-### Manual Installation
-
-For developers or users who prefer to build from source:
-
-```bash
-git clone https://github.com/eduardoagarcia/shef.git
-cd shef
-
-# Install (requires sudo for system-wide installation)
-make install
-
-shef -v
-```
+For detailed installation instructions on Linux and Windows platforms, please refer to our comprehensive [installation
+guide.](docs/installation.md)
 
 ## Quick Start
 
@@ -347,7 +240,7 @@ Operations are the building blocks of recipes:
 - name: "Operation Name"            # Operation name
   id: "var_id"                      # [Optional] Identifier for referencing the variable for the operation
   command: echo "Hello"             # [Optional] Shell command to execute
-  execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, or stream)
+  execution_mode: "standard"        # [Optional] How the command runs (standard, interactive, stream, or background)
   output_format: "raw"              # [Optional] How to format command output (raw [default], trim, or lines)
   silent: false                     # [Optional] Flag whether to suppress output to stdout. Default is false.
   exit: false                       # [Optional] When set to true, the recipe will exit after the operation completes. Default is false.
@@ -376,8 +269,100 @@ Operations are the building blocks of recipes:
   require direct terminal interaction, but output cannot be captured for use in subsequent operations.
 - **stream**: Similar to interactive mode but optimized for long-running processes that produce continuous output. The
   command's output streams to the terminal in real-time, but output cannot be captured for use in subsequent operations.
+- **background**: Executes the command asynchronously in a separate process. The recipe execution continues immediately
+  without waiting for the command to complete. Useful for long-running tasks that don't need to block recipe execution.
 
-#### Output Format
+### Background Task Management
+
+When using `execution_mode: "background"`, Shef provides template functions to monitor and interact with background
+tasks:
+
+- **bgTaskStatus**: Returns the current status of a background task (`pending`, `complete`, or `failed`)
+- **bgTaskComplete**: Returns `true` if the task has completed successfully, `false` otherwise
+- **bgTaskFailed**: Returns `true` if the task has failed, `false` otherwise
+- **allTasksComplete**: Returns `true` if all tasks are complete, `false` if one or more tasks are complete.
+- **anyTasksFailed**: Returns `true` if one ore more tasks fail, `false` if all tasks completed successfully.
+- **taskStatusMessage**: Returns a string based on the status of the task. `{{ taskStatusMessage "task_id" "complete message" "pending message" "failed message" "unknown task message" }}`
+
+#### Requirements for Background Tasks
+
+- Each background task must have a unique `id` specified
+- The task's output will be available as a variable using the task's ID once completed
+
+#### Task Status Checking
+
+##### Check a task's status
+
+```yaml
+- name: "Check Status"
+  command:
+    echo 'Task status: {{ bgTaskStatus "task_id" }}'
+```
+
+> [!IMPORTANT]
+> Notice we reference the task id by a _string_ when checking status, complete, and failed states.
+
+##### Wait for task completion
+
+```yaml
+- name: "Wait For Task"
+  control_flow:
+    type: "while"
+    condition: '{{ not (bgTaskComplete "task_id") }}'
+  operations:
+    - name: "Poll Status"
+      command: echo "Waiting for task to complete..."
+```
+
+##### Wait for all tasks to complete
+
+```yaml
+- name: "Wait For All Tasks"
+  control_flow:
+    type: "while"
+    condition: .allTasksComplete != "true"
+  operations:
+    - name: "Poll Status"
+      command: echo "Waiting for all tasks to complete..."
+```
+
+#### Task Output Access
+
+Once a background task completes, its output is available like any other operation:
+
+```yaml
+- name: "Echo Task Output"
+  command: echo "Task result {{ .task_id }}"
+  condition: '{{ bgTaskComplete "task_id" }}'
+```
+
+#### Background Task Completion Behavior
+
+When you start a background task with `execution_mode: "background"`, it's important to understand how Shef handles task
+completion:
+
+- **Implicit Waiting**: Shef automatically waits for all background tasks to complete before terminating the recipe
+  execution, even if you don't explicitly wait for them in your operations.
+- **Output Capture**: All background tasks will have their outputs captured and made available as variables, regardless
+  of whether you explicitly check their status.
+- **Completion Order**: Background tasks complete in the order determined by their execution time, not the order they
+  were started.
+- **Recipe Exit**: The recipe won't exit until all background tasks have completed, which could cause the recipe to
+  appear to "hang" if a background task takes a very long time.
+
+Example of implicit waiting:
+
+```yaml
+- name: "Start Long Task"
+  id: "long_task"
+  command: "sleep 30 && echo 'Done!'"
+  execution_mode: "background"
+
+- name: "Immediate Feedback"
+  command: echo "Started background task! Recipe will wait for it to complete before exiting."
+```
+
+### Output Format
 
 Shef provides options for controlling how whitespace and empty lines are handled in command output:
 
@@ -408,11 +393,11 @@ operations:
     output_format: "lines"  # Result: "item1\nitem2\nitem3"
 ```
 
-#### Control Flow Configuration
+### Control Flow Configuration
 
 Control flow structures are configured as follows:
 
-##### Foreach
+#### Foreach
 
 ```yaml
 control_flow:
@@ -421,7 +406,7 @@ control_flow:
   as: "item"                    # Variable name for current item
 ```
 
-##### For
+#### For
 
 ```yaml
 control_flow:
@@ -430,7 +415,7 @@ control_flow:
   variable: "i"  # Variable name for iteration index (optional)
 ```
 
-##### While
+#### While
 
 ```yaml
 control_flow:

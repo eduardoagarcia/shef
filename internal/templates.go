@@ -213,13 +213,13 @@ func backgroundTaskStatusFunc(ctx *ExecutionContext) func(string) string {
 		defer ctx.BackgroundMutex.RUnlock()
 
 		if ctx.BackgroundTasks == nil {
-			return "unknown"
+			return string(TaskUnknown)
 		}
 
 		if task, exists := ctx.BackgroundTasks[taskID]; exists {
 			return string(task.Status)
 		}
-		return "unknown"
+		return string(TaskUnknown)
 	}
 }
 
