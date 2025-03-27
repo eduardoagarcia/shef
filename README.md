@@ -12,6 +12,8 @@ easily run and manage background tasks, and build reusable workflows with advanc
 
 ### Hello World
 
+This first example demonstrates a simple recipe that echos a string to the terminal.
+
 ![Quick Start Hello World Example](images/hello-world.gif)
 
 ```yaml
@@ -25,7 +27,7 @@ recipes:
 
 ### Background Tasks
 
-The following example illustrates more advanced functionality where a user selects which background tasks to run and then 
+The next example demonstrates a more advanced recipe where a user selects which background tasks to run and then
 monitors each task's progress in real-time.
 
 ![Quick Start Background Tasks Example](images/tasks.gif)
@@ -40,7 +42,7 @@ deeper? [Check out the demo recipes.](https://github.com/eduardoagarcia/shef/tre
 - [A Note on Bash Scripts, YAML, and Shef](#a-note-on-bash-scripts-yaml-and-shef)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Shef Command Reference](#shef-command-reference)
+- [Command Reference](#command-reference)
 - [Recipe Sources](#recipe-sources)
 - [Recipe Structure](#recipe-structure)
 - [Operation Execution Order](#operation-execution-order)
@@ -79,8 +81,8 @@ deeper? [Check out the demo recipes.](https://github.com/eduardoagarcia/shef/tre
 Bash scripting is a powerful and valid approach for shell automation. Shef isn't designed to replace bash scripts, but
 rather provides a toolkit that compliments bash when you need specific features.
 
-Shef implements some common tooling like built-in support for interactive prompts, conditional logic, and command
-piping. This structured approach can simplify certain tasks that might require more verbose code in bash.
+Shef implements some common tooling like built-in support for interactive prompts, background task management, and CLI process
+standardization. This structured approach can simplify certain tasks that might require more verbose code in bash.
 
 Consider Shef as another tool in your automation toolkit. Absolutely use bash scripts when they're the right fit, and
 reach for Shef when its features align with your specific needs.
@@ -104,7 +106,7 @@ shef -v
 
 ### Advanced Installation (Linux and Windows)
 
-For detailed installation instructions on Linux and Windows platforms, please refer to our comprehensive [installation
+For detailed installation instructions on Linux and Windows platforms, please refer to the comprehensive [installation
 guide.](docs/installation.md)
 
 ## Quick Start
@@ -128,12 +130,20 @@ shef ls demo
 shef demo arguments -h
 ```
 
-## Shef Command Reference
+## Command Reference
 
-### Basic Shef Command Structure
+### Basic Command Structure
+
+#### Simple
 
 ```
-shef [category] [recipe-name]
+shef [recipe-name]
+```
+
+#### Advanced
+
+```
+shef [global-flags] [category] [recipe-name] [input-text] [recipe-flags...]
 ```
 
 ### Global Flags
@@ -172,13 +182,13 @@ For more details on argument types and usage, see the [Arguments and Flags](#arg
 
 ## Recipe Sources
 
-Shef looks for recipes in multiple locations and contexts:
+Shef looks for recipes in multiple locations and contexts within your system:
 
 ### Standard Paths (All Platforms)
 
-1. **Local Recipes**: `./.shef/*.yaml` in the current directory
-2. **User Recipes**: `~/.shef/user/*.yaml` in your home directory
-3. **Public Recipes**: `~/.shef/public/*.yaml` in your home directory
+1. **Local Recipes**: `./.shef/*.yaml` in the current directory (only shown when you're in the directory, like Make)
+2. **User Recipes**: `~/.shef/user/*.yaml` in your home directory (always shown)
+3. **Public Recipes**: `~/.shef/public/*.yaml` in your home directory (always shown)
 
 ### XDG Base Directory Paths (Linux Only)
 
@@ -249,10 +259,10 @@ Operations are the building blocks of recipes:
   on_failure: "failure_op"          # [Optional] Operation to run on failure
   transform: "{{ trim .output }}"   # [Optional] Transform output
   prompts:                          # [Optional] Interactive prompts (can include one or more prompts)
-     - name: "Prompt Name"
-       id: "var_id"
-       type: "input"
-       message: "Enter value:"
+    - name: "Prompt Name"
+      id: "var_id"
+      type: "input"
+      message: "Enter value:"
   control_flow:                     # [Optional] Control flow structure
     type: "foreach"                 # Type of control flow (foreach, for, while)
   operations:                       # [Optional] Sub-operations for control flows
@@ -302,10 +312,10 @@ tasks:
 > [!IMPORTANT]
 > Notice we reference the task id by a _string_ when checking status, complete, and failed states.
 
-##### Wait for task completion
+##### Wait for one task to complete
 
 ```yaml
-- name: "Wait For Task"
+- name: "Wait For One Task"
   control_flow:
     type: "while"
     condition: '{{ not (bgTaskComplete "task_id") }}'
@@ -362,7 +372,7 @@ Example of implicit waiting:
   command: echo "Started background task! Recipe will wait for it to complete before exiting."
 ```
 
-### Output Format
+### Command Output Format
 
 Shef provides options for controlling how whitespace and empty lines are handled in command output:
 
@@ -391,36 +401,6 @@ operations:
     id: "list_items"
     command: echo "  item1  \n\n\n\n\n      item2  \n\n  item3    "
     output_format: "lines"  # Result: "item1\nitem2\nitem3"
-```
-
-### Control Flow Configuration
-
-Control flow structures are configured as follows:
-
-#### Foreach
-
-```yaml
-control_flow:
-  type: "foreach"               # Iterate over a collection
-  collection: "Item 1\nItem 2"  # Collection of items (newline separated)
-  as: "item"                    # Variable name for current item
-```
-
-#### For
-
-```yaml
-control_flow:
-  type: "for"    # Execute a fixed number of times
-  count: 5       # Number of iterations
-  variable: "i"  # Variable name for iteration index (optional)
-```
-
-#### While
-
-```yaml
-control_flow:
-  type: "while"                  # Execute while condition is true
-  condition: .status != "ready"  # Condition to evaluate each iteration
 ```
 
 ## Operation Execution Order
@@ -470,6 +450,10 @@ Shef supports the following types of user prompts:
     - "dev"
     - "staging"
     - "production"
+  descriptions:
+    "dev": "Dev Environment"
+    "staging": "Staging Environment"
+    "production": "Production Environment"
   default: "dev"
   help_text: "Choose the deployment environment"
 
@@ -617,6 +601,27 @@ transform: "{{ param1 | function1 .output }}"
 | `style`          | Add styling to text                | (style, text)              | `{{ style "bold" "Important!" }}`     | `{{ "Important!" \| style "bold" }}`   | `"bold", "Important!"` | Bold "Important!"        |
 | `resetFormat`    | Reset colors and styles            | ()                         | `{{ resetFormat }}`                   | N/A                                    | N/A                    | ANSI reset code          |
 
+#### Available Math Functions
+
+| Function        | Description                       | Parameters        | Direct Example                      | Pipe Example                 | Input             | Output             |
+|-----------------|-----------------------------------|-------------------|-------------------------------------|------------------------------|-------------------|--------------------|
+| `mod`           | Modulo operation                  | (a, b)            | `{{ mod 10 3 }}`                    | `{{ 3 \| mod 10 }}`          | `10, 3`           | `1`                |
+| `round`         | Round to nearest integer          | (value)           | `{{ round 3.7 }}`                   | `{{ 3.7 \| round }}`         | `3.7`             | `4`                |
+| `rand`          | Generate random integer in range  | (min, max)        | `{{ rand 1 10 }}`                   | N/A                          | `1, 10`           | Random number 1-10 |
+| `percent`       | Calculate percentage              | (part, total)     | `{{ percent 25 100 }}`              | `{{ 100 \| percent 25 }}`    | `25, 100`         | `25.0`             |
+| `formatPercent` | Format percentage with decimals   | (value, decimals) | `{{ formatPercent 33.333 1 }}`      | N/A                          | `33.333, 1`       | `"33.3%"`          |
+| `ceil`          | Round up to next integer          | (value)           | `{{ ceil 3.1 }}`                    | `{{ 3.1 \| ceil }}`          | `3.1`             | `4`                |
+| `floor`         | Round down to integer             | (value)           | `{{ floor 3.9 }}`                   | `{{ 3.9 \| floor }}`         | `3.9`             | `3`                |
+| `abs`           | Absolute value for floats         | (value)           | `{{ abs -3.5 }}`                    | `{{ -3.5 \| abs }}`          | `-3.5`            | `3.5`              |
+| `max`           | Maximum of two integers           | (a, b)            | `{{ max 5 10 }}`                    | `{{ 10 \| max 5 }}`          | `5, 10`           | `10`               |
+| `min`           | Minimum of two integers           | (a, b)            | `{{ min 5 10 }}`                    | `{{ 10 \| min 5 }}`          | `5, 10`           | `5`                |
+| `pow`           | Power function                    | (base, exponent)  | `{{ pow 2 3 }}`                     | `{{ 3 \| pow 2 }}`           | `2, 3`            | `8.0`              |
+| `sqrt`          | Square root                       | (value)           | `{{ sqrt 9 }}`                      | `{{ 9 \| sqrt }}`            | `9`               | `3.0`              |
+| `log`           | Natural logarithm                 | (value)           | `{{ log 2.718 }}`                   | `{{ 2.718 \| log }}`         | `2.718`           | `1.0`              |
+| `log10`         | Base-10 logarithm                 | (value)           | `{{ log10 100 }}`                   | `{{ 100 \| log10 }}`         | `100`             | `2.0`              |
+| `formatNumber`  | Format numbers with pattern       | (format, args...) | `{{ formatNumber "%.2f" 3.14159 }}` | N/A                          | `"%.2f", 3.14159` | `"3.14"`           |
+| `roundTo`       | Round to specified decimal places | (value, decimals) | `{{ roundTo 3.14159 2 }}`           | `{{ 2 \| roundTo 3.14159 }}` | `3.14159, 2`      | `3.14`             |
+
 ### Recommended Practices
 
 1. **Use direct function calls for clarity** rather than pipe syntax, especially for functions that take multiple
@@ -651,6 +656,11 @@ transform: "{{ param1 | function1 .output }}"
 #### Numeric Operations
 
 - `atoi`, `add`, `sub`, `div`, `mul`
+
+#### Math Operations
+
+- `mod`, `round`, `ceil`, `floor`, `abs`, `max`, `min`, `pow`, `sqrt`, `log`, `log10`, `percent`, `formatPercent`,
+  `rand`, `roundTo`, `formatNumber`
 
 #### Shell Integration
 
@@ -823,9 +833,9 @@ You can iterate over a collection of items and perform a flow of operations on e
 #### Key Foreach Components
 
 - **control_flow**
-    - **type**: foreach
-    - **collection**: The list of items to iterate over (string with items separated by newlines)
-    - **as**: The variable name to use for the current item in each iteration
+  - **type**: foreach
+  - **collection**: The list of items to iterate over (string with items separated by newlines)
+  - **as**: The variable name to use for the current item in each iteration
 - **operations**: The sub-operations to perform for each item (all sub-operations have access to the `as` loop variable)
 
 #### Mechanics of the Foreach Loop
@@ -850,12 +860,12 @@ You can iterate over a collection of items and perform a flow of operations on e
 ```yaml
 - name: "Process Each Item"
   control_flow:
-     type: "foreach"
-     collection: "🍎 Apples\n🍌 Bananas\n🍒 Cherries\n🍊 Oranges"
-     as: "fruit"  # Each item will be available as .fruit
+    type: "foreach"
+    collection: "🍎 Apples\n🍌 Bananas\n🍒 Cherries\n🍊 Oranges"
+    as: "fruit"  # Each item will be available as .fruit
   operations:
-     - name: "Process Fruit"
-       command: echo "Processing {{ .fruit }}"
+    - name: "Process Fruit"
+      command: echo "Processing {{ .fruit }}"
 ```
 
 You can also generate the collection dynamically:
@@ -882,9 +892,9 @@ You can execute a set of operations a fixed number of times.
 #### Key For Loop Components
 
 - **control_flow**
-    - **type**: for
-    - **count**: The number of iterations to execute
-    - **variable**: (Optional) The variable name to use for the current iteration index (defaults to "i")
+  - **type**: for
+  - **count**: The number of iterations to execute
+  - **variable**: (Optional) The variable name to use for the current iteration index (defaults to "i")
 - **operations**: The sub-operations to perform for each iteration
 
 #### Mechanics of the For Loop
@@ -943,8 +953,8 @@ You can repeatedly execute operations as long as a condition remains true.
 #### Key While Loop Components
 
 - **control_flow**
-    - **type**: while
-    - **condition**: The condition to evaluate before each iteration
+  - **type**: while
+  - **condition**: The condition to evaluate before each iteration
 - **operations**: The sub-operations to perform for each iteration
 
 #### Mechanics of the While Loop
@@ -999,7 +1009,7 @@ Real-world polling example:
       transform: "{{ trim .output }}"
 ```
 
-### Duration Tracking in Loops
+### Duration Time Tracking in Loops
 
 All loop types in Shef (`for`, `foreach`, and `while`) automatically track duration. This allows you to measure
 execution time, implement timeouts, or provide progress feedback in your recipes.
@@ -1042,7 +1052,7 @@ operations:
     operations:
       - name: "Do something until timeout"
         command: "echo 'Working... ({{ .duration }} elapsed)'"
-        
+
       - name: "Wait a bit"
         command: "sleep 1"
 ```
@@ -1060,10 +1070,10 @@ operations:
     operations:
       - name: "Run test iteration"
         command: "your_command --iteration {{ i }}"
-        
+
       - name: "Display progress"
         command: "echo 'Completed {{ .iteration }}/100 in {{ .duration }}'"
-        
+
   - name: "Show results"
     command: "echo 'Test completed in {{ perf_test.duration_ms_fmt }}'"
 ```
@@ -1071,6 +1081,81 @@ operations:
 > [!NOTE]
 > Duration variables persist after the loop completes, allowing you to access the total execution time of the loop in
 > subsequent operations.
+
+### Progress Mode
+
+Progress mode allows operations within loops to update in-place on a single line, creating a cleaner interface for
+status updates and progress indicators.
+
+#### Key Progress Mode Features
+
+- **control_flow**
+  - **progress_mode**: When set to `true`, enables single-line updates for all operations in the loop
+- **Behavior**: Each operation's output replaces the previous output on the same line rather than printing new lines
+- **Limitations**: Only the first line of output is displayed; additional lines are ignored
+
+#### Mechanics of Progress Mode
+
+1. When a loop has `progress_mode: true`, all operations within the loop display their output on a single line
+2. Each new output overwrites the previous output (returning to the start of the line)
+3. At the end of the loop, a newline is automatically added to maintain clean formatting
+
+#### Common Uses
+
+- Displaying progress counters (e.g., "Processing 5/100...")
+- Showing status updates for long-running operations
+- Creating animated loading indicators
+- Providing real-time feedback without cluttering the terminal
+
+> [!TIP]
+> Progress mode works best for simple, concise status messages. For complex multi-line output, standard mode is more
+appropriate.
+
+#### Example Progress Mode Recipes
+
+With a for loop:
+
+```yaml
+- name: "Download Progress Example"
+  control_flow:
+    type: "for"
+    count: 100
+    variable: "i"
+    progress_mode: true
+  operations:
+    - name: "Update Progress"
+      command: echo "Downloading... {{ .i }}% complete"
+```
+
+With a while loop:
+
+```yaml
+- name: "Service Monitor Example"
+  control_flow:
+    type: "while"
+    condition: .duration_s < 60  # Monitor for 60 seconds
+    progress_mode: true
+  operations:
+    - name: "Check Service Status"
+      command: echo "Monitoring service... ({{ .duration_fmt }} elapsed)"
+
+    - name: "Wait"
+      command: sleep 1
+```
+
+With a foreach loop:
+
+```yaml
+- name: "Batch Processing Example"
+  control_flow:
+    type: "foreach"
+    collection: "{{ .files }}"
+    as: "file"
+    progress_mode: true
+  operations:
+    - name: "Process File"
+      command: echo "Processing {{ .file }}"
+```
 
 ## Arguments and Flags
 
@@ -1211,6 +1296,8 @@ recipes:
 ```
 
 ## Example Recipes
+
+For even more examples, [check out the demo recipes.](https://github.com/eduardoagarcia/shef/tree/main/recipes/demo)
 
 ### Hello World
 
