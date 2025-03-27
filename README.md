@@ -1,6 +1,6 @@
 # Shef
 
-Shef, a wordplay on *"shell"* and *"chef"*, lets you create interactive recipes that simplify complex command-line tasks.
+Shef, a wordplay on *"shell"* and *"chef"*, is a framework that lets you create interactive recipes that simplify complex command-line tasks.
 
 Essentially, imagine that [Make](https://www.gnu.org/software/make), [GitHub Actions](https://github.com/features/actions),
 and [CyberChef](https://gchq.github.io/CyberChef) had a weird little `<moira-rose>bea-by</>`.
