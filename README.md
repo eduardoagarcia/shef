@@ -54,6 +54,7 @@ deeper? [Check out the demo recipes.](https://github.com/eduardoagarcia/shef/tre
 - [Control Flow Structures](#control-flow-structures)
 - [Arguments and Flags](#arguments-and-flags)
 - [Recipe Help Documentation](#recipe-help-documentation)
+- [Components](#components)
 - [Example Recipes](#example-recipes)
 - [Creating Recipes](#creating-recipes)
 - [AI-Assisted Recipe Creation](#ai-assisted-recipe-creation)
@@ -1293,6 +1294,160 @@ recipes:
         --output=DIR   # Output directory (default: ./backups)
     operations:
       # Operations follow here
+```
+
+## Components
+
+Components are reusable modules that can be incorporated into any recipe. Components enable you to create building
+blocks that can be shared across one or multiple recipes.
+
+### Component Overview
+
+Components provide the following benefits:
+
+- **Reusability**: Define operations once, use them in multiple recipes
+- **Maintainability**: Update a single component rather than modifying multiple recipes
+- **Modularity**: Break complex workflows into logical, reusable blocks
+- **Standardization**: Create consistent patterns across your organization
+
+### Defining Components
+
+Components can be defined in the same file as recipes, or in separate files entirely.
+
+```yaml
+components:
+  - id: "backup-database"
+    name: "Database Backup Component"
+    description: "Creates a timestamped database backup"
+    operations:
+      - name: "Get Current Timestamp"
+        id: "timestamp"
+        command: "date +%Y%m%d_%H%M%S"
+        output_format: "trim"
+
+      - name: "Create Backup"
+        id: "backup_file"
+        command: "mysqldump --user={{ .db_user }} --password={{ .db_password }} {{ .db_name }} > backup_{{ .timestamp }}.sql"
+```
+
+#### Key Components
+
+- **id**: Unique identifier for referencing the component (required)
+- **name**: Human-readable name for the component
+- **description**: Purpose and functionality of the component
+- **operations**: List of operations to execute when the component is used
+
+### Using Components in Recipes
+
+Include components in your recipes using the `uses` field:
+
+```yaml
+recipes:
+  - name: "nightly_backup"
+    description: "Performs database backup every night"
+    operations:
+      - name: "Prompt for Database Credentials"
+        prompts:
+          - name: "Database Name"
+            id: "db_name"
+            type: "input"
+            message: "Enter database name:"
+
+          - name: "Database User"
+            id: "db_user"
+            type: "input"
+            message: "Enter database username:"
+
+          - name: "Database Password"
+            id: "db_password"
+            type: "password"
+            message: "Enter database password:"
+
+      - name: "Backup Database"
+        uses: "backup_database"
+        id: "db_backup"
+
+      - name: "Show Backup Complete"
+        command: "echo 'Backup completed: {{ .backup_file }}'"
+```
+
+### Component Variables
+
+Components can access all variables in the recipe's execution context:
+
+1. **Recipe Variables**: Variables defined in the recipe can be used inside components
+2. **Prompt Results**: Values from recipe prompts are available to components
+3. **Operation Outputs**: Outputs from operations before the component are accessible
+
+### Capturing Component Outputs
+
+You can capture outputs from components in two ways:
+
+1. **Component-level ID**: Assign an ID to the `uses` operation to capture its output
+   ```yaml
+   - name: "Backup Database"
+     uses: "backup_database"
+     id: "db_backup"  # Will contain the output of the last operation in the component
+   ```
+
+2. **Operation-level IDs**: Access individual operation outputs from within the component
+   ```yaml
+   # After using the backup-database component
+   - name: "Show Timestamp"
+     command: "echo 'Backup created at: {{ .timestamp }}'"
+   ```
+
+### Component Sources
+
+Components follow the same source priority as recipes:
+
+1. **Local Components**: `./.shef/*.yaml` in the current directory
+2. **User Components**: `~/.shef/user/*.yaml` in your home directory
+3. **Public Components**: `~/.shef/public/*.yaml` in your home directory
+
+### Advanced Component Usage
+
+#### Nesting Components
+
+Components can use other components, allowing you to build more complex structures:
+
+```yaml
+components:
+  - id: "setup-environment"
+    name: "Environment Setup"
+    operations:
+      - name: "Create Directory"
+        command: "mkdir -p workspace"
+
+  - id: "deploy-application"
+    name: "Application Deployment"
+    operations:
+      - name: "Setup Environment First"
+        uses: "setup-environment"
+
+      - name: "Deploy Code"
+        command: "cp -r ./app/* workspace/"
+```
+
+#### Component Conditions
+
+Just like operations, component usage can be conditional:
+
+```yaml
+- name: "Optional Database Backup"
+  uses: "backup-database"
+  condition: .perform_backup == "true"
+```
+
+#### Component Error Handling
+
+Handle component failures using the same success/failure patterns as regular operations:
+
+```yaml
+- name: "Backup Database"
+  uses: "backup-database"
+  on_success: "notify_success"
+  on_failure: "notify_failure"
 ```
 
 ## Example Recipes
