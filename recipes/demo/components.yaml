@@ -1,0 +1,66 @@
+recipes:
+  - name: "components"
+    description: "A simple demo of reusable components"
+    category: "demo"
+    help: |
+      This recipe demonstrates how to use reusable components in Shef.
+
+      The recipe will:
+        1. Use the "health-check" component to gather system information
+        2. Display the collected information in a formatted report
+        3. Show how components can be nested (health-check uses system-info)
+
+      Components are reusable blocks of operations that can be shared across recipes:
+        - Components are defined with an "id" that you reference with "uses"
+        - Component operations with IDs become available as variables
+        - Components can use other components (nesting)
+        - Operations inside components work just like regular operations
+
+      Key concepts:
+        - Creating modular, reusable operation sets
+        - Breaking complex workflows into logical components
+        - Referencing component outputs by their operation IDs
+        - Building higher-level components from simpler ones
+    operations:
+      - name: "Run System Checkup"
+        uses: "health-check"
+
+      - name: "Generate System Report"
+        command: |
+          echo "==== SYSTEM INFO ===="
+          echo "Hostname: {{ .hostname }}"
+          echo "User: {{ .user }}"
+          echo "Time: {{ .datetime }}"
+          echo "Disk Usage: {{ .disk_space }}"
+
+components:
+  - id: "system-info"
+    name: "System Information"
+    description: "Collects basic system information"
+    operations:
+      - name: "Get Hostname"
+        id: "hostname"
+        command: "hostname"
+        silent: true
+
+      - name: "Get Current User"
+        id: "user"
+        command: "whoami"
+        silent: true
+
+      - name: "Get Date and Time"
+        id: "datetime"
+        command: "date"
+        silent: true
+
+  - id: "health-check"
+    name: "System Health Check"
+    description: "Performs basic system health checks"
+    operations:
+      - name: "Collect System Information"
+        uses: "system-info"
+
+      - name: "Check Disk Space"
+        id: "disk_space"
+        command: "df -h | grep -E '/$' | awk '{print $5}'"
+        silent: true

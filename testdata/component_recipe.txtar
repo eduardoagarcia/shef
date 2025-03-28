@@ -1,0 +1,20 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy component test file
+cp component_recipe.yaml .shef/
+
+# Test running the component test recipe
+exec shef component_test_recipe
+
+# Validate test
+stdout 'First output: Hello from component'
+stdout 'Second output: World from component'
+stdout 'Component ID output: World from component'

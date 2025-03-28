@@ -7,7 +7,8 @@ import (
 
 // File represents a collection of recipes
 type File struct {
-	Recipes []Recipe `yaml:"recipes"`
+	Recipes    []Recipe    `yaml:"recipes"`
+	Components []Component `yaml:"components,omitempty"`
 }
 
 // Recipe defines a Shef recipe with its metadata and operations
@@ -24,6 +25,7 @@ type Recipe struct {
 type Operation struct {
 	Name          string      `yaml:"name"`
 	ID            string      `yaml:"id,omitempty"`
+	Uses          string      `yaml:"uses,omitempty"`
 	Command       string      `yaml:"command,omitempty"`
 	ControlFlow   interface{} `yaml:"control_flow,omitempty"`
 	Operations    []Operation `yaml:"operations,omitempty"`
@@ -100,4 +102,12 @@ type ExecutionContext struct {
 	BackgroundTasks  map[string]*BackgroundTask
 	BackgroundMutex  sync.RWMutex
 	BackgroundWg     sync.WaitGroup
+}
+
+// Component defines a reusable set of operations
+type Component struct {
+	ID          string      `yaml:"id"`
+	Name        string      `yaml:"name"`
+	Description string      `yaml:"description,omitempty"`
+	Operations  []Operation `yaml:"operations"`
 }

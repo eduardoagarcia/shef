@@ -29,10 +29,21 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 	}
 
 	opMap := make(map[string]Operation)
-	registerOperations(recipe.Operations, opMap)
+
+	expandedOperations, err := ExpandComponentReferences(recipe.Operations, opMap, debug)
+	if err != nil {
+		return fmt.Errorf("failed to expand component references: %w", err)
+	}
+
+	if debug && len(expandedOperations) != len(recipe.Operations) {
+		fmt.Printf("Expanded %d operations into %d operations after component resolution\n",
+			len(recipe.Operations), len(expandedOperations))
+	}
+
+	registerOperations(expandedOperations, opMap)
 
 	handlerIDs := make(map[string]bool)
-	identifyHandlers(recipe.Operations, handlerIDs)
+	identifyHandlers(expandedOperations, handlerIDs)
 
 	if debug {
 		printRegisteredOperations(opMap, handlerIDs)
@@ -102,7 +113,7 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 		return processCommandOutput(op, output, ctx, opMap, executeOp, depth, debug)
 	}
 
-	for i, op := range recipe.Operations {
+	for i, op := range expandedOperations {
 		if op.ID != "" && handlerIDs[op.ID] {
 			if debug {
 				fmt.Printf("Skipping handler operation %d: %s (ID: %s)\n", i+1, op.Name, op.ID)
