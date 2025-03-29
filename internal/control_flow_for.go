@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"strconv"
-	"time"
 )
 
 // ForFlow defines the structure for a for loop control flow
@@ -53,7 +52,8 @@ func (op *Operation) GetForFlow() (*ForFlow, error) {
 
 // ExecuteFor runs a for loop with the given parameters
 func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
-	startTime := time.Now()
+	loopCtx := ctx.pushLoopContext("for", depth)
+	defer ctx.popLoopContext()
 
 	originalMode := setupProgressMode(ctx, forFlow.ProgressMode)
 	defer func() {
@@ -73,13 +73,13 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 	}
 
 	for i := 0; i < count; i++ {
-		updateDurationVars(ctx, startTime)
+		ctx.updateLoopDuration()
 		ctx.Vars[forFlow.Variable] = i
 		ctx.Vars["iteration"] = i + 1
 
 		if debug {
 			fmt.Printf("For iteration %d/%d: %s = %d (elapsed: %s)\n",
-				i+1, count, forFlow.Variable, i, ctx.Vars["duration_fmt"])
+				i+1, count, forFlow.Variable, i, formatDuration(loopCtx.Duration))
 		}
 
 		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp, debug)
@@ -91,7 +91,7 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 		}
 	}
 
-	updateDurationVars(ctx, startTime)
+	ctx.updateLoopDuration()
 	cleanupLoopState(ctx, op.ID, forFlow.Variable)
 
 	return false, nil

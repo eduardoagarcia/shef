@@ -26,13 +26,8 @@ recipes:
           condition: .duration_s < 3
           progress_mode: true
         operations:
-          - name: "Perform Work"
-            command: echo "Performing work..."
-            silent: true
-
           - name: "Status Update"
             command: echo {{ color "yellow" (printf "Performing work... '%s'" .duration_ms_fmt) }}
-
 
       - name: "Show Completion"
         command: echo {{ color "green" "While loop finished - work is complete!" }}

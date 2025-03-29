@@ -2,17 +2,20 @@ package internal
 
 import (
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/agnivade/levenshtein"
-	"github.com/urfave/cli/v2"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/agnivade/levenshtein"
+	"github.com/urfave/cli/v2"
 )
 
 // dispatch handles recipe discovery, selection, and execution based on CLI arguments
 func dispatch(c *cli.Context, args []string, sourcePriority []string) error {
 	debug := c.Bool("debug")
+
+	loadComponents(sourcePriority, debug)
 
 	recipes, remainingArgs, err := loadRecipesToExecute(c, args, sourcePriority, debug)
 	if err != nil {
@@ -39,6 +42,35 @@ func dispatch(c *cli.Context, args []string, sourcePriority []string) error {
 	return nil
 }
 
+// loadComponents discovers and loads components from all sources
+func loadComponents(sourcePriority []string, debug bool) {
+	sources := discoverComponentSources(sourcePriority)
+
+	globalComponentRegistry.Clear()
+	if err := LoadComponents(sources, debug); err != nil && debug {
+		fmt.Printf("Warning: Error loading components: %v\n", err)
+	}
+
+	if debug {
+		fmt.Printf("Loaded %d components from all sources\n", len(globalComponentRegistry.components))
+	}
+}
+
+// discoverComponentSources finds all files that might contain components
+func discoverComponentSources(sourcePriority []string) []string {
+	var allSources []string
+	for _, source := range sourcePriority {
+		useLocal := source == "local"
+		useUser := source == "user"
+		usePublic := source == "public"
+
+		sources, _ := findRecipeSourcesByType(useLocal, useUser, usePublic)
+		allSources = append(allSources, sources...)
+	}
+
+	return allSources
+}
+
 // loadRecipesToExecute determines which recipes to run based on provided arguments
 func loadRecipesToExecute(c *cli.Context, args []string, sourcePriority []string, debug bool) ([]Recipe, []string, error) {
 	recipeFilePath := c.String("recipe-file")
@@ -60,7 +92,19 @@ func loadRecipesFromFile(filePath string, args []string) ([]Recipe, []string, er
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load recipe file %s: %w", filePath, err)
 	}
+
+	registerFileComponents(file)
+
 	return file.Recipes, args, nil
+}
+
+// registerFileComponents adds components from a file to the registry
+func registerFileComponents(file *File) {
+	for _, component := range file.Components {
+		if component.ID != "" {
+			globalComponentRegistry.Register(component)
+		}
+	}
 }
 
 // loadRecipeFromArgs finds a recipe based on command-line arguments

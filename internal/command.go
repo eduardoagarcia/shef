@@ -124,6 +124,20 @@ func executeBackgroundCommand(op Operation, ctx *ExecutionContext, opMap map[str
 		return fmt.Errorf("background execution requires an operation ID")
 	}
 
+	renderedID, err := renderTemplate(op.ID, ctx.templateVars())
+	if err != nil {
+		return fmt.Errorf("failed to render operation ID template: %w", err)
+	}
+	if renderedID != op.ID {
+		opCopy := op
+		opCopy.ID = renderedID
+		op = opCopy
+
+		if debug {
+			fmt.Printf("Rendered background task ID: '%s' -> '%s'\n", op.ID, renderedID)
+		}
+	}
+
 	cmd, err := renderTemplate(op.Command, ctx.templateVars())
 	if err != nil {
 		return fmt.Errorf("failed to render command template: %w", err)

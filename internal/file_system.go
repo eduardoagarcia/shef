@@ -2,11 +2,12 @@ package internal
 
 import (
 	"fmt"
-	"github.com/urfave/cli/v2"
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/urfave/cli/v2"
+	"gopkg.in/yaml.v3"
 )
 
 // findRecipeSourceFile locates the file containing a specified recipe

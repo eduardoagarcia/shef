@@ -2,9 +2,12 @@ package internal
 
 import (
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/google/uuid"
 )
 
 // evaluateRecipe executes a recipe with given input and variables
@@ -14,6 +17,7 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 		Vars:             make(map[string]interface{}),
 		OperationOutputs: make(map[string]string),
 		OperationResults: make(map[string]bool),
+		LoopStack:        make([]*LoopContext, 0),
 	}
 
 	ctx.templateFuncs = extendTemplateFuncs(templateFuncs, ctx)
@@ -29,10 +33,21 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 	}
 
 	opMap := make(map[string]Operation)
-	registerOperations(recipe.Operations, opMap)
+
+	expandedOperations, err := ExpandComponentReferences(recipe.Operations, opMap, debug)
+	if err != nil {
+		return fmt.Errorf("failed to expand component references: %w", err)
+	}
+
+	if debug && len(expandedOperations) != len(recipe.Operations) {
+		fmt.Printf("Expanded %d operations into %d operations after component resolution\n",
+			len(recipe.Operations), len(expandedOperations))
+	}
+
+	registerOperations(expandedOperations, opMap)
 
 	handlerIDs := make(map[string]bool)
-	identifyHandlers(recipe.Operations, handlerIDs)
+	identifyHandlers(expandedOperations, handlerIDs)
 
 	if debug {
 		printRegisteredOperations(opMap, handlerIDs)
@@ -42,6 +57,24 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 	executeOp = func(op Operation, depth int) (bool, error) {
 		if depth > 50 {
 			return false, fmt.Errorf("possible infinite loop detected (max depth reached)")
+		}
+
+		renderedID := op.ID
+		if op.ID != "" {
+			var err error
+			renderedID, err = renderTemplate(op.ID, ctx.templateVars())
+			if err != nil {
+				return false, fmt.Errorf("failed to render operation ID template: %w", err)
+			}
+			if renderedID != op.ID {
+				opCopy := op
+				opCopy.ID = renderedID
+				op = opCopy
+
+				if debug {
+					fmt.Printf("Rendered operation ID: '%s' -> '%s'\n", op.ID, renderedID)
+				}
+			}
 		}
 
 		// 1. Check condition
@@ -102,7 +135,7 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 		return processCommandOutput(op, output, ctx, opMap, executeOp, depth, debug)
 	}
 
-	for i, op := range recipe.Operations {
+	for i, op := range expandedOperations {
 		if op.ID != "" && handlerIDs[op.ID] {
 			if debug {
 				fmt.Printf("Skipping handler operation %d: %s (ID: %s)\n", i+1, op.Name, op.ID)
@@ -403,4 +436,42 @@ func (ctx *ExecutionContext) anyTasksFailed() string {
 		}
 	}
 	return "false"
+}
+
+// pushLoopContext starts tracking a new loop
+func (ctx *ExecutionContext) pushLoopContext(loopType string, depth int) *LoopContext {
+	loopCtx := &LoopContext{
+		ID:        uuid.New().String(),
+		StartTime: time.Now(),
+		Type:      loopType,
+		Depth:     depth,
+	}
+
+	ctx.LoopStack = append(ctx.LoopStack, loopCtx)
+	ctx.CurrentLoopIdx = len(ctx.LoopStack) - 1
+	return loopCtx
+}
+
+// popLoopContext removes the current loop context
+func (ctx *ExecutionContext) popLoopContext() {
+	if len(ctx.LoopStack) > 0 {
+		ctx.LoopStack = ctx.LoopStack[:len(ctx.LoopStack)-1]
+		ctx.CurrentLoopIdx = len(ctx.LoopStack) - 1
+	}
+}
+
+// updateLoopDuration updates the duration of the current loop
+func (ctx *ExecutionContext) updateLoopDuration() {
+	if ctx.CurrentLoopIdx >= 0 && ctx.CurrentLoopIdx < len(ctx.LoopStack) {
+		loop := ctx.LoopStack[ctx.CurrentLoopIdx]
+		loop.Duration = time.Since(loop.StartTime)
+	}
+}
+
+// getCurrentLoopDuration gets the duration of the current loop
+func (ctx *ExecutionContext) getCurrentLoopDuration() time.Duration {
+	if ctx.CurrentLoopIdx >= 0 && ctx.CurrentLoopIdx < len(ctx.LoopStack) {
+		return ctx.LoopStack[ctx.CurrentLoopIdx].Duration
+	}
+	return 0
 }

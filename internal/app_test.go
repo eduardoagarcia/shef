@@ -3,7 +3,6 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"github.com/rogpeppe/go-internal/testscript"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
+	"github.com/rogpeppe/go-internal/testscript"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

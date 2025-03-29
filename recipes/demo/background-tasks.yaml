@@ -80,25 +80,16 @@ recipes:
           - name: "Delay"
             command: sleep 0.05
 
-          - name: "Apple Status"
-            id: "apple_status"
-            command: echo "[{{ taskStatusMessage "apple" (color "green" "✅ apple") (color "yellow" "apple") "" (style "dim" "apple") }}]"
-            silent: true
-
-          - name: "Orange Status"
-            id: "orange_status"
-            command: echo "[{{ taskStatusMessage "orange" (color "green" "✅ orange") (color "yellow" "orange") "" (style "dim" "orange") }}]"
-            silent: true
-
-          - name: "Lemon Status"
-            id: "lemon_status"
-            command: echo "[{{ taskStatusMessage "lemon" (color "green" "✅ lemon") (color "yellow" "lemon") "" (style "dim" "lemon") }}]"
-            silent: true
-
-          - name: "Kiwi Status"
-            id: "kiwi_status"
-            command: echo "[{{ taskStatusMessage "kiwi" (color "green" "✅ kiwi") (color "yellow" "kiwi") "" (style "dim" "kiwi") }}]"
-            silent: true
+          - name: "Fruit Status"
+            control_flow:
+              type: "foreach"
+              collection: "apple\norange\nlemon\nkiwi"
+              as: "fruit"
+            operations:
+              - name: "{{ .fruit }} Status"
+                id: "{{ .fruit }}_status"
+                command: echo "[{{ taskStatusMessage .fruit (color "green" (printf "✅ %s" .fruit)) (color "yellow" (printf "%s" .fruit)) "" (style "dim" (printf "%s" .fruit)) }}]"
+                silent: true
 
           - name: "Status Update"
             command: echo {{ printf "%s %s %s %s '(%s)'" .apple_status .orange_status .lemon_status .kiwi_status (color "magenta" .duration_ms_fmt) }}

@@ -1,0 +1,33 @@
+components:
+  - id: "echo_component"
+    name: "Echo Component"
+    description: "A simple component that echoes text"
+    operations:
+      - name: "Echo Hello"
+        id: "hello_output"
+        command: "echo 'Hello from component'"
+
+      - name: "Echo World"
+        id: "world_output"
+        command: "echo 'World from component'"
+
+recipes:
+  - name: "component_test_recipe"
+    description: "A recipe that tests component functionality"
+    category: "test"
+    operations:
+      - name: "Use Echo Component"
+        uses: "echo_component"
+
+      - name: "Show Component Outputs"
+        command: |
+          echo "First output: {{ .hello_output }}"
+          echo "Second output: {{ .world_output }}"
+
+      - name: "Direct Component Usage"
+        uses: "echo_component"
+        id: "my_component"
+
+      - name: "Show Direct Usage Output"
+        command: |
+          echo "Component ID output: {{ .my_component }}"
