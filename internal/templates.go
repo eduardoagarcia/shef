@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 	"text/template"
+	"time"
 )
 
 // templateVars creates a map of variables available for template rendering
@@ -29,6 +30,18 @@ func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 
 	vars["allTasksComplete"] = ctx.allTasksComplete()
 	vars["anyTasksFailed"] = ctx.anyTasksFailed()
+
+	var duration time.Duration
+	if ctx.CurrentLoopIdx >= 0 && ctx.CurrentLoopIdx < len(ctx.LoopStack) {
+		duration = ctx.LoopStack[ctx.CurrentLoopIdx].Duration
+	}
+
+	if duration > 0 {
+		vars["duration_ms"] = fmt.Sprintf("%d", duration.Milliseconds())
+		vars["duration_s"] = fmt.Sprintf("%d", int(duration.Seconds()))
+		vars["duration_fmt"] = formatDuration(duration)
+		vars["duration_ms_fmt"] = formatDurationWithMs(duration)
+	}
 
 	return vars
 }

@@ -3,9 +3,10 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"sort"
 	"strings"
+
+	"github.com/urfave/cli/v2"
 )
 
 // recipeInfo represents recipe data for JSON output

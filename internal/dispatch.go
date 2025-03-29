@@ -2,12 +2,13 @@ package internal
 
 import (
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/agnivade/levenshtein"
-	"github.com/urfave/cli/v2"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/agnivade/levenshtein"
+	"github.com/urfave/cli/v2"
 )
 
 // dispatch handles recipe discovery, selection, and execution based on CLI arguments

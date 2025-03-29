@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"time"
 )
 
 // ForEachFlow defines the structure for a foreach loop control flow
@@ -56,7 +55,8 @@ func (op *Operation) GetForEachFlow() (*ForEachFlow, error) {
 
 // ExecuteForEach runs a foreach loop with the given parameters
 func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
-	startTime := time.Now()
+	loopCtx := ctx.pushLoopContext("foreach", depth)
+	defer ctx.popLoopContext()
 
 	originalMode := setupProgressMode(ctx, forEach.ProgressMode)
 	defer func() {
@@ -78,13 +78,13 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 	}
 
 	for idx, item := range items {
-		updateDurationVars(ctx, startTime)
+		ctx.updateLoopDuration()
 		ctx.Vars[forEach.As] = item
 		ctx.Vars["iteration"] = idx + 1
 
 		if debug {
 			fmt.Printf("Foreach iteration %d/%d: %s = %s (elapsed: %s)\n",
-				idx+1, len(items), forEach.As, item, ctx.Vars["duration_fmt"])
+				idx+1, len(items), forEach.As, item, formatDuration(loopCtx.Duration))
 		}
 
 		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp, debug)
@@ -96,7 +96,7 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 		}
 	}
 
-	updateDurationVars(ctx, startTime)
+	ctx.updateLoopDuration()
 	cleanupLoopState(ctx, op.ID, forEach.As)
 
 	return false, nil

@@ -2,10 +2,11 @@ package internal
 
 import (
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/urfave/cli/v2"
 )
 
 // Run initializes and runs the Shef CLI application

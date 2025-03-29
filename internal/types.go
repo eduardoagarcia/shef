@@ -3,6 +3,7 @@ package internal
 import (
 	"sync"
 	"text/template"
+	"time"
 )
 
 // File represents a collection of recipes
@@ -102,6 +103,8 @@ type ExecutionContext struct {
 	BackgroundTasks  map[string]*BackgroundTask
 	BackgroundMutex  sync.RWMutex
 	BackgroundWg     sync.WaitGroup
+	LoopStack        []*LoopContext
+	CurrentLoopIdx   int
 }
 
 // Component defines a reusable set of operations
@@ -110,4 +113,13 @@ type Component struct {
 	Name        string      `yaml:"name"`
 	Description string      `yaml:"description,omitempty"`
 	Operations  []Operation `yaml:"operations"`
+}
+
+// LoopContext tracks state for a specific loop
+type LoopContext struct {
+	ID        string
+	StartTime time.Time
+	Duration  time.Duration
+	Type      string
+	Depth     int
 }

@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"time"
 )
 
 // WhileFlow defines the structure for a while loop control flow
@@ -49,7 +48,8 @@ func (op *Operation) GetWhileFlow() (*WhileFlow, error) {
 
 // ExecuteWhile runs a while loop with the given parameters
 func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
-	startTime := time.Now()
+	loopCtx := ctx.pushLoopContext("while", depth)
+	defer ctx.popLoopContext()
 
 	originalMode := setupProgressMode(ctx, whileFlow.ProgressMode)
 	defer func() {
@@ -62,7 +62,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 	iterations := 0
 
 	for {
-		updateDurationVars(ctx, startTime)
+		ctx.updateLoopDuration()
 
 		shouldContinue, err := evaluateWhileCondition(whileFlow.Condition, ctx)
 		if err != nil {
@@ -78,7 +78,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 
 		if debug {
 			fmt.Printf("While iteration %d, condition: %s (elapsed: %s)\n",
-				iterations, whileFlow.Condition, ctx.Vars["duration_fmt"])
+				iterations, whileFlow.Condition, formatDuration(loopCtx.Duration))
 		}
 
 		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp, debug)
@@ -90,7 +90,7 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		}
 	}
 
-	updateDurationVars(ctx, startTime)
+	ctx.updateLoopDuration()
 	cleanupLoopState(ctx, op.ID, "")
 
 	return false, nil

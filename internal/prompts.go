@@ -2,11 +2,12 @@ package internal
 
 import (
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/AlecAivazis/survey/v2"
 )
 
 // handlePrompt processes a prompt definition and returns the user's response
