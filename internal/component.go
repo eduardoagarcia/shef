@@ -89,13 +89,17 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 				fmt.Printf("Expanding component reference: %s\n", op.Uses)
 			}
 
-			for _, compOp := range component.Operations {
-				if compOp.ID != "" {
-					opMap[compOp.ID] = compOp
+			clonedOps := make([]Operation, len(component.Operations))
+			for i, compOp := range component.Operations {
+				clonedOps[i] = compOp
+				applyOperationProperties(&clonedOps[i], op)
+
+				if clonedOps[i].ID != "" {
+					opMap[clonedOps[i].ID] = clonedOps[i]
 				}
 			}
 
-			componentOps, err := ExpandComponentReferences(component.Operations, opMap, debug)
+			componentOps, err := ExpandComponentReferences(clonedOps, opMap, debug)
 			if err != nil {
 				return nil, err
 			}
@@ -131,4 +135,19 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 	}
 
 	return expanded, nil
+}
+
+// applyOperationProperties applies specific properties from source operation to target operation
+func applyOperationProperties(target *Operation, source Operation) {
+	if source.Condition != "" {
+		if target.Condition != "" {
+			target.Condition = "(" + target.Condition + ") && (" + source.Condition + ")"
+		} else {
+			target.Condition = source.Condition
+		}
+	}
+
+	target.Silent = target.Silent || source.Silent
+	target.Break = target.Break || source.Break
+	target.Exit = target.Exit || source.Exit
 }

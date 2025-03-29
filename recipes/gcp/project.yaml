@@ -16,61 +16,23 @@ recipes:
         - You must be authenticated with gcloud
 
       Options:
-        -w, --which    Show the currently selected project without changing it
+        -w, --which  Show the currently selected project without changing it
     operations:
-      - name: "Which"
-        command: echo "which"
-        condition: .w == "true" || .which == "true"
-        on_success: "selected_project"
+      - name: "GCP Project Select"
+        id: "gcp_current_project"
+        uses: "gcp_project_select"
+        condition: .w != "true" && .which != "true"
         silent: true
-
-      - name: "List Projects"
-        id: "list_projects"
-        command: gcloud projects list --filter="NOT project_id:sys-*" --format="value(name,project_id)" | awk '{print $1 " (" $2 ")|" $2}'
-        silent: true
-
-      - name: "Format Display Options"
-        id: "display_options"
-        command: cut -d'|' -f1 <<< "{{ .list_projects }}"
-        silent: true
-
-      - name: "Select Project"
-        id: "selected_display"
-        command: echo "{{ .project_display }}"
-        silent: true
-        prompts:
-          - name: "Project Select"
-            id: "project_display"
-            type: "select"
-            message: "Select a project"
-            source_operation: "display_options"
-
-      - name: "Extract Project ID"
-        id: "project_id"
-        command: |
-          selected="{{ .selected_display }}"
-          while IFS= read -r line; do
-            display=$(echo "$line" | cut -d'|' -f1)
-            id=$(echo "$line" | cut -d'|' -f2)
-            if [ "$display" = "$selected" ]; then
-              echo "$id"
-              break
-            fi
-          done <<< "{{ .list_projects }}"
-        silent: true
-
-      - name: "Set Project"
-        command: gcloud config set project {{ .project_id }}
-        on_success: "selected_project"
-        silent: true
-
-      - name: "Get Selected Project"
-        id: "selected_project"
-        command: gcloud config get-value project
         on_success: "exit"
+
+      - name: "GCP Current Project"
+        id: "gcp_current_project"
+        uses: "gcp_current_project"
+        condition: .w == "true" || .which == "true"
         silent: true
+        on_success: "exit"
 
       - name: "Show Selected Project"
         id: "exit"
-        command: echo "Selected project:" {{ style "bold" (color "green" .selected_project) }}
+        command: echo "Selected project:" {{ style "bold" (color "green" .gcp_current_project) }}
         exit: true

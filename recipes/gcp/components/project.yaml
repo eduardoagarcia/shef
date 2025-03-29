@@ -1,0 +1,41 @@
+components:
+  - id: "gcp_current_project"
+    name: "GCP Current Project"
+    description: "Gets the current GCP project"
+    operations:
+      - name: "Get Current GCP Project"
+        id: "gcp_current_project"
+        command: gcloud config get-value project
+
+  - id: "gcp_project_select"
+    name: "GCP Project Select"
+    description: "Displays GCP project select prompt with the default set to the current GCP project"
+    operations:
+      - name: "GCP Current Project"
+        id: "gcp_current_project"
+        uses: "gcp_current_project"
+        silent: true
+
+      - name: "List GCP Projects"
+        id: "gcp_projects_list"
+        command: gcloud projects list --filter="NOT project_id:sys-*" --format="value(project_id,name)" | awk '{print $1 "=" $2}'
+        silent: true
+
+      - name: "GCP Select Project"
+        id: "gcp_selected_project"
+        command: echo "{{ .gcp_project_prompt }}"
+        silent: true
+        prompts:
+          - name: "GCP Project Select"
+            id: "gcp_project_prompt"
+            type: "select"
+            message: "Select a GCP project"
+            source_operation: "gcp_projects_list"
+            default: "{{ .gcp_current_project }}"
+
+      - name: "Set GCP Project"
+        command: gcloud config set project {{ .gcp_selected_project }}
+        silent: true
+
+      - name: "Return Selected GCP Project"
+        command: echo "{{ .gcp_selected_project }}"
