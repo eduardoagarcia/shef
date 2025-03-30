@@ -74,6 +74,7 @@ func stringFunctions(funcs template.FuncMap) {
 	funcs["grep"] = filterLines
 	funcs["cut"] = cutFields
 	funcs["exec"] = execCommand
+	funcs["count"] = count
 }
 
 // mathFunctions adds mathematical functions to the template function map
@@ -344,6 +345,29 @@ func execCommand(cmd string) string {
 		return ""
 	}
 	return string(output)
+}
+
+// count returns the number of items in an array or lines in a string
+func count(val interface{}) int {
+	switch v := val.(type) {
+	case []interface{}:
+		return len(v)
+	case []string:
+		return len(v)
+	case []int:
+		return len(v)
+	case []float64:
+		return len(v)
+	case map[string]interface{}:
+		return len(v)
+	case string:
+		if v == "" {
+			return 0
+		}
+		return len(strings.Split(v, "\n"))
+	default:
+		return 1
+	}
 }
 
 // renderTemplate parses and executes a Go template with the provided variables

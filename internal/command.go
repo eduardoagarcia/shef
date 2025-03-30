@@ -11,16 +11,16 @@ import (
 )
 
 // executeCommand runs a shell command in the specified execution mode
-func executeCommand(cmdStr string, input string, executionMode string, outputFormat string) (string, error) {
+func executeCommand(cmdStr string, input string, executionMode string, outputFormat string, workdir string) (string, error) {
 	if executionMode == "" {
 		executionMode = "standard"
 	}
 
 	switch executionMode {
 	case "standard":
-		return executeStandardCommand(cmdStr, input, outputFormat)
+		return executeStandardCommand(cmdStr, input, outputFormat, workdir)
 	case "interactive", "stream":
-		return executeInteractiveCommand(cmdStr)
+		return executeInteractiveCommand(cmdStr, workdir)
 	case "background":
 		return string(TaskPending), nil
 	default:
@@ -29,8 +29,12 @@ func executeCommand(cmdStr string, input string, executionMode string, outputFor
 }
 
 // executeStandardCommand runs a command and captures its output
-func executeStandardCommand(cmdStr string, input string, outputFormat string) (string, error) {
+func executeStandardCommand(cmdStr string, input string, outputFormat string, workdir string) (string, error) {
 	cmd := exec.Command("sh", "-c", cmdStr)
+
+	if workdir != "" {
+		cmd.Dir = workdir
+	}
 
 	if input != "" {
 		cmd.Stdin = strings.NewReader(input)
@@ -69,8 +73,13 @@ func formatOutput(output string, outputFormat string) (string, error) {
 }
 
 // executeInteractiveCommand runs a command with direct connection to terminal I/O
-func executeInteractiveCommand(cmdStr string) (string, error) {
+func executeInteractiveCommand(cmdStr string, workdir string) (string, error) {
 	cmd := exec.Command("sh", "-c", cmdStr)
+
+	if workdir != "" {
+		cmd.Dir = workdir
+	}
+
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -119,7 +128,7 @@ func interruptAndWaitForCommand(cmd *exec.Cmd, done chan error) error {
 }
 
 // executeBackgroundCommand runs a command asynchronously in the background
-func executeBackgroundCommand(op Operation, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, debug bool) error {
+func executeBackgroundCommand(op Operation, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, debug bool, workdir string) error {
 	if op.ID == "" {
 		return fmt.Errorf("background execution requires an operation ID")
 	}
@@ -161,7 +170,7 @@ func executeBackgroundCommand(op Operation, ctx *ExecutionContext, opMap map[str
 	ctx.BackgroundMutex.Unlock()
 
 	ctx.BackgroundWg.Add(1)
-	go executeBackgroundTask(op, cmd, ctx, opMap, executeOp, depth, debug)
+	go executeBackgroundTask(op, cmd, ctx, opMap, executeOp, depth, debug, workdir)
 
 	return nil
 }
@@ -184,10 +193,10 @@ func initializeBackgroundTask(taskID, cmd string, ctx *ExecutionContext) {
 }
 
 // executeBackgroundTask runs the task in a goroutine and handles success/failure
-func executeBackgroundTask(op Operation, cmd string, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, debug bool) {
+func executeBackgroundTask(op Operation, cmd string, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, debug bool, workdir string) {
 	defer ctx.BackgroundWg.Done()
 
-	output, err := executeStandardCommand(cmd, ctx.Data, op.OutputFormat)
+	output, err := executeStandardCommand(cmd, ctx.Data, op.OutputFormat, workdir)
 
 	ctx.BackgroundMutex.Lock()
 	defer ctx.BackgroundMutex.Unlock()

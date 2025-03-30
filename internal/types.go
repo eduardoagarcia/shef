@@ -14,12 +14,14 @@ type File struct {
 
 // Recipe defines a Shef recipe with its metadata and operations
 type Recipe struct {
-	Name        string      `yaml:"name"`
-	Description string      `yaml:"description"`
-	Category    string      `yaml:"category,omitempty"`
-	Author      string      `yaml:"author,omitempty"`
-	Help        string      `yaml:"help,omitempty"`
-	Operations  []Operation `yaml:"operations"`
+	Name        string                 `yaml:"name"`
+	Description string                 `yaml:"description"`
+	Category    string                 `yaml:"category,omitempty"`
+	Author      string                 `yaml:"author,omitempty"`
+	Help        string                 `yaml:"help,omitempty"`
+	Vars        map[string]interface{} `yaml:"vars,omitempty"`
+	Workdir     string                 `yaml:"workdir,omitempty"`
+	Operations  []Operation            `yaml:"operations"`
 }
 
 // Operation defines a single executable step in a recipe

@@ -7,6 +7,15 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+// defaultProgressTheme defines the default visual style for progress bars
+var defaultProgressTheme = Theme{
+	Saucer:        "[green]=[reset]",
+	SaucerHead:    "[green]>[reset]",
+	SaucerPadding: " ",
+	BarStart:      "[",
+	BarEnd:        "]",
+}
+
 type ProgressBarOptions struct {
 	Width              int     `yaml:"width,omitempty"`
 	Description        string  `yaml:"description,omitempty"`
@@ -31,48 +40,37 @@ type ProgressBar struct {
 	bar *progressbar.ProgressBar
 }
 
+// CreateProgressBar creates a new progress bar with the given total, operation name, and options
 func CreateProgressBar(total int, opName string, opts *ProgressBarOptions) *ProgressBar {
-	// Set default options if none provided
 	if opts == nil {
 		opts = &ProgressBarOptions{
 			ShowCount:       true,
 			ShowPercentage:  true,
 			ShowElapsedTime: true,
-			Theme: &Theme{
-				Saucer:        "[green]=[reset]",
-				SaucerHead:    "[green]>[reset]",
-				SaucerPadding: " ",
-				BarStart:      "[",
-				BarEnd:        "]",
-			},
+			Theme:           &Theme{},
 		}
+		*opts.Theme = defaultProgressTheme
 	}
 
-	// Prepare progressbar options
-	options := []progressbar.Option{
-		progressbar.OptionEnableColorCodes(true),
-	}
+	options := []progressbar.Option{progressbar.OptionEnableColorCodes(true)}
 
-	// Apply custom width if specified
 	if opts.Width > 0 {
 		options = append(options, progressbar.OptionSetWidth(opts.Width))
 	}
 
-	// Apply description
-	description := opts.Description
-	if description == "" {
-		description = opName
+	if opts.Description != "" {
+		options = append(options, progressbar.OptionSetDescription(opts.Description))
+	} else {
+		options = append(options, progressbar.OptionSetDescription(opName))
 	}
-	options = append(options, progressbar.OptionSetDescription(description))
 
-	// Apply theme
 	if opts.Theme != nil {
 		theme := progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
+			Saucer:        defaultProgressTheme.Saucer,
+			SaucerHead:    defaultProgressTheme.SaucerHead,
+			SaucerPadding: defaultProgressTheme.SaucerPadding,
+			BarStart:      defaultProgressTheme.BarStart,
+			BarEnd:        defaultProgressTheme.BarEnd,
 		}
 
 		if opts.Theme.Saucer != "" {
@@ -94,7 +92,6 @@ func CreateProgressBar(total int, opName string, opts *ProgressBarOptions) *Prog
 		options = append(options, progressbar.OptionSetTheme(theme))
 	}
 
-	// Apply additional display options
 	if opts.ShowCount {
 		options = append(options, progressbar.OptionShowCount())
 	}
@@ -112,90 +109,80 @@ func CreateProgressBar(total int, opName string, opts *ProgressBarOptions) *Prog
 		options = append(options, progressbar.OptionThrottle(time.Duration(float64(time.Second)*opts.RefreshRate)))
 	}
 
-	// Create the progress bar
-	bar := progressbar.NewOptions(total, options...)
-	return &ProgressBar{bar: bar}
+	return &ProgressBar{bar: progressbar.NewOptions(total, options...)}
 }
 
+// Increment adds 1 to the progress bar
 func (p *ProgressBar) Increment() {
-	p.bar.Add(1)
+	if err := p.bar.Add(1); err != nil {
+		return
+	}
 }
 
+// Complete marks the progress bar as finished
 func (p *ProgressBar) Complete() {
-	p.bar.Finish()
+	if err := p.bar.Finish(); err != nil {
+		return
+	}
 	fmt.Println()
 }
 
+// Update changes the description of the progress bar
 func (p *ProgressBar) Update(message string) {
 	p.bar.Describe(message)
 }
 
 // ParseProgressBarOptions converts a map of interface{} to a ProgressBarOptions struct
 func ParseProgressBarOptions(optsMap map[string]interface{}) *ProgressBarOptions {
-	opts := &ProgressBarOptions{}
+	opts := &ProgressBarOptions{
+		ShowCount:       true,
+		ShowPercentage:  true,
+		ShowElapsedTime: true,
+		Theme:           &Theme{},
+	}
+	*opts.Theme = defaultProgressTheme
 
-	if msgTemplate, ok := optsMap["message_template"].(string); ok {
-		opts.MessageTemplate = msgTemplate
+	if val, ok := optsMap["message_template"].(string); ok {
+		opts.MessageTemplate = val
+	}
+	if val, ok := optsMap["width"].(int); ok {
+		opts.Width = val
+	}
+	if val, ok := optsMap["description"].(string); ok {
+		opts.Description = val
+	}
+	if val, ok := optsMap["show_count"].(bool); ok {
+		opts.ShowCount = val
+	}
+	if val, ok := optsMap["show_percentage"].(bool); ok {
+		opts.ShowPercentage = val
+	}
+	if val, ok := optsMap["show_elapsed_time"].(bool); ok {
+		opts.ShowElapsedTime = val
+	}
+	if val, ok := optsMap["show_iteration_speed"].(bool); ok {
+		opts.ShowIterationSpeed = val
+	}
+	if val, ok := optsMap["refresh_rate"].(float64); ok {
+		opts.RefreshRate = val
 	}
 
-	if width, ok := optsMap["width"].(int); ok {
-		opts.Width = width
-	}
-
-	if desc, ok := optsMap["description"].(string); ok {
-		opts.Description = desc
-	}
-
-	if showCount, ok := optsMap["show_count"].(bool); ok {
-		opts.ShowCount = showCount
-	} else {
-		opts.ShowCount = true // Default to true
-	}
-
-	if showPercentage, ok := optsMap["show_percentage"].(bool); ok {
-		opts.ShowPercentage = showPercentage
-	} else {
-		opts.ShowPercentage = true // Default to true
-	}
-
-	if showElapsedTime, ok := optsMap["show_elapsed_time"].(bool); ok {
-		opts.ShowElapsedTime = showElapsedTime
-	} else {
-		opts.ShowElapsedTime = true // Default to true
-	}
-
-	if showIterationSpeed, ok := optsMap["show_iteration_speed"].(bool); ok {
-		opts.ShowIterationSpeed = showIterationSpeed
-	}
-
-	if refreshRate, ok := optsMap["refresh_rate"].(float64); ok {
-		opts.RefreshRate = refreshRate
-	}
-
-	if themeVal, ok := optsMap["theme"].(map[string]interface{}); ok {
-		theme := &Theme{}
-
-		if saucer, ok := themeVal["saucer"].(string); ok {
-			theme.Saucer = saucer
+	if themeMap, ok := optsMap["theme"].(map[string]interface{}); ok {
+		if val, ok := themeMap["saucer"].(string); ok {
+			opts.Theme.Saucer = val
 		}
-
-		if saucerHead, ok := themeVal["saucer_head"].(string); ok {
-			theme.SaucerHead = saucerHead
+		if val, ok := themeMap["saucer_head"].(string); ok {
+			opts.Theme.SaucerHead = val
 		}
-
-		if saucerPadding, ok := themeVal["saucer_padding"].(string); ok {
-			theme.SaucerPadding = saucerPadding
+		if val, ok := themeMap["saucer_padding"].(string); ok {
+			opts.Theme.SaucerPadding = val
 		}
-
-		if barStart, ok := themeVal["bar_start"].(string); ok {
-			theme.BarStart = barStart
+		if val, ok := themeMap["bar_start"].(string); ok {
+			opts.Theme.BarStart = val
 		}
-
-		if barEnd, ok := themeVal["bar_end"].(string); ok {
-			theme.BarEnd = barEnd
+		if val, ok := themeMap["bar_end"].(string); ok {
+			opts.Theme.BarEnd = val
 		}
-
-		opts.Theme = theme
 	}
 
 	return opts
