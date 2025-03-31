@@ -12,7 +12,7 @@ easily run and manage background tasks, and build reusable workflows with advanc
 
 ### Hello World
 
-This first example demonstrates a simple recipe that echos a string to the terminal.
+This first example demonstrates a simple recipe that echos "Hello World!" to the terminal.
 
 ![Quick Start Hello World Example](images/hello-world.gif)
 
@@ -25,10 +25,19 @@ recipes:
         command: echo "Hello, World!"
 ```
 
+### Progress Bars
+
+The next [example](https://github.com/eduardoagarcia/shef/blob/main/recipes/demo/progress.yaml) demonstrates progress
+bars and loops, where a recipe creates a number of temporary files, and then loops through the directory to clean up
+each file it just created.
+
+![Quick Start Progress Example](images/progress.gif)
+
 ### Background Tasks
 
-The next example demonstrates a more advanced recipe where a user selects which background tasks to run and then
-monitors each task's progress in real-time.
+The final [example](https://github.com/eduardoagarcia/shef/blob/main/recipes/demo/background-tasks.yaml) demonstrates
+a more advanced recipe where a user selects which background tasks to run and then monitors each task's progress in
+real-time.
 
 ![Quick Start Background Tasks Example](images/tasks.gif)
 
@@ -55,6 +64,7 @@ deeper? [Check out the demo recipes.](https://github.com/eduardoagarcia/shef/tre
 - [Arguments and Flags](#arguments-and-flags)
 - [Recipe Help Documentation](#recipe-help-documentation)
 - [Components](#components)
+- [Progress Bars](#progress-bars)
 - [Example Recipes](#example-recipes)
 - [Creating Recipes](#creating-recipes)
 - [AI-Assisted Recipe Creation](#ai-assisted-recipe-creation)
