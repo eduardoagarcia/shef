@@ -1,11 +1,11 @@
 # Shef
 
-Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI framework for cooking up advanced shell recipes.
+Shef, a wordplay on *"shell"* and *"chef"*, is a powerful CLI framework for cooking up dynamic shell recipes.
 
-Essentially, imagine that [Make](https://www.gnu.org/software/make), [GitHub Actions](https://github.com/features/actions),
+At its core, imagine that [Make](https://www.gnu.org/software/make), [GitHub Actions](https://github.com/features/actions),
 and [CyberChef](https://gchq.github.io/CyberChef) had a weird little `<moira-rose>bea-by</>`.
 
-Shef allows you to pipe shell commands together, add interactive user prompts, loop using complex control structures,
+Shef allows you to chain multiple commands together, add interactive user prompts, loop using complex control structures,
 easily run and manage background tasks, and build reusable workflows with advanced logic and conditionals.
 
 ## Quick Start Examples
@@ -27,7 +27,7 @@ recipes:
 
 ### Progress Bars
 
-The next [example](https://github.com/eduardoagarcia/shef/blob/main/recipes/demo/progress.yaml) demonstrates progress
+This next [example](https://github.com/eduardoagarcia/shef/blob/main/recipes/demo/progress.yaml) demonstrates progress
 bars and loops, where a recipe creates a number of temporary files, and then loops through the directory to clean up
 each file it just created.
 
@@ -35,7 +35,7 @@ each file it just created.
 
 ### Background Tasks
 
-The final [example](https://github.com/eduardoagarcia/shef/blob/main/recipes/demo/background-tasks.yaml) demonstrates
+This [example](https://github.com/eduardoagarcia/shef/blob/main/recipes/demo/background-tasks.yaml) demonstrates
 a more advanced recipe where a user selects which background tasks to run and then monitors each task's progress in
 real-time.
 
@@ -43,7 +43,7 @@ real-time.
 
 > [!TIP]
 > Want to see more before diving
-deeper? [Check out the additional demo recipes.](https://github.com/eduardoagarcia/shef/tree/main/recipes/demo)
+deeper? [Check out the demo recipes.](https://github.com/eduardoagarcia/shef/tree/main/recipes/demo)
 
 ## Table of Contents
 
@@ -52,7 +52,6 @@ deeper? [Check out the additional demo recipes.](https://github.com/eduardoagarc
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Command Reference](#command-reference)
-- [Recipe Sources](#recipe-sources)
 - [Recipe Structure](#recipe-structure)
 - [Operation Execution Order](#operation-execution-order)
 - [Interactive Prompts](#interactive-user-prompts)
@@ -61,6 +60,7 @@ deeper? [Check out the additional demo recipes.](https://github.com/eduardoagarc
 - [Branching Workflows](#branching-workflows)
 - [Data Flow Between Operations](#data-flow-between-operations)
 - [Control Flow Structures](#control-flow-structures)
+- [Background Task Management](#background-task-management)
 - [Arguments and Flags](#arguments-and-flags)
 - [Recipe Help Documentation](#recipe-help-documentation)
 - [Components](#components)
@@ -80,10 +80,10 @@ deeper? [Check out the additional demo recipes.](https://github.com/eduardoagarc
 - **Conditional Logic**: Use if/else branching based on command results
 - **Control Flow**: Create dynamic workflows with loops and control structures
 - **Background Task Management**: Easily monitor and control background tasks
-- **Progress Mode**: Inline updates for clean status updates and progress indicators
+- **Progress Mode**: Inline updates for clean status updates and progress bars
 - **Multiple Sources and Contexts**: Use local, user, or public recipes
 - **Public Recipes**: Common, useful recipes anyone can use. Browse
-  public [recipes](https://github.com/eduardoagarcia/shef/tree/main/recipes).
+  the public [recipes](https://github.com/eduardoagarcia/shef/tree/main/recipes).
 
 ## A Note on Bash Scripts, YAML, and Shef
 
@@ -170,19 +170,6 @@ shef [global-flags] [category] [recipe-name] [input-text] [recipe-flags...]
 | `-P, --public`        | Force public recipes first |
 | `-r, --recipe-file`   | Path to the recipe file    |
 
-### Recipe Input and Flags
-
-When running a recipe, you can provide both positional input text and custom flags:
-
-| Input Type                 | Example                        | Access in Recipe  | Description                                             |
-|----------------------------|--------------------------------|-------------------|---------------------------------------------------------|
-| `-h, --help`               | `shef recipe -h`               | N/A               | Show help information for the recipe                    |
-| Text Input                 | `shef recipe "My text"`        | `{{ .input }}`    | First argument after recipe name becomes input variable |
-| Any short flag `-x`        | `shef recipe -x`               | `{{ .x }}`        | Any short flag becomes available as a boolean variable  |
-| Any long flag `--var-name` | `shef recipe --var-name=value` | `{{ .var_name }}` | Any long flag becomes available as variable             |
-
-For more details on argument types and usage, see the [Arguments and Flags](#arguments-and-flags) section.
-
 ### Utility Commands
 
 | Command                                  | Description                                                           |
@@ -191,17 +178,17 @@ For more details on argument types and usage, see the [Arguments and Flags](#arg
 | `list` `ls` `l`                          | List available recipes (note: `demo` recipes are excluded by default) |
 | `which` `w` \[category\] \[recipe-name\] | Show the location of a recipe file                                    |
 
-## Recipe Sources
+### Recipe Sources
 
 Shef looks for recipes in multiple locations and contexts within your system:
 
-### Standard Paths (All Platforms)
+#### Standard Paths (All Platforms)
 
 1. **Local Recipes**: `./.shef/*.yaml` in the current directory (only shown when you're in the directory, like Make)
 2. **User Recipes**: `~/.shef/user/*.yaml` in your home directory (always shown)
 3. **Public Recipes**: `~/.shef/public/*.yaml` in your home directory (always shown)
 
-### XDG Base Directory Paths (Linux Only)
+#### XDG Base Directory Paths (Linux Only)
 
 On Linux systems, Shef also supports the XDG Base Directory Specification:
 
@@ -210,7 +197,7 @@ On Linux systems, Shef also supports the XDG Base Directory Specification:
 
 Shef includes both standard and XDG paths on Linux systems.
 
-### Source Priority
+#### Source Priority
 
 If you have recipes with the same name and category in different locations, you can prioritize a specific source:
 
@@ -255,7 +242,7 @@ recipes:
 - **author**: Optional author attribution
 - **help**: Detailed help documentation shown when using `-h` or `--help` flags
 - **vars**: Optional pre-defined variables available to all operations in the recipe
-- **workdir**: Optional working directory where all recipe commands will be executed (will be created if it does not exist)
+- **workdir**: Optional working directory where all recipe commands will be executed (the directory will be created if it does not already exist)
 - **operations**: List of operations to execute in sequence
 
 ### Operations
@@ -297,96 +284,6 @@ Operations are the building blocks of recipes:
   command's output streams to the terminal in real-time, but output cannot be captured for use in subsequent operations.
 - **background**: Executes the command asynchronously in a separate process. The recipe execution continues immediately
   without waiting for the command to complete. Useful for long-running tasks that don't need to block recipe execution.
-
-### Background Task Management
-
-When using `execution_mode: "background"`, Shef provides template functions to monitor and interact with background
-tasks:
-
-- **bgTaskStatus**: Returns the current status of a background task (`pending`, `complete`, or `failed`)
-- **bgTaskComplete**: Returns `true` if the task has completed successfully, `false` otherwise
-- **bgTaskFailed**: Returns `true` if the task has failed, `false` otherwise
-- **allTasksComplete**: Returns `true` if all tasks are complete, `false` if one or more tasks are pending.
-- **anyTasksFailed**: Returns `true` if one ore more tasks fail, `false` if all tasks completed successfully.
-- **taskStatusMessage**: Returns a string based on the status of the task. `{{ taskStatusMessage "task_id" "complete message" "pending message" "failed message" "unknown task message" }}`
-
-#### Requirements for Background Tasks
-
-- Each background task must have a unique `id` specified
-- The task's output will be available as a variable using the task's ID once completed
-
-#### Task Status Checking
-
-##### Check a task's status
-
-```yaml
-- name: "Check Status"
-  command:
-    echo 'Task status: {{ bgTaskStatus "task_id" }}'
-```
-
-> [!IMPORTANT]
-> Notice we reference the task id by a _string_ when checking status, complete, and failed states.
-
-##### Wait for one task to complete
-
-```yaml
-- name: "Wait For One Task"
-  control_flow:
-    type: "while"
-    condition: '{{ not (bgTaskComplete "task_id") }}'
-  operations:
-    - name: "Poll Status"
-      command: echo "Waiting for task to complete..."
-```
-
-##### Wait for all tasks to complete
-
-```yaml
-- name: "Wait For All Tasks"
-  control_flow:
-    type: "while"
-    condition: .allTasksComplete != "true"
-  operations:
-    - name: "Poll Status"
-      command: echo "Waiting for all tasks to complete..."
-```
-
-#### Task Output Access
-
-Once a background task completes, its output is available like any other operation:
-
-```yaml
-- name: "Echo Task Output"
-  command: echo "Task result {{ .task_id }}"
-  condition: '{{ bgTaskComplete "task_id" }}'
-```
-
-#### Background Task Completion Behavior
-
-When you start a background task with `execution_mode: "background"`, it's important to understand how Shef handles task
-completion:
-
-- **Implicit Waiting**: Shef automatically waits for all background tasks to complete before terminating the recipe
-  execution, even if you don't explicitly wait for them in your operations.
-- **Output Capture**: All background tasks will have their outputs captured and made available as variables, regardless
-  of whether you explicitly check their status.
-- **Completion Order**: Background tasks complete in the order determined by their execution time, not the order they
-  were started.
-- **Recipe Exit**: The recipe won't exit until all background tasks have completed, which could cause the recipe to
-  appear to "hang" if a background task takes a very long time.
-
-Example of implicit waiting:
-
-```yaml
-- name: "Start Long Task"
-  id: "long_task"
-  command: "sleep 30 && echo 'Done!'"
-  execution_mode: "background"
-
-- name: "Immediate Feedback"
-  command: echo "Started background task! Recipe will wait for it to complete before exiting."
-```
 
 ### Command Output Format
 
@@ -978,9 +875,8 @@ You can repeatedly execute operations as long as a condition remains true.
 
 1. Evaluate the condition before each iteration
 2. If the condition is true, execute the operations and repeat
-3. If the condition is false, exit the loop
+3. If the condition is false, immediately exit the loop
 4. An `.iteration` variable is automatically set to track the current iteration (starting from 1)
-5. A safety limit prevents infinite loops (maximum 1000 iterations)
 
 #### Common Uses
 
@@ -1172,6 +1068,97 @@ With a foreach loop:
   operations:
     - name: "Process File"
       command: echo "Processing {{ .file }}"
+```
+
+## Background Task Management
+
+When using `execution_mode: "background"`, Shef provides template functions to monitor and interact with background
+tasks:
+
+- **bgTaskStatus**: Returns the current status of a background task (`pending`, `complete`, or `failed`)
+- **bgTaskComplete**: Returns `true` if the task has completed successfully, `false` otherwise
+- **bgTaskFailed**: Returns `true` if the task has failed, `false` otherwise
+- **allTasksComplete**: Returns `true` if all tasks are complete, `false` if one or more tasks are pending.
+- **anyTasksFailed**: Returns `true` if one ore more tasks fail, `false` if all tasks completed successfully.
+- **taskStatusMessage**: Returns a string based on the status of the task.
+  `{{ taskStatusMessage "task_id" "complete message" "pending message" "failed message" "unknown task message" }}`
+
+### Requirements for Background Tasks
+
+- Each background task must have a unique `id` specified
+- The task's output will be available as a variable using the task's ID once completed
+
+### Task Status Checking
+
+#### Check a task's status
+
+```yaml
+- name: "Check Status"
+  command:
+    echo 'Task status: {{ bgTaskStatus "task_id" }}'
+```
+
+> [!IMPORTANT]
+> Notice we reference the task id by a _string_ when checking status, complete, and failed states.
+
+#### Wait for one task to complete
+
+```yaml
+- name: "Wait For One Task"
+  control_flow:
+    type: "while"
+    condition: '{{ not (bgTaskComplete "task_id") }}'
+  operations:
+    - name: "Poll Status"
+      command: echo "Waiting for task to complete..."
+```
+
+#### Wait for all tasks to complete
+
+```yaml
+- name: "Wait For All Tasks"
+  control_flow:
+    type: "while"
+    condition: .allTasksComplete != "true"
+  operations:
+    - name: "Poll Status"
+      command: echo "Waiting for all tasks to complete..."
+```
+
+### Task Output Access
+
+Once a background task completes, its output is available like any other operation:
+
+```yaml
+- name: "Echo Task Output"
+  command: echo "Task result {{ .task_id }}"
+  condition: '{{ bgTaskComplete "task_id" }}'
+```
+
+### Background Task Completion Behavior
+
+When you start a background task with `execution_mode: "background"`, it's important to understand how Shef handles task
+completion:
+
+- **Implicit Waiting**: Shef automatically waits for all background tasks to complete before terminating the recipe
+  execution, even if you don't explicitly wait for them in your operations.
+- **Output Capture**: All background tasks will have their outputs captured and made available as variables, regardless
+  of whether you explicitly check their status.
+- **Completion Order**: Background tasks complete in the order determined by their execution time, not the order they
+  were started.
+- **Recipe Exit**: The recipe won't exit until all background tasks have completed, which could cause the recipe to
+  appear to "hang" if a background task takes a very long time.
+
+Example of implicit waiting:
+
+```yaml
+- name: "Start Long Task"
+  id: "long_task"
+  command: "sleep 30 && echo 'Done!'"
+  execution_mode: "background"
+
+- name: "Immediate Feedback"
+  command: echo "Started background task! Recipe will wait for it to complete before exiting."
 ```
 
 ## Arguments and Flags
