@@ -159,16 +159,17 @@ shef [global-flags] [category] [recipe-name] [input-text] [recipe-flags...]
 
 ### Global Flags
 
-| Flag                  | Description                |
-|-----------------------|----------------------------|
-| `-h, --help`          | Show help information      |
-| `-v, --version`       | Show version information   |
-| `-d, --debug`         | Enable debug output        |
-| `-c, --category`      | Specify a category         |
-| `-L, --local`         | Force local recipes first  |
-| `-U, --user`          | Force user recipes first   |
-| `-P, --public`        | Force public recipes first |
-| `-r, --recipe-file`   | Path to the recipe file    |
+| Flag                  | Description                              |
+|-----------------------|------------------------------------------|
+| `-h, --help`          | Show help information                    |
+| `-v, --version`       | Show version information                 |
+| `-d, --debug`         | Enable debug output                      |
+| `--debug-file`        | Save debug logs to specified file path   |
+| `-c, --category`      | Specify a category                       |
+| `-L, --local`         | Force local recipes first                |
+| `-U, --user`          | Force user recipes first                 |
+| `-P, --public`        | Force public recipes first               |
+| `-r, --recipe-file`   | Path to the recipe file                  |
 
 ### Utility Commands
 

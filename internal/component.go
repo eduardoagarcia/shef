@@ -44,21 +44,17 @@ func (cr *ComponentRegistry) Clear() {
 }
 
 // LoadComponents loads components from all available sources
-func LoadComponents(sources []string, debug bool) error {
+func LoadComponents(sources []string) error {
 	for _, source := range sources {
 		file, err := loadFile(source)
 		if err != nil {
-			if debug {
-				fmt.Printf("Warning: Failed to load components from %s: %v\n", source, err)
-			}
+			LogError(fmt.Sprintf("Failed to load components from %s", source), err, nil)
 			continue
 		}
 
 		for _, component := range file.Components {
 			if component.ID == "" {
-				if debug {
-					fmt.Printf("Warning: Skipping component without ID in %s\n", source)
-				}
+				Log(CategoryComponent, fmt.Sprintf("Skipping component without ID in %s", source))
 				continue
 			}
 			globalComponentRegistry.Register(component)
@@ -69,7 +65,7 @@ func LoadComponents(sources []string, debug bool) error {
 }
 
 // ExpandComponentReferences recursively replaces component references with their operations
-func ExpandComponentReferences(operations []Operation, opMap map[string]Operation, debug bool) ([]Operation, error) {
+func ExpandComponentReferences(operations []Operation, opMap map[string]Operation) ([]Operation, error) {
 	var expanded []Operation
 
 	for _, op := range operations {
@@ -85,9 +81,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 				return nil, fmt.Errorf("component not found: %s", op.Uses)
 			}
 
-			if debug {
-				fmt.Printf("Expanding component reference: %s\n", op.Uses)
-			}
+			Log(CategoryComponent, fmt.Sprintf("Expanding component reference: %s", op.Uses))
 
 			clonedOps := make([]Operation, len(component.Operations))
 			for i, compOp := range component.Operations {
@@ -99,7 +93,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 				}
 			}
 
-			componentOps, err := ExpandComponentReferences(clonedOps, opMap, debug)
+			componentOps, err := ExpandComponentReferences(clonedOps, opMap)
 			if err != nil {
 				return nil, err
 			}
@@ -123,7 +117,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 			expanded = append(expanded, componentOps...)
 		} else {
 			if len(op.Operations) > 0 {
-				expandedSubOps, err := ExpandComponentReferences(op.Operations, opMap, debug)
+				expandedSubOps, err := ExpandComponentReferences(op.Operations, opMap)
 				if err != nil {
 					return nil, err
 				}

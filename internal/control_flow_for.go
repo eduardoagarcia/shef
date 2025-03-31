@@ -63,7 +63,7 @@ func (op *Operation) GetForFlow() (*ForFlow, error) {
 }
 
 // ExecuteFor runs a for loop with the given parameters
-func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
+func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error)) (bool, error) {
 	loopCtx := ctx.pushLoopContext("for", depth)
 	defer ctx.popLoopContext()
 
@@ -80,9 +80,7 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 		return false, err
 	}
 
-	if debug {
-		fmt.Printf("For loop with %d iterations\n", count)
-	}
+	Log(CategoryLoop, fmt.Sprintf("For loop with %d iterations", count))
 
 	var progressBar *ProgressBar
 	if forFlow.ProgressBar {
@@ -98,10 +96,11 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 		ctx.Vars[forFlow.Variable] = i
 		ctx.Vars["iteration"] = i + 1
 
-		if debug {
-			fmt.Printf("For iteration %d/%d: %s = %d (elapsed: %s)\n",
-				i+1, count, forFlow.Variable, i, formatDuration(loopCtx.Duration))
-		}
+		LogLoopIteration("for", i+1, count, map[string]interface{}{
+			"variable": forFlow.Variable,
+			"value":    i,
+			"duration": formatDuration(loopCtx.Duration),
+		})
 
 		if progressBar != nil && forFlow.ProgressBarOpts != nil && forFlow.ProgressBarOpts.MessageTemplate != "" {
 			rendered, err := renderTemplate(forFlow.ProgressBarOpts.MessageTemplate, ctx.templateVars())
@@ -110,7 +109,7 @@ func ExecuteFor(op Operation, forFlow *ForFlow, ctx *ExecutionContext, depth int
 			}
 		}
 
-		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp, debug)
+		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp)
 
 		if progressBar != nil {
 			progressBar.Increment()
