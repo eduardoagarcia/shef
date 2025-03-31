@@ -1,0 +1,25 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp count_recipe.yaml .shef/
+
+# Test running count test recipe
+exec shef count_test_recipe
+
+# Validate test
+stdout 'Line 1'
+stdout 'Line 2'
+stdout 'Line 3'
+stdout 'Line 4'
+stdout 'Line count 4'
+stdout 'Array count 3'
+stdout 'CSV count 3'
+stdout 'Empty count 0'

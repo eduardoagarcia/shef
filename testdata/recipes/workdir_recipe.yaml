@@ -1,0 +1,20 @@
+recipes:
+  - name: "workdir_test_recipe"
+    description: "A recipe that tests working directory setting"
+    category: "test"
+    workdir: "./test_workdir"
+    operations:
+      - name: "Check Directory Creation"
+        command: echo "Working directory created automatically"
+
+      - name: "Create Files"
+        command: |
+          echo "Creating files in working directory"
+          touch file1.txt file2.txt
+          echo "success" > success.txt
+
+      - name: "List Files"
+        command: ls -1
+
+      - name: "Read File"
+        command: cat success.txt

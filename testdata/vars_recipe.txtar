@@ -1,0 +1,21 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp vars_recipe.yaml .shef/
+
+# Test running vars test recipe
+exec shef vars_test_recipe
+
+# Validate test
+stdout 'String variable hello world'
+stdout 'Number variable 42'
+stdout 'Boolean variable true'
+stdout 'Number plus one 43'

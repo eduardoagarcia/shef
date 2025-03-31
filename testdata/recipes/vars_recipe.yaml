@@ -1,0 +1,20 @@
+recipes:
+  - name: "vars_test_recipe"
+    description: "A recipe that tests pre-defined variables"
+    category: "test"
+    vars:
+      string_var: "hello world"
+      number_var: 42
+      boolean_var: true
+    operations:
+      - name: "Check String Variable"
+        command: echo "String variable {{ .string_var }}"
+
+      - name: "Check Number Variable"
+        command: echo "Number variable {{ .number_var }}"
+
+      - name: "Check Boolean Variable"
+        command: echo "Boolean variable {{ .boolean_var }}"
+
+      - name: "Use Variables In Expression"
+        command: echo "Number plus one {{ add .number_var 1 }}"
