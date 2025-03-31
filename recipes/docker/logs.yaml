@@ -19,25 +19,34 @@ recipes:
         - Uses the stream execution mode to display logs in real-time
         - Automatically retrieves container names from docker ps
         - Press Ctrl+C to stop log streaming
+    vars:
+      "filter": ""
+      "filter_exclude": "2>&1"
+      "filter_base": "| grep -i --color=always"
+      "filter_lines": 5
     operations:
-      - name: "List Containers"
-        id: "list_containers"
-        command: docker ps --format "{{ `{{ .Names }}` }}"
+      - name: "Docker Container Select"
+        uses: "docker_container_select"
         silent: true
 
-      - name: "Select Container"
-        id: "select_container"
-        command: echo "Streaming logs for {{ .container }}..."
-        prompts:
-          - name: "Container Select"
-            id: "container"
-            type: "select"
-            message: "Select a container"
-            source_operation: "list_containers"
+      - name: "Filter Lines"
+        id: "filter_lines"
+        command: echo {{ .lines }}
+        condition: .lines != "false"
+        silent: true
+
+      - name: "Filter"
+        id: "filter_base"
+        command: echo "{{ .filter_exclude }} {{ .filter_base }} -A {{ .filter_lines }} -B {{ .filter_lines }}"
+        condition: .f == "true"
+        silent: true
+
+      - name: "Highlight"
+        id: "filter"
+        command: echo "{{ .filter_base }} '{{ .input }}'"
+        condition: .input != "false"
+        silent: true
 
       - name: "Stream Logs"
-        command: docker logs --follow {{ .container }}
+        command: docker logs --follow {{ .docker_selected_container }} {{ .filter }}
         execution_mode: "stream"
-
-      - name: "Show Message After Logs Exit"
-        command: echo {{ color "green" "Docker container log streaming ended." }}

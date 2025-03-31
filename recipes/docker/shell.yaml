@@ -21,24 +21,14 @@ recipes:
         - Automatically retrieves container names from docker ps
         - Exit the shell (usually with 'exit' command)
     operations:
-      - name: "List Containers"
-        id: "list_containers"
-        command: docker ps --format "{{ `{{ .Names }}` }}"
+      - name: "Docker Container Select"
+        uses: "docker_container_select"
         silent: true
 
-      - name: "Select Container"
-        id: "select_container"
-        command: echo "Shelling into {{ .container }}..."
-        prompts:
-          - name: "Container Select"
-            id: "container"
-            type: "select"
-            message: "Select a container"
-            source_operation: "list_containers"
+      - name: "Docker Container Shell"
+        uses: "docker_container_shell"
+        silent: true
 
       - name: "Execute Shell"
-        command: docker exec -it {{ .container }} bash
+        command: docker exec -it {{ .docker_selected_container }} {{ .docker_shell }}
         execution_mode: "interactive"
-
-      - name: "Show Message After Shell Exit"
-        command: echo {{ color "green" "Shell session closed. Welcome back!" }}
