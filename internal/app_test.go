@@ -1026,7 +1026,7 @@ func TestExecuteRecipeSimple(t *testing.T) {
 
 	mockCmd.On("Execute", "echo 'Hello'", "", "", "").Return("Hello", nil).Maybe()
 
-	err := evaluateRecipe(recipe, "", map[string]interface{}{}, false)
+	err := evaluateRecipe(recipe, "", map[string]interface{}{})
 	assert.NoError(t, err)
 
 	mockCmd.AssertCalled(t, "Execute", "echo 'Hello'", "", "", "")

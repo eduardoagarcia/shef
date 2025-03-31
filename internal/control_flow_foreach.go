@@ -66,7 +66,7 @@ func (op *Operation) GetForEachFlow() (*ForEachFlow, error) {
 }
 
 // ExecuteForEach runs a foreach loop with the given parameters
-func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
+func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error)) (bool, error) {
 	loopCtx := ctx.pushLoopContext("foreach", depth)
 	defer ctx.popLoopContext()
 
@@ -85,9 +85,7 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 
 	items := parseOptionsFromOutput(collectionExpr)
 
-	if debug {
-		fmt.Printf("Foreach loop over %d items\n", len(items))
-	}
+	Log(CategoryLoop, fmt.Sprintf("Foreach loop over %d items", len(items)))
 
 	var progressBar *ProgressBar
 	if forEach.ProgressBar {
@@ -103,10 +101,11 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 		ctx.Vars[forEach.As] = item
 		ctx.Vars["iteration"] = idx + 1
 
-		if debug {
-			fmt.Printf("Foreach iteration %d/%d: %s = %s (elapsed: %s)\n",
-				idx+1, len(items), forEach.As, item, formatDuration(loopCtx.Duration))
-		}
+		LogLoopIteration("foreach", idx+1, len(items), map[string]interface{}{
+			"variable": forEach.As,
+			"value":    item,
+			"duration": formatDuration(loopCtx.Duration),
+		})
 
 		if progressBar != nil && forEach.ProgressBarOpts != nil && forEach.ProgressBarOpts.MessageTemplate != "" {
 			rendered, err := renderTemplate(forEach.ProgressBarOpts.MessageTemplate, ctx.templateVars())
@@ -115,7 +114,7 @@ func ExecuteForEach(op Operation, forEach *ForEachFlow, ctx *ExecutionContext, d
 			}
 		}
 
-		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp, debug)
+		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp)
 
 		if progressBar != nil {
 			progressBar.Increment()

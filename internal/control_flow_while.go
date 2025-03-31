@@ -47,7 +47,7 @@ func (op *Operation) GetWhileFlow() (*WhileFlow, error) {
 }
 
 // ExecuteWhile runs a while loop with the given parameters
-func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
+func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error)) (bool, error) {
 	loopCtx := ctx.pushLoopContext("while", depth)
 	defer ctx.popLoopContext()
 
@@ -76,12 +76,12 @@ func ExecuteWhile(op Operation, whileFlow *WhileFlow, ctx *ExecutionContext, dep
 		iterations++
 		ctx.Vars["iteration"] = iterations
 
-		if debug {
-			fmt.Printf("While iteration %d, condition: %s (elapsed: %s)\n",
-				iterations, whileFlow.Condition, formatDuration(loopCtx.Duration))
-		}
+		LogLoopIteration("while", iterations, -1, map[string]interface{}{
+			"condition": whileFlow.Condition,
+			"duration":  formatDuration(loopCtx.Duration),
+		})
 
-		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp, debug)
+		exit, breakLoop := executeLoopOperations(op.Operations, ctx, depth, executeOp)
 		if exit {
 			return true, nil
 		}

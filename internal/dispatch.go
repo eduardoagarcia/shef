@@ -13,12 +13,16 @@ import (
 
 // dispatch handles recipe discovery, selection, and execution based on CLI arguments
 func dispatch(c *cli.Context, args []string, sourcePriority []string) error {
-	debug := c.Bool("debug")
+	Log(CategoryInit, "Dispatching recipe", map[string]interface{}{
+		"args":           args,
+		"sourcePriority": sourcePriority,
+	})
 
-	loadComponents(sourcePriority, debug)
+	loadComponents(sourcePriority)
 
-	recipes, remainingArgs, err := loadRecipesToExecute(c, args, sourcePriority, debug)
+	recipes, remainingArgs, err := loadRecipesToExecute(c, args, sourcePriority)
 	if err != nil {
+		LogError("Failed to load recipes", err, nil)
 		return err
 	}
 
@@ -30,11 +34,9 @@ func dispatch(c *cli.Context, args []string, sourcePriority []string) error {
 	input, vars := processRemainingArgs(remainingArgs)
 
 	for _, recipe := range recipes {
-		if debug {
-			printDebugInfo(recipe, input, vars)
-		}
+		printDebugInfo(recipe, input, vars)
 
-		if err := evaluateRecipe(recipe, input, vars, debug); err != nil {
+		if err := evaluateRecipe(recipe, input, vars); err != nil {
 			return err
 		}
 	}
@@ -43,17 +45,15 @@ func dispatch(c *cli.Context, args []string, sourcePriority []string) error {
 }
 
 // loadComponents discovers and loads components from all sources
-func loadComponents(sourcePriority []string, debug bool) {
+func loadComponents(sourcePriority []string) {
 	sources := discoverComponentSources(sourcePriority)
 
 	globalComponentRegistry.Clear()
-	if err := LoadComponents(sources, debug); err != nil && debug {
-		fmt.Printf("Warning: Error loading components: %v\n", err)
+	if err := LoadComponents(sources); err != nil {
+		LogError("Error loading components", err, nil)
 	}
 
-	if debug {
-		fmt.Printf("Loaded %d components from all sources\n", len(globalComponentRegistry.components))
-	}
+	Log(CategoryComponent, fmt.Sprintf("Loaded %d components from all sources", len(globalComponentRegistry.components)))
 }
 
 // discoverComponentSources finds all files that might contain components
@@ -72,7 +72,7 @@ func discoverComponentSources(sourcePriority []string) []string {
 }
 
 // loadRecipesToExecute determines which recipes to run based on provided arguments
-func loadRecipesToExecute(c *cli.Context, args []string, sourcePriority []string, debug bool) ([]Recipe, []string, error) {
+func loadRecipesToExecute(c *cli.Context, args []string, sourcePriority []string) ([]Recipe, []string, error) {
 	recipeFilePath := c.String("recipe-file")
 
 	if recipeFilePath != "" {
@@ -83,7 +83,7 @@ func loadRecipesToExecute(c *cli.Context, args []string, sourcePriority []string
 		return nil, nil, fmt.Errorf("no recipe specified. Use shef ls to list available recipes")
 	}
 
-	return loadRecipeFromArgs(args, sourcePriority, debug)
+	return loadRecipeFromArgs(args, sourcePriority)
 }
 
 // loadRecipesFromFile loads recipes from a specified file path
@@ -108,8 +108,8 @@ func registerFileComponents(file *File) {
 }
 
 // loadRecipeFromArgs finds a recipe based on command-line arguments
-func loadRecipeFromArgs(args []string, sourcePriority []string, debug bool) ([]Recipe, []string, error) {
-	recipe, remainingArgs, err := findRecipeWithOptions(args, sourcePriority, debug)
+func loadRecipeFromArgs(args []string, sourcePriority []string) ([]Recipe, []string, error) {
+	recipe, remainingArgs, err := findRecipeWithOptions(args, sourcePriority)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -139,14 +139,15 @@ func shouldShowHelp(recipe Recipe, args []string) bool {
 
 // printDebugInfo outputs debug information about the recipe being executed
 func printDebugInfo(recipe Recipe, input string, vars map[string]interface{}) {
-	fmt.Printf("Running recipe: %s\n", recipe.Name)
-	fmt.Printf("With input: %s\n", input)
-	fmt.Printf("With vars: %v\n", vars)
-	fmt.Printf("Description: %s\n\n", recipe.Description)
+	Log(CategoryRecipe, fmt.Sprintf("Running recipe: %s", recipe.Name), map[string]interface{}{
+		"input": input,
+		"vars":  vars,
+	})
+	Log(CategoryRecipe, fmt.Sprintf("Description: %s", recipe.Description))
 }
 
 // findRecipeWithOptions tries different strategies to find a matching recipe
-func findRecipeWithOptions(args []string, sourcePriority []string, debug bool) (*Recipe, []string, error) {
+func findRecipeWithOptions(args []string, sourcePriority []string) (*Recipe, []string, error) {
 	// 1. try exact name match
 	recipe, err := findRecipeByExactName(args[0], "", sourcePriority)
 	if err == nil {
@@ -168,7 +169,7 @@ func findRecipeWithOptions(args []string, sourcePriority []string, debug bool) (
 	}
 
 	// 3. try category selection
-	recipe, err = handleCategorySelection(args[0], sourcePriority, debug)
+	recipe, err = handleCategorySelection(args[0], sourcePriority)
 	if err == nil {
 		return recipe, args[1:], nil
 	} else if err.Error() == "recipe selection aborted by user" {
@@ -408,7 +409,7 @@ func processShortFlag(arg string, vars map[string]interface{}) {
 }
 
 // handleCategorySelection prompts the user to select a recipe from a category
-func handleCategorySelection(categoryName string, sourcePriority []string, debug bool) (*Recipe, error) {
+func handleCategorySelection(categoryName string, sourcePriority []string) (*Recipe, error) {
 	recipes := collectRecipesInCategory(categoryName, sourcePriority)
 
 	if len(recipes) == 0 {

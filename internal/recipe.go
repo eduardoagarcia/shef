@@ -11,7 +11,13 @@ import (
 )
 
 // evaluateRecipe executes a recipe with given input and variables
-func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, debug bool) error {
+func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) error {
+	Log(CategoryRecipe, "Starting recipe evaluation", map[string]interface{}{
+		"name":      recipe.Name,
+		"input":     input,
+		"varsCount": len(vars),
+	})
+
 	ctx := &ExecutionContext{
 		Data:             "",
 		Vars:             make(map[string]interface{}),
@@ -24,37 +30,44 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 	vars["context"] = ctx
 
 	if recipe.Vars != nil {
+		Log(CategoryRecipe, fmt.Sprintf("Adding %d recipe variables", len(recipe.Vars)))
 		for k, v := range recipe.Vars {
 			ctx.Vars[k] = v
 		}
 	}
 
 	if recipe.Workdir != "" {
-		if err := ensureWorkingDirectory(recipe.Workdir, debug); err != nil {
+		Log(CategoryFileSystem, fmt.Sprintf("Setting working directory: %s", recipe.Workdir))
+		if err := ensureWorkingDirectory(recipe.Workdir); err != nil {
+			LogError("Failed to create working directory", err, map[string]interface{}{"workdir": recipe.Workdir})
 			return err
 		}
 		ctx.Vars["workdir"] = recipe.Workdir
 	}
 
+	Log(CategoryRecipe, fmt.Sprintf("Adding %d external variables", len(vars)))
 	for k, v := range vars {
 		ctx.Vars[k] = v
 	}
 
 	if input != "" {
+		Log(CategoryRecipe, "Setting input data")
 		ctx.Vars["input"] = input
 		ctx.Data = input
 	}
 
 	opMap := make(map[string]Operation)
 
-	expandedOperations, err := ExpandComponentReferences(recipe.Operations, opMap, debug)
+	Log(CategoryComponent, "Expanding component references")
+	expandedOperations, err := ExpandComponentReferences(recipe.Operations, opMap)
 	if err != nil {
+		LogError("Failed to expand component references", err, nil)
 		return fmt.Errorf("failed to expand component references: %w", err)
 	}
 
-	if debug && len(expandedOperations) != len(recipe.Operations) {
-		fmt.Printf("Expanded %d operations into %d operations after component resolution\n",
-			len(recipe.Operations), len(expandedOperations))
+	if len(expandedOperations) != len(recipe.Operations) {
+		Log(CategoryComponent, fmt.Sprintf("Expanded %d operations into %d operations",
+			len(recipe.Operations), len(expandedOperations)))
 	}
 
 	registerOperations(expandedOperations, opMap)
@@ -62,21 +75,26 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 	handlerIDs := make(map[string]bool)
 	identifyHandlers(expandedOperations, handlerIDs)
 
-	if debug {
-		printRegisteredOperations(opMap, handlerIDs)
-	}
+	printRegisteredOperations(opMap, handlerIDs)
 
 	var executeOp func(op Operation, depth int) (bool, error)
 	executeOp = func(op Operation, depth int) (bool, error) {
 		if depth > 50 {
+			LogError("Possible infinite loop detected", nil, map[string]interface{}{"depth": depth})
 			return false, fmt.Errorf("possible infinite loop detected (max depth reached)")
 		}
+
+		LogOperation(op.Name, op.ID, map[string]interface{}{"depth": depth})
+		IncreaseIndent()
+		defer DecreaseIndent()
 
 		renderedID := op.ID
 		if op.ID != "" {
 			var err error
+			originalID := op.ID
 			renderedID, err = renderTemplate(op.ID, ctx.templateVars())
 			if err != nil {
+				LogError("Failed to render operation ID template", err, nil)
 				return false, fmt.Errorf("failed to render operation ID template: %w", err)
 			}
 			if renderedID != op.ID {
@@ -84,14 +102,12 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 				opCopy.ID = renderedID
 				op = opCopy
 
-				if debug {
-					fmt.Printf("Rendered operation ID: '%s' -> '%s'\n", op.ID, renderedID)
-				}
+				Log(CategoryTemplate, fmt.Sprintf("Rendered operation ID: '%s' -> '%s'", originalID, renderedID))
 			}
 		}
 
 		// 1. Check condition
-		if !shouldRunOperation(op, ctx, debug) {
+		if !shouldRunOperation(op, ctx) {
 			return false, nil
 		}
 
@@ -102,14 +118,12 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 
 		// 3. Process control flow
 		if op.ControlFlow != nil {
-			exit, err := processControlFlow(op, ctx, depth, executeOp, debug)
+			exit, err := processControlFlow(op, ctx, depth, executeOp)
 			if err != nil {
 				return op.Exit, err
 			}
 			if exit {
-				if debug {
-					fmt.Printf("Exiting recipe due to exit flag inside control flow\n")
-				}
+				Log(CategoryControlFlow, "Exiting recipe due to exit flag inside control flow")
 				return true, nil
 			}
 		}
@@ -119,9 +133,7 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 		if err != nil {
 			return false, fmt.Errorf("failed to render command template: %w", err)
 		}
-		if debug {
-			fmt.Printf("Running command: %s\n", cmd)
-		}
+		LogCommand(cmd, nil)
 		ctx.Vars["error"] = ""
 		workdir := ""
 		if workdirVal, exists := ctx.Vars["workdir"]; exists {
@@ -130,7 +142,7 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 
 		// 5. Execute command in the background
 		if op.ExecutionMode == "background" {
-			if err := executeBackgroundCommand(op, ctx, opMap, executeOp, depth, debug, workdir); err != nil {
+			if err := executeBackgroundCommand(op, ctx, opMap, executeOp, depth, workdir); err != nil {
 				return false, err
 			}
 			return op.Exit, nil
@@ -145,24 +157,20 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 
 		// 7. Handle command errors
 		if err != nil {
-			return handleCommandError(op, ctx, opMap, executeOp, err, depth, debug)
+			return handleCommandError(op, ctx, opMap, executeOp, err, depth)
 		}
 
 		// 8. Process command output
-		return processCommandOutput(op, output, ctx, opMap, executeOp, depth, debug)
+		return processCommandOutput(op, output, ctx, opMap, executeOp, depth)
 	}
 
 	for i, op := range expandedOperations {
 		if op.ID != "" && handlerIDs[op.ID] {
-			if debug {
-				fmt.Printf("Skipping handler operation %d: %s (ID: %s)\n", i+1, op.Name, op.ID)
-			}
+			Log(CategoryOperation, fmt.Sprintf("Skipping handler operation %d: %s (ID: %s)", i+1, op.Name, op.ID))
 			continue
 		}
 
-		if debug {
-			fmt.Printf("Executing operation %d: %s\n", i+1, op.Name)
-		}
+		Log(CategoryOperation, fmt.Sprintf("Executing operation %d: %s", i+1, op.Name))
 
 		shouldExit, err := executeOp(op, 0)
 		if err != nil {
@@ -170,9 +178,7 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 		}
 
 		if shouldExit {
-			if debug {
-				fmt.Printf("Exiting recipe execution after operation: %s\n", op.Name)
-			}
+			Log(CategoryRecipe, fmt.Sprintf("Exiting recipe execution after operation: %s", op.Name))
 			return nil
 		}
 	}
@@ -180,43 +186,34 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 	// Wait for background tasks to complete
 	ctx.BackgroundWg.Wait()
 
-	if debug {
-		ctx.BackgroundMutex.RLock()
-		for id, task := range ctx.BackgroundTasks {
-			if task.Status == TaskComplete && task.Output != "" {
-				fmt.Printf("Background task %s output: %s\n", id, task.Output)
-			} else if task.Status == TaskFailed && task.Error != "" {
-				fmt.Printf("Background task %s failed: %s\n", id, task.Error)
-			}
+	ctx.BackgroundMutex.RLock()
+	for id, task := range ctx.BackgroundTasks {
+		if task.Status == TaskComplete && task.Output != "" {
+			LogBackgroundTask(id, "completed", map[string]interface{}{"output": task.Output})
+		} else if task.Status == TaskFailed && task.Error != "" {
+			LogBackgroundTask(id, "failed", map[string]interface{}{"error": task.Error})
 		}
-		ctx.BackgroundMutex.RUnlock()
 	}
+	ctx.BackgroundMutex.RUnlock()
 
 	return nil
 }
 
 // shouldRunOperation checks if an operation's condition is met
-func shouldRunOperation(op Operation, ctx *ExecutionContext, debug bool) bool {
+func shouldRunOperation(op Operation, ctx *ExecutionContext) bool {
 	if op.Condition == "" {
 		return true
 	}
 
-	if debug {
-		fmt.Printf("Evaluating condition: %s\n", op.Condition)
-	}
+	Log(CategoryCondition, fmt.Sprintf("Evaluating condition: %s", op.Condition))
 
 	result, err := evaluateCondition(op.Condition, ctx)
 	if err != nil {
-		if debug {
-			fmt.Printf("Condition evaluation failed: %v\n", err)
-		}
+		LogError("Condition evaluation failed", err, map[string]interface{}{"condition": op.Condition})
 		return false
 	}
 
-	if !result && debug {
-		fmt.Printf("Skipping operation '%s' (condition not met)\n", op.Name)
-	}
-
+	LogCondition(op.Condition, result, map[string]interface{}{"operation": op.Name})
 	return result
 }
 
@@ -243,7 +240,7 @@ func processPrompts(op Operation, ctx *ExecutionContext) error {
 }
 
 // processControlFlow handles foreach, while, and for loops
-func processControlFlow(op Operation, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error), debug bool) (bool, error) {
+func processControlFlow(op Operation, ctx *ExecutionContext, depth int, executeOp func(Operation, int) (bool, error)) (bool, error) {
 	flowMap, ok := op.ControlFlow.(map[string]interface{})
 	if !ok {
 		return false, fmt.Errorf("invalid control_flow structure")
@@ -260,21 +257,21 @@ func processControlFlow(op Operation, ctx *ExecutionContext, depth int, executeO
 		if err != nil {
 			return false, err
 		}
-		return ExecuteForEach(op, forEach, ctx, depth, executeOp, debug)
+		return ExecuteForEach(op, forEach, ctx, depth, executeOp)
 
 	case "while":
 		whileFlow, err := op.GetWhileFlow()
 		if err != nil {
 			return false, err
 		}
-		return ExecuteWhile(op, whileFlow, ctx, depth, executeOp, debug)
+		return ExecuteWhile(op, whileFlow, ctx, depth, executeOp)
 
 	case "for":
 		forFlow, err := op.GetForFlow()
 		if err != nil {
 			return false, err
 		}
-		return ExecuteFor(op, forFlow, ctx, depth, executeOp, debug)
+		return ExecuteFor(op, forFlow, ctx, depth, executeOp)
 
 	default:
 		return false, fmt.Errorf("unknown control_flow type: %s", typeVal)
@@ -282,20 +279,20 @@ func processControlFlow(op Operation, ctx *ExecutionContext, depth int, executeO
 }
 
 // handleCommandError processes errors from command execution
-func handleCommandError(op Operation, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), err error, depth int, debug bool) (bool, error) {
+func handleCommandError(op Operation, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), err error, depth int) (bool, error) {
 	ctx.Vars["error"] = err.Error()
 
-	if debug {
-		fmt.Printf("Warning: command execution had errors: %v\n", err)
-	}
+	LogError("Command execution error", err, map[string]interface{}{
+		"operation": op.Name,
+		"id":        op.ID,
+	})
 
 	if op.OnFailure != "" {
-		if debug {
-			fmt.Printf("Executing on_failure handler: %s\n", op.OnFailure)
-		}
+		Log(CategoryOperation, fmt.Sprintf("Executing on_failure handler: %s", op.OnFailure))
 
 		nextOp, exists := opMap[op.OnFailure]
 		if !exists {
+			LogError("On_failure handler not found", nil, map[string]interface{}{"handler": op.OnFailure})
 			return false, fmt.Errorf("on_failure operation %s not found", op.OnFailure)
 		}
 		shouldExit, err := executeOp(nextOp, depth+1)
@@ -314,6 +311,7 @@ func handleCommandError(op Operation, ctx *ExecutionContext, opMap map[string]Op
 	}
 
 	if !continueExecution {
+		Log(CategoryRecipe, "Recipe execution aborted by user after command error")
 		return true, fmt.Errorf("recipe execution aborted by user after command error")
 	}
 
@@ -321,15 +319,20 @@ func handleCommandError(op Operation, ctx *ExecutionContext, opMap map[string]Op
 }
 
 // processCommandOutput handles successful command output
-func processCommandOutput(op Operation, output string, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, debug bool) (bool, error) {
+func processCommandOutput(op Operation, output string, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int) (bool, error) {
+	LogOutput(output, map[string]interface{}{
+		"operation": op.Name,
+		"id":        op.ID,
+	})
+
 	if op.Transform != "" {
+		Log(CategoryTransform, fmt.Sprintf("Applying transformation: %s", op.Transform))
 		transformedOutput, err := transformOutput(output, op.Transform, ctx)
 		if err != nil {
-			if debug {
-				fmt.Printf("Warning: output transformation failed: %v\n", err)
-			}
+			LogError("Output transformation failed", err, map[string]interface{}{"transform": op.Transform})
 		} else {
 			output = transformedOutput
+			Log(CategoryTransform, "Transformation applied successfully")
 		}
 	}
 
@@ -352,16 +355,21 @@ func processCommandOutput(op Operation, output string, ctx *ExecutionContext, op
 	}
 
 	if op.OnSuccess != "" {
+		Log(CategoryOperation, fmt.Sprintf("Executing on_success handler: %s", op.OnSuccess))
 		nextOp, exists := opMap[op.OnSuccess]
 		if !exists {
+			LogError("On_success handler not found", nil, map[string]interface{}{"handler": op.OnSuccess})
 			return false, fmt.Errorf("on_success operation %s not found", op.OnSuccess)
 		}
 		shouldExit, err := executeOp(nextOp, depth+1)
 		return shouldExit || op.Exit, err
 	}
 
-	if debug {
-		printOperationDebug(op, ctx)
+	if op.Exit {
+		Log(CategoryOperation, "Exit flag set, will exit after this operation")
+	}
+	if op.Break {
+		Log(CategoryOperation, "Break flag set, will break out of control flow")
 	}
 
 	return op.Exit, nil
@@ -369,26 +377,11 @@ func processCommandOutput(op Operation, output string, ctx *ExecutionContext, op
 
 // printRegisteredOperations displays information about registered operations
 func printRegisteredOperations(opMap map[string]Operation, handlerIDs map[string]bool) {
-	fmt.Println("Registered operations:")
+	Log(CategoryInit, fmt.Sprintf("Registered %d operations", len(opMap)))
 	for id := range opMap {
-		handlerStatus := ""
-		if handlerIDs[id] {
-			handlerStatus = " (handler)"
-		}
-		fmt.Printf("  - %s%s\n", id, handlerStatus)
-	}
-}
-
-// printOperationDebug prints debug information about an operation
-func printOperationDebug(op Operation, ctx *ExecutionContext) {
-	fmt.Printf("Operation %s result: %v\n", op.ID, ctx.OperationResults[op.ID])
-	fmt.Printf("Handler for on_success: '%s'\n", op.OnSuccess)
-	fmt.Printf("Handler for on_failure: '%s'\n", op.OnFailure)
-	if op.Exit {
-		fmt.Printf("Exit flag is set. Will exit after this operation.\n")
-	}
-	if op.Break {
-		fmt.Printf("Break flag is set. Will break out of control flow.\n")
+		isHandler := handlerIDs[id]
+		Log(CategoryInit, fmt.Sprintf("Registered operation: %s", id),
+			map[string]interface{}{"is_handler": isHandler})
 	}
 }
 

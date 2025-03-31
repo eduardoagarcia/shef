@@ -96,14 +96,12 @@ func handleDefaultEmpty(s string) string {
 }
 
 // ensureWorkingDirectory makes sure any workdir values exist on the system
-func ensureWorkingDirectory(path string, debug bool) error {
+func ensureWorkingDirectory(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		if err := os.MkdirAll(path, 0755); err != nil {
 			return fmt.Errorf("failed to create working directory %s: %w", path, err)
 		}
-		if debug {
-			fmt.Printf("Created working directory: %s\n", path)
-		}
+		Log(CategoryFileSystem, fmt.Sprintf("Created working directory: %s", path))
 	}
 	return nil
 }

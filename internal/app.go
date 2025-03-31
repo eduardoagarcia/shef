@@ -51,6 +51,10 @@ func globalFlags() []cli.Flag {
 			Usage:   "Enable debug output",
 			Value:   false,
 		},
+		&cli.StringFlag{
+			Name:  "debug-file",
+			Usage: "Save debug logs to specified file path",
+		},
 		&cli.BoolFlag{
 			Name:    "local",
 			Aliases: []string{"L"},
@@ -90,8 +94,39 @@ func dispatchRecipe() cli.ActionFunc {
 			return nil
 		}
 
+		debugger := setupDebugging(c)
+		defer debugger()
+
 		sourcePriority := getSourcePriority(c)
 		return dispatch(c, args, sourcePriority)
+	}
+}
+
+// setupDebugging initializes debug logging and returns a debugger function to finish logging
+func setupDebugging(c *cli.Context) func() {
+	InitDebugLogger(c.Bool("debug"))
+
+	if !c.Bool("debug") {
+		return func() {}
+	}
+
+	logToFile := c.IsSet("debug-file")
+
+	if logToFile {
+		debugFilePath := c.String("debug-file")
+		return func() {
+			if err := SaveLogsToFile(debugFilePath); err != nil {
+				fmt.Printf("Error saving debug logs to file: %v\n", err)
+			} else if IsDebugEnabled() {
+				fmt.Printf("Debug logs saved to: %s\n", debugFilePath)
+			}
+		}
+	} else {
+		return func() {
+			if IsDebugEnabled() {
+				PrintLogs()
+			}
+		}
 	}
 }
 

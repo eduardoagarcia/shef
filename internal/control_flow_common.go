@@ -6,10 +6,10 @@ import (
 
 // executeLoopOperations runs all operations for a single iteration.
 func executeLoopOperations(operations []Operation, ctx *ExecutionContext, depth int,
-	executeOp func(Operation, int) (bool, error), debug bool) (exit bool, breakLoop bool) {
+	executeOp func(Operation, int) (bool, error)) (exit bool, breakLoop bool) {
 
 	for _, subOp := range operations {
-		if !shouldRunOperation(subOp, ctx, debug) {
+		if !shouldRunOperation(subOp, ctx) {
 			continue
 		}
 
@@ -19,16 +19,12 @@ func executeLoopOperations(operations []Operation, ctx *ExecutionContext, depth 
 		}
 
 		if shouldExit || subOp.Exit {
-			if debug {
-				fmt.Printf("Exiting entire recipe due to exit flag in '%s'\n", subOp.Name)
-			}
+			Log(CategoryControlFlow, fmt.Sprintf("Exiting entire recipe due to exit flag in '%s'", subOp.Name))
 			return true, false
 		}
 
 		if subOp.Break {
-			if debug {
-				fmt.Printf("Breaking out of loop due to break flag in '%s'\n", subOp.Name)
-			}
+			Log(CategoryControlFlow, fmt.Sprintf("Breaking out of loop due to break flag in '%s'", subOp.Name))
 			return false, true
 		}
 	}

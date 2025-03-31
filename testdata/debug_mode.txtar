@@ -15,8 +15,6 @@ cp simple_recipe.yaml .shef/
 exec shef --debug simple_recipe
 
 # Validate test
-stdout 'Running recipe: simple_recipe'
-stdout 'With input:'
-stdout 'With vars:'
-stdout 'Running command: echo "Test successful"'
-stdout 'Test successful'
+stdout 'RECIPE: Running recipe: simple_recipe'
+stdout 'COMMAND: echo "Test successful"'
+stdout 'OUTPUT: Test successful'
