@@ -23,6 +23,19 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 	ctx.templateFuncs = extendTemplateFuncs(templateFuncs, ctx)
 	vars["context"] = ctx
 
+	if recipe.Vars != nil {
+		for k, v := range recipe.Vars {
+			ctx.Vars[k] = v
+		}
+	}
+
+	if recipe.Workdir != "" {
+		if err := ensureWorkingDirectory(recipe.Workdir, debug); err != nil {
+			return err
+		}
+		ctx.Vars["workdir"] = recipe.Workdir
+	}
+
 	for k, v := range vars {
 		ctx.Vars[k] = v
 	}
@@ -110,17 +123,21 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}, de
 			fmt.Printf("Running command: %s\n", cmd)
 		}
 		ctx.Vars["error"] = ""
+		workdir := ""
+		if workdirVal, exists := ctx.Vars["workdir"]; exists {
+			workdir = fmt.Sprintf("%v", workdirVal)
+		}
 
 		// 5. Execute command in the background
 		if op.ExecutionMode == "background" {
-			if err := executeBackgroundCommand(op, ctx, opMap, executeOp, depth, debug); err != nil {
+			if err := executeBackgroundCommand(op, ctx, opMap, executeOp, depth, debug, workdir); err != nil {
 				return false, err
 			}
 			return op.Exit, nil
 		}
 
 		// 6. Execute command normally
-		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat)
+		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat, workdir)
 		operationSuccess := err == nil
 		if op.ID != "" {
 			ctx.OperationResults[op.ID] = operationSuccess

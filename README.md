@@ -219,6 +219,9 @@ recipes:
   - name: "example"
     description: "An example recipe"
     category: "demo"
+    vars:
+      name: "World"
+    workdir: "./my-project"  # optional
     help: |
       This is detailed help text for the example recipe.
 
@@ -227,7 +230,7 @@ recipes:
     operations:
       - name: "First Operation"
         id: "first_op"
-        command: echo "Hello, World!"
+        command: echo "Hello, {{ .name }}!"
 
       - name: "Second Operation"
         id: "second_op"
@@ -241,6 +244,8 @@ recipes:
 - **category**: Used for organization and filtering
 - **author**: Optional author attribution
 - **help**: Detailed help documentation shown when using `-h` or `--help` flags
+- **vars**: Optional pre-defined variables available to all operations in the recipe
+- **workdir**: Optional working directory where all recipe commands will be executed (will be created if it does not exist)
 - **operations**: List of operations to execute in sequence
 
 ### Operations
@@ -580,27 +585,28 @@ transform: "{{ param1 | function1 .output }}"
 
 ### Available Transformation Functions
 
-| Function         | Description                        | Parameters                 | Direct Example                        | Pipe Example                           | Input                  | Output                   |
-|------------------|------------------------------------|----------------------------|---------------------------------------|----------------------------------------|------------------------|--------------------------|
-| `trim`           | Remove whitespace                  | (string)                   | `{{ trim .output }}`                  | `{{ .output \| trim }}`                | `"  hello  "`          | `"hello"`                |
-| `split`          | Split string by delimiter          | (string, delimiter)        | `{{ split .output "," }}`             | `{{ "," \| split .output }}`           | `"a,b,c"`              | `["a", "b", "c"]`        |
-| `join`           | Join array with delimiter          | (array, delimiter)         | `{{ join .array "," }}`               | `{{ "," \| join .array }}`             | `["a", "b", "c"]`      | `"a,b,c"`                |
-| `joinArray`      | Join any array type with delimiter | (array, delimiter)         | `{{ joinArray .array ":" }}`          | `{{ ":" \| joinArray .array }}`        | `[1, 2, 3]`            | `"1:2:3"`                |
-| `trimPrefix`     | Remove prefix from string          | (string, prefix)           | `{{ trimPrefix .output "pre" }}`      | `{{ "pre" \| trimPrefix .output }}`    | `"prefix"`             | `"fix"`                  |
-| `trimSuffix`     | Remove suffix from string          | (string, suffix)           | `{{ trimSuffix .output "fix" }}`      | `{{ "fix" \| trimSuffix .output }}`    | `"prefix"`             | `"pre"`                  |
-| `contains`       | Check if string contains pattern   | (string, substring)        | `{{ contains .output "pat" }}`        | `{{ "pat" \| contains .output }}`      | `"pattern"`            | `true`                   |
-| `replace`        | Replace text                       | (string, old, new)         | `{{ replace .output "old" "new" }}`   | `{{ "old" \| replace .output "new" }}` | `"oldtext"`            | `"newtext"`              |
-| `filter`, `grep` | Keep lines containing a pattern    | (string, pattern)          | `{{ filter .output "err" }}`          | `{{ "err" \| filter .output }}`        | `"error\nok\nerror2"`  | `"error\nerror2"`        |
-| `cut`            | Extract field from each line       | (string, delimiter, field) | `{{ cut .output ":" 1 }}`             | `{{ ":" \| cut .output 1 }}`           | `"name:value"`         | `"value"`                |
-| `atoi`           | Convert string to int              | (string)                   | `{{ atoi .output }}`                  | `{{ .output \| atoi }}`                | `"42"`                 | `42`                     |
-| `add`            | Add numbers                        | (num1, num2)               | `{{ add 5 3 }}` or `{{ add .num 5 }}` | `{{ 5 \| add 3 }}`                     | `5, 3`                 | `8`                      |
-| `sub`            | Subtract numbers                   | (num1, num2)               | `{{ sub 10 4 }}`                      | `{{ 4 \| sub 10 }}`                    | `10, 4`                | `6`                      |
-| `div`            | Divide numbers                     | (num1, num2)               | `{{ div 10 2 }}`                      | `{{ 2 \| div 10 }}`                    | `10, 2`                | `5`                      |
-| `mul`            | Multiply numbers                   | (num1, num2)               | `{{ mul 6 7 }}`                       | `{{ 7 \| mul 6 }}`                     | `6, 7`                 | `42`                     |
-| `exec`           | Execute command                    | (command)                  | `{{ exec "date" }}`                   | N/A                                    | `"date"`               | Output of `date` command |
-| `color`          | Add color to text                  | (color, text)              | `{{ color "green" "Success!" }}`      | `{{ "Success!" \| color "green" }}`    | `"green", "Success!"`  | Green-colored "Success!" |
-| `style`          | Add styling to text                | (style, text)              | `{{ style "bold" "Important!" }}`     | `{{ "Important!" \| style "bold" }}`   | `"bold", "Important!"` | Bold "Important!"        |
-| `resetFormat`    | Reset colors and styles            | ()                         | `{{ resetFormat }}`                   | N/A                                    | N/A                    | ANSI reset code          |
+| Function         | Description                               | Parameters                 | Direct Example                                | Pipe Example                           | Input                                 | Output                   |
+|------------------|-------------------------------------------|----------------------------|-----------------------------------------------|----------------------------------------|---------------------------------------|--------------------------|
+| `trim`           | Remove whitespace                         | (string)                   | `{{ trim .output }}`                          | `{{ .output \| trim }}`                | `"  hello  "`                         | `"hello"`                |
+| `split`          | Split string by delimiter                 | (string, delimiter)        | `{{ split .output "," }}`                     | `{{ "," \| split .output }}`           | `"a,b,c"`                             | `["a", "b", "c"]`        |
+| `join`           | Join array with delimiter                 | (array, delimiter)         | `{{ join .array "," }}`                       | `{{ "," \| join .array }}`             | `["a", "b", "c"]`                     | `"a,b,c"`                |
+| `joinArray`      | Join any array type with delimiter        | (array, delimiter)         | `{{ joinArray .array ":" }}`                  | `{{ ":" \| joinArray .array }}`        | `[1, 2, 3]`                           | `"1:2:3"`                |
+| `trimPrefix`     | Remove prefix from string                 | (string, prefix)           | `{{ trimPrefix .output "pre" }}`              | `{{ "pre" \| trimPrefix .output }}`    | `"prefix"`                            | `"fix"`                  |
+| `trimSuffix`     | Remove suffix from string                 | (string, suffix)           | `{{ trimSuffix .output "fix" }}`              | `{{ "fix" \| trimSuffix .output }}`    | `"prefix"`                            | `"pre"`                  |
+| `contains`       | Check if string contains pattern          | (string, substring)        | `{{ contains .output "pat" }}`                | `{{ "pat" \| contains .output }}`      | `"pattern"`                           | `true`                   |
+| `replace`        | Replace text                              | (string, old, new)         | `{{ replace .output "old" "new" }}`           | `{{ "old" \| replace .output "new" }}` | `"oldtext"`                           | `"newtext"`              |
+| `filter`, `grep` | Keep lines containing a pattern           | (string, pattern)          | `{{ filter .output "err" }}`                  | `{{ "err" \| filter .output }}`        | `"error\nok\nerror2"`                 | `"error\nerror2"`        |
+| `count`          | Count array elements or lines in a string | (value)                    | `{{ count .array }}` or `{{ count .output }}` | `{{ .array \| count }}`                | `["a", "b", "c"]` or `"line1\nline2"` | `3` or `2`               |
+| `cut`            | Extract field from each line              | (string, delimiter, field) | `{{ cut .output ":" 1 }}`                     | `{{ ":" \| cut .output 1 }}`           | `"name:value"`                        | `"value"`                |
+| `atoi`           | Convert string to int                     | (string)                   | `{{ atoi .output }}`                          | `{{ .output \| atoi }}`                | `"42"`                                | `42`                     |
+| `add`            | Add numbers                               | (num1, num2)               | `{{ add 5 3 }}` or `{{ add .num 5 }}`         | `{{ 5 \| add 3 }}`                     | `5, 3`                                | `8`                      |
+| `sub`            | Subtract numbers                          | (num1, num2)               | `{{ sub 10 4 }}`                              | `{{ 4 \| sub 10 }}`                    | `10, 4`                               | `6`                      |
+| `div`            | Divide numbers                            | (num1, num2)               | `{{ div 10 2 }}`                              | `{{ 2 \| div 10 }}`                    | `10, 2`                               | `5`                      |
+| `mul`            | Multiply numbers                          | (num1, num2)               | `{{ mul 6 7 }}`                               | `{{ 7 \| mul 6 }}`                     | `6, 7`                                | `42`                     |
+| `exec`           | Execute command                           | (command)                  | `{{ exec "date" }}`                           | N/A                                    | `"date"`                              | Output of `date` command |
+| `color`          | Add color to text                         | (color, text)              | `{{ color "green" "Success!" }}`              | `{{ "Success!" \| color "green" }}`    | `"green", "Success!"`                 | Green-colored "Success!" |
+| `style`          | Add styling to text                       | (style, text)              | `{{ style "bold" "Important!" }}`             | `{{ "Important!" \| style "bold" }}`   | `"bold", "Important!"`                | Bold "Important!"        |
+| `resetFormat`    | Reset colors and styles                   | ()                         | `{{ resetFormat }}`                           | N/A                                    | N/A                                   | ANSI reset code          |
 
 #### Available Math Functions
 
@@ -652,7 +658,7 @@ transform: "{{ param1 | function1 .output }}"
 
 #### Text Processing
 
-- `filter`, `grep`, `cut`
+- `filter`, `grep`, `count`, `cut`
 
 #### Numeric Operations
 
@@ -1449,6 +1455,78 @@ Handle component failures using the same success/failure patterns as regular ope
   on_success: "notify_success"
   on_failure: "notify_failure"
 ```
+
+## Progress Bars
+
+You can utilize [progress bars](https://github.com/schollz/progressbar) for long-running operations within loops,
+offering visual feedback about iteration progress, timing, and completion status.
+
+### Basics
+
+Progress bars can be added to any `for` or `foreach` loop in your recipes:
+
+```yaml
+- name: "Process With Progress Bar"
+  control_flow:
+    type: "for"
+    count: 100
+    variable: "i"
+    progress_bar: true  # Enable the progress bar
+  operations:
+    - name: "Process Item"
+      command: sleep 0.1
+```
+
+### Customization
+
+Progress bars can be extensively customized using the `progress_bar_options` field:
+
+```yaml
+progress_bar_options:
+  description: "Processing Files"          # Text shown at the start of the bar (optional)
+  width: 50                                # Width in characters (default: terminal width)
+  show_count: true                         # Show "5/100" counts (default: true)
+  show_percentage: true                    # Show percentage (default: true)
+  show_elapsed_time: true                  # Show elapsed time (default: true)
+  show_iteration_speed: true               # Show iterations/second (default: false)
+  refresh_rate: 0.1                        # Update rate in seconds (default: every iteration)
+  message_template: "Custom message here"  # Dynamic message template with variable replacement (optional)
+  theme:                                   # Visual appearance customization
+    saucer: "[green]=[reset]"              # Bar fill character
+    saucer_head: "[green]>[reset]"         # Leading character
+    saucer_padding: " "                    # Empty bar character
+    bar_start: "["                         # Left bracket
+    bar_end: "]"                           # Right bracket
+```
+
+### Theme Customization
+
+Progress bars can be styled with ANSI colors and custom characters:
+
+```yaml
+theme:
+  saucer: "[green]=[reset]"
+  saucer_head: "[green]>[reset]"
+  saucer_padding: " "
+  bar_start: "["
+  bar_end: "]"
+```
+
+#### Color Options
+
+All text elements support ANSI colors:
+
+| Color Values | Description            |
+|--------------|------------------------|
+| `[black]`    | Black text             |
+| `[red]`      | Red text               |
+| `[green]`    | Green text             |
+| `[yellow]`   | Yellow text            |
+| `[blue]`     | Blue text              |
+| `[magenta]`  | Magenta text           |
+| `[cyan]`     | Cyan text              |
+| `[white]`    | White text             |
+| `[reset]`    | Reset to default color |
 
 ## Example Recipes
 

@@ -1,0 +1,24 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+rm -rf ./test_workdir
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp workdir_recipe.yaml .shef/
+
+# Test running workdir test recipe
+exec shef workdir_test_recipe
+
+# Validate test
+stdout 'Working directory created automatically'
+stdout 'Creating files in working directory'
+stdout 'file1.txt'
+stdout 'file2.txt'
+stdout 'success.txt'
+stdout 'success'

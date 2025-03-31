@@ -1,0 +1,99 @@
+recipes:
+  - name: "progress"
+    description: "A simple demo to show progress bars, variables, and workdir"
+    category: "demo"
+    help: |
+      This recipe demonstrates how to use progress bars, pre-defined variables, and working directories.
+
+      The recipe will:
+        1. Prompt for confirmation before creating temporary files
+        2. Create a set number of temporary files with a progress bar
+        3. Count and display the number of files created
+        4. Delete each file with a customized progress bar
+        5. Clean up the working directory
+
+      Key features demonstrated:
+        - Pre-defined variables using the `vars` section
+        - Setting a working directory with `workdir`
+        - Using the `count` function to count items
+        - Progress bars with different configurations and themes
+        - For loops with progress tracking
+        - ForEach loops with progress tracking
+        - Color-coded output for better readability
+
+      This recipe is useful for:
+        - Understanding how to use the vars, workdir, and count features
+        - Seeing how progress bars can be customized
+    vars:
+      "tmp_dir": "/tmp"
+      "shef_dir": "shef_progress_demo"
+      "files_to_create": 50
+    workdir: "/tmp/shef_progress_demo"
+    operations:
+      - name: "Start Progress Bar Demo Prompt"
+        prompts:
+          - name: "Confirm"
+            id: "confirm"
+            type: "confirm"
+            message: "Create {{ .files_to_create }} temporary files?"
+            default: "true"
+
+      - name: "Exit Check"
+        condition: .confirm == "false"
+        exit: true
+
+      - name: "Create Temp Files"
+        control_flow:
+          type: "for"
+          count: '{{ .files_to_create }}'
+          variable: "i"
+          progress_bar: true
+          progress_bar_options:
+            message_template: "Creating {{ .files_to_create }} temporary files"
+        operations:
+          - name: "Create files with random names"
+            command: touch "$(uuidgen).txt"
+
+          - name: "Delay"
+            command: sleep 0.1
+
+      - name: "Output Temp File Count"
+        command: ls -1 {{ .workdir }} | wc -l
+        transform: '{{ color "yellow" (printf "Files created: %s" (trim .output)) }}'
+
+      - name: "Get File List"
+        id: "file_list"
+        command: ls -1 {{ .workdir }}
+        silent: true
+
+      - name: "Process Each Temporary File"
+        condition: '{{ count .file_list }} > 0'
+        control_flow:
+          type: "foreach"
+          collection: "{{ .file_list }}"
+          as: "file"
+          progress_bar: true
+          progress_bar_options:
+            message_template: "Deleting {{ .files_to_create }} temporary files"
+            theme:
+              saucer: "[red]=[reset]"
+              saucer_head: "[red]>[reset]"
+        operations:
+          - name: "Remove File"
+            command: rm {{ .file }}
+
+          - name: "Delay"
+            command: sleep 0.05
+
+      - name: "Output Remaining Temp File Count"
+        command: ls -1 {{ .workdir }} | wc -l
+        transform: '{{ color "yellow" (printf "Files remaining: %s" (trim .output)) }}'
+
+      - name: "Cleanup"
+        command: |
+          # Bypass workdir here
+          cd {{ .tmp_dir }}
+          rm -rf {{ .shef_dir }}
+          echo {{ color "green" (printf "✅ %d temporary files deleted!" .files_to_create) }}
+          echo {{ color "green" "✅ Temporary directory removed!" }}
+          echo {{ color "green" "✅ Cleanup complete!" }}

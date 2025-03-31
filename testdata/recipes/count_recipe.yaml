@@ -1,0 +1,34 @@
+recipes:
+  - name: "count_test_recipe"
+    description: "A recipe that tests the count function"
+    category: "test"
+    vars:
+      array_var: [ "item1", "item2", "item3" ]
+    operations:
+      - name: "Generate Lines"
+        id: "lines"
+        command: |
+          echo "Line 1
+          Line 2
+          Line 3
+          Line 4"
+
+      - name: "Count Lines"
+        command: echo "Line count {{ count .lines }}"
+
+      - name: "Count Predefined Array"
+        command: echo "Array count {{ count .array_var }}"
+
+      - name: "Generate CSV"
+        id: "csv_data"
+        command: echo "item1,item2,item3"
+
+      - name: "Count CSV Items"
+        command: echo "CSV count {{ count (split .csv_data ",") }}"
+
+      - name: "Empty String"
+        id: "empty"
+        command: echo ""
+
+      - name: "Count Empty"
+        command: echo "Empty count {{ count .empty }}"

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -86,9 +87,23 @@ func parseOptionsFromOutput(output string) []string {
 	return result
 }
 
+// handleDefaultEmpty ensures proper string template replacement
 func handleDefaultEmpty(s string) string {
 	s = strings.ReplaceAll(s, "<nil>", "")
 	s = strings.ReplaceAll(s, "<no value>", "false")
 
 	return s
+}
+
+// ensureWorkingDirectory makes sure any workdir values exist on the system
+func ensureWorkingDirectory(path string, debug bool) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		if err := os.MkdirAll(path, 0755); err != nil {
+			return fmt.Errorf("failed to create working directory %s: %w", path, err)
+		}
+		if debug {
+			fmt.Printf("Created working directory: %s\n", path)
+		}
+	}
+	return nil
 }
