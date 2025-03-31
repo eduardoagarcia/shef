@@ -285,7 +285,7 @@ Operations are the building blocks of recipes:
 - **background**: Executes the command asynchronously in a separate process. The recipe execution continues immediately
   without waiting for the command to complete. Useful for long-running tasks that don't need to block recipe execution.
 
-### Command Output Format
+#### Command Output Format
 
 Shef provides options for controlling how whitespace and empty lines are handled in command output:
 
