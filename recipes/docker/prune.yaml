@@ -1,0 +1,103 @@
+recipes:
+  - name: "prune"
+    description: "Prune unused Docker resources to free up disk space"
+    category: "docker"
+    help: |
+      This recipe helps prune unused Docker resources to free up disk space.
+
+      The recipe will:
+        1. Show the initial disk usage
+        2. Prompt you to select which Docker resources to prune
+        3. Prune the selected resources
+        4. Show the final disk usage and space saved
+
+      Resources that can be pruned:
+        - Dangling images (untagged images)
+        - All unused images (not used by containers)
+        - Stopped containers
+        - Unused volumes (not used by containers)
+        - Unused networks (not connected to containers)
+        - Build cache
+
+      Requirements:
+        - Docker must be installed and running
+        - You must have permissions to access Docker
+
+      Note: Use caution when pruning volumes as this will permanently delete data.
+    vars:
+      "initial_usage": ""
+      "final_usage": ""
+    operations:
+      - name: "Initial Disk Usage Message"
+        command: echo "{{ color "magenta" "Collecting Docker disk usage information..." }}"
+
+      - name: "Initial Disk Usage"
+        command: docker system df
+        transform: '{{ color "yellow" .output }}'
+
+      - name: "Select Resources to Clean Up"
+        silent: true
+        prompts:
+          - name: "Resources"
+            id: "prune_resources"
+            type: "multiselect"
+            message: "Select which Docker resources to prune:"
+            options:
+              - "1"
+              - "2"
+              - "3"
+              - "4"
+              - "5"
+              - "6"
+            descriptions:
+              "1": "Dangling images (untagged images not used by containers)"
+              "2": "All unused images (not used by any container)"
+              "3": "Stopped containers"
+              "4": "Unused volumes (not used by containers - data will be permanently deleted)"
+              "5": "Unused networks (not connected to containers)"
+              "6": "Build cache (temporary files from image builds)"
+
+      - name: "Clean Dangling Images"
+        command: |
+          echo {{ color "magenta" "• Pruning dangling images..." }}
+          docker image prune -f
+        condition: '{{ contains .prune_resources "1" }}'
+
+      - name: "Clean All Unused Images"
+        command: |
+          echo {{ color "magenta" "• Pruning all unused images..." }}
+          docker image prune -a -f
+        condition: '{{ contains .prune_resources "2" }}'
+
+      - name: "Clean Stopped Containers"
+        command: |
+          echo {{ color "magenta" "• Pruning stopped containers..." }}
+          docker container prune -f
+        condition: '{{ contains .prune_resources "3" }}'
+
+      - name: "Clean Unused Volumes"
+        command: |
+          echo {{ color "magenta" "• Pruning unused volumes..." }}
+          docker volume prune -f
+        condition: '{{ contains .prune_resources "4" }}'
+
+      - name: "Clean Unused Networks"
+        command: |
+          echo {{ color "magenta" "• Pruning unused networks..." }}
+          docker network prune -f
+        condition: '{{ contains .prune_resources "5" }}'
+
+      - name: "Clean Build Cache"
+        command: |
+          echo {{ color "magenta" "• Pruning build cache..." }}
+          docker builder prune -f
+        condition: '{{ contains .prune_resources "6" }}'
+
+      - command: echo {{ color "magenta" "• Complete!" }}
+
+      - name: "Final Disk Usage Message"
+        command: echo {{ color "magenta" "Collecting Docker disk usage information..." }}
+
+      - name: "Final Disk Usage"
+        command: docker system df
+        transform: '{{ color "green" .output }}'
