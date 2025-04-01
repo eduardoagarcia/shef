@@ -33,7 +33,7 @@ recipes:
         - Press Ctrl+C to stop log streaming
     vars:
       "filter": ""
-      "filter_base": "2>&1 | grep --color=always"
+      "filter_base": "2>&1 | grep --color=always -i"
       "filter_lines": 5
     operations:
       - name: "Docker Container Select"
@@ -48,7 +48,7 @@ recipes:
 
       - name: "Filter"
         id: "filter"
-        command: echo '{{ .filter_base }} -i -B{{ .filter_lines }} -A{{ .filter_lines }} "{{ .input }}"'
+        command: echo '{{ .filter_base }} -B{{ .filter_lines }} -A{{ .filter_lines }} "{{ .input }}"'
         condition: .f == "true" && .input != "false"
         silent: true
 
