@@ -234,6 +234,7 @@ func processPrompts(op Operation, ctx *ExecutionContext) error {
 			varName = prompt.ID
 		}
 		ctx.Vars[varName] = value
+		ctx.OperationOutputs[varName] = fmt.Sprintf("%v", value)
 	}
 
 	return nil

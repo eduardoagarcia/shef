@@ -56,6 +56,9 @@ func buildTemplateFunctions() template.FuncMap {
 	stringFunctions(funcs)
 	mathFunctions(funcs)
 	formattingFunctions(funcs)
+	for name, fn := range TableFuncMap() {
+		funcs[name] = fn
+	}
 
 	return funcs
 }
@@ -75,6 +78,7 @@ func stringFunctions(funcs template.FuncMap) {
 	funcs["cut"] = cutFields
 	funcs["exec"] = execCommand
 	funcs["count"] = count
+	funcs["list"] = createList
 }
 
 // mathFunctions adds mathematical functions to the template function map
@@ -368,6 +372,11 @@ func count(val interface{}) int {
 	default:
 		return 1
 	}
+}
+
+// createList creates a list/array from the provided items
+func createList(items ...interface{}) []interface{} {
+	return items
 }
 
 // renderTemplate parses and executes a Go template with the provided variables
