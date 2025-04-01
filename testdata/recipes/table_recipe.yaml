@@ -1,0 +1,55 @@
+recipes:
+  - name: "table_test_recipe"
+    description: "A recipe that tests various table rendering functions"
+    category: "test"
+    operations:
+      - name: "Basic Table Test"
+        id: "basic_table"
+        command: |
+          echo '{{ table
+            (makeHeaders "Name" "Age" "City")
+            (list
+              (makeRow "John" "34" "Chicago")
+              (makeRow "Jane" "28" "Seattle")
+            )
+            "rounded"
+          }}'
+
+      - name: "Style Constants Test"
+        id: "style_constants"
+        command: |
+          echo '{{ table
+            (makeHeaders "Product" "Price")
+            (list
+              (makeRow "Apple" "$1.25")
+              (makeRow "Orange" "$0.90")
+            )
+            (tableStyleDouble)
+          }}'
+
+      - name: "Column Alignment Test"
+        id: "aligned_table"
+        command: |
+          echo '{{ table
+            (makeHeaders "Product" "Price" "Percentage")
+            (list
+              (makeRow "Widget A" "$10.00" "32.4%")
+              (makeRow "Widget B" "$15.00" "29.1%")
+            )
+            "rounded"
+            (list "left" "right" "center")
+          }}'
+
+      - name: "JSON Table Test"
+        id: "json_table"
+        command: |
+          echo '{{ tableJSON `{
+            "headers": ["Date", "Value"],
+            "rows": [
+              ["2023-01-01", "$100"],
+              ["2023-01-02", "$150"]
+            ],
+            "align": ["left", "right"],
+            "footers": ["Total", "$250"],
+            "style": "light"
+          }` }}'

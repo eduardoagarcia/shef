@@ -585,6 +585,76 @@ transform: "{{ param1 | function1 .output }}"
 
 - `color`, `style`, `resetFormat`
 
+### Tables
+
+Shef includes built-in functions for rendering tables:
+
+- `table`: Create tables with headers, rows, and styling
+- `tableJSON`: Create tables from JSON configuration
+- `makeHeaders`: Create a header row for a table
+- `makeRow`: Create a data row for a table
+- `tableStyleRounded`, `tableStyleLight`, `tableStyleDouble`, `tableStyleASCII`: Style constants
+
+#### Simple Table Example:
+
+```yaml
+command: |
+  echo '{{ table
+    (makeHeaders "Name" "Age" "City")
+    (list
+      (makeRow "John" "34" "Chicago")
+      (makeRow "Jane" "28" "Seattle")
+    )
+    "rounded"
+  }}'
+```
+
+#### Table with Custom Style:
+
+```yaml
+command: |
+  echo '{{ table
+    (makeHeaders "Product" "Price")
+    (list
+      (makeRow "Apple" "$1.25")
+      (makeRow "Orange" "$0.90")
+    )
+    (tableStyleDouble)
+  }}'
+```
+
+#### Table with Column Alignment:
+
+- `"left"`: Left-align the column (default for text)
+- `"center"`: Center-align the column
+- `"right"`: Right-align the column (default for numbers)
+
+```yaml
+command: |
+  echo '{{ table
+    (makeHeaders "Name" "Value" "Percentage")
+    (list
+      (makeRow "Item A" "150" "75%")
+      (makeRow "Item B" "42" "21%")
+    )
+    "rounded"
+    (list "left" "right" "center")  # Left-align first column, right-align second, center-align third
+  }}'
+```
+
+```yaml
+command: |
+  echo '{{ tableJSON `{
+    "headers": ["Name", "Value", "Percentage"],
+    "rows": [
+      ["Item A", "150", "75%"],
+      ["Item B", "42", "21%"]
+    ],
+    "align": ["left", "right", "center"],
+    "style": "rounded"
+  }` }}'
+```
+
 ### Terminal Colors and Styles
 
 You can make your recipe outputs more readable by adding colors and styles. These are automatically disabled when using

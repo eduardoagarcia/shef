@@ -1,0 +1,30 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy recipe file for testing
+cp table_recipe.yaml .shef/
+
+# Test running the table test recipe
+exec shef table_test_recipe
+
+# Validate test
+stdout '| NAME | AGE | CITY'
+stdout '| John | 34  | Chicago'
+stdout '| Jane | 28  | Seattle'
+stdout '| PRODUCT | PRICE'
+stdout '| Apple   | $1.25'
+stdout '| Orange  | $0.90'
+stdout '| PRODUCT  | PRICE  | PERCENTAGE'
+stdout '| Widget A | $10.00 | 32.4%'
+stdout '| Widget B | $15.00 | 29.1%'
+stdout '| DATE       | VALUE'
+stdout '| 2023-01-01 | $100'
+stdout '| 2023-01-02 | $150'
+stdout '| Total      | $250'
