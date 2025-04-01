@@ -1,6 +1,6 @@
 recipes:
   - name: "logs"
-    description: "Stream logs from a Docker container"
+    description: "Stream logs from a Docker container with advanced filtering"
     category: "docker"
     help: |
       This recipe streams logs from a Docker container.

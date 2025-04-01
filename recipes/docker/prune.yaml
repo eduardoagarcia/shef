@@ -1,6 +1,6 @@
 recipes:
   - name: "prune"
-    description: "Prune unused Docker resources to free up disk space"
+    description: "Prune unused Docker resources"
     category: "docker"
     help: |
       This recipe helps prune unused Docker resources to free up disk space.
