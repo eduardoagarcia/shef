@@ -1,0 +1,24 @@
+recipes:
+  - name: "time"
+    description: "A time utility displaying formatted time information"
+    category: "utils"
+    operations:
+      - name: "Get Local Time"
+        id: "local"
+        command: date "+%Y-%m-%d %H:%M:%S"
+        silent: true
+
+      - name: "Get UTC Time"
+        id: "utc"
+        command: date -u "+%Y-%m-%d %H:%M:%S"
+        silent: true
+
+      - name: "Display times within a table"
+        command: |
+          echo '{{ table
+            (makeHeaders "Local Time" "UTC Time") 
+            (list
+              (makeRow (color "green" .local) (color "yellow" .utc))
+            )
+            "rounded" 
+          }}'

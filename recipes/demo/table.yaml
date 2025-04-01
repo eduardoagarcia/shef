@@ -1,0 +1,67 @@
+recipes:
+  - name: "table"
+    description: "Demonstrates the table rendering feature"
+    category: "demo"
+    help: |
+      This recipe demonstrates the table rendering feature in Shef.
+
+      It shows how to:
+      - Create and render tables with clear syntax
+      - Apply different styles (rounded, light, double, ASCII)
+      - Format data in various ways
+      - Use JSON configuration for complex tables
+
+      The table function accepts:
+      - headers: Array of column headers (use list function)
+      - rows: 2D array of row data (use list function)
+      - style: Table style (rounded, light, double, ascii)
+
+      The tableJSON function accepts a JSON string with:
+      - headers: Array of column headers
+      - rows: 2D array of row data
+      - style: Table style (rounded, light, double, ascii)
+      - footers: Optional array of footer values
+    operations:
+      - name: "Basic Table"
+        command: |
+          echo "Basic Table Demo:"
+          echo '{{ table (list "Name" "Age" "City") (list (list "John Doe" "34" "New York") (list "Jane Smith" "28" "San Francisco") (list "Bob Johnson" "42" "Chicago")) "rounded" }}'
+
+      - name: "Different Table Styles"
+        command: |
+          echo "Table with Double Border Style:"
+          echo '{{ table (list "Product" "Price" "Stock") (list (list "Apple" "$1.25" "125") (list "Orange" "$0.90" "83") (list "Banana" "$0.50" "42")) "double" }}'
+
+          echo "Table with Light Border Style:"
+          echo '{{ table (list "Product" "Price" "Stock") (list (list "Apple" "$1.25" "125") (list "Orange" "$0.90" "83") (list "Banana" "$0.50" "42")) "light" }}'
+
+      - name: "ASCII Style Table"
+        command: |
+          echo "ASCII Style Table:"
+          echo '{{ table (list "Language" "First Released" "Paradigm") (list (list "Go" "2009" "Concurrent") (list "Python" "1991" "Multi-paradigm") (list "Rust" "2010" "Multi-paradigm")) "ascii" }}'
+
+      - name: "JSON Tables"
+        command: |
+          echo "JSON Configured Table:"
+          echo '{{ tableJSON `{
+            "headers": ["Project", "Stars", "Language", "License"],
+            "rows": [
+              ["VS Code", "150k+", "TypeScript", "MIT"],
+              ["React", "200k+", "JavaScript", "MIT"],
+              ["TensorFlow", "170k+", "C++/Python", "Apache 2.0"],
+              ["Kubernetes", "95k+", "Go", "Apache 2.0"]
+            ],
+            "style": "rounded"
+          }` }}'
+
+          echo "JSON Table with Footer:"
+          echo '{{ tableJSON `{
+            "headers": ["Item", "Quantity", "Unit Price", "Total"],
+            "rows": [
+              ["Widget A", "5", "$10.00", "$50.00"],
+              ["Widget B", "3", "$15.00", "$45.00"],
+              ["Widget C", "7", "$8.50", "$59.50"]
+            ],
+            "footers": ["", "15", "", "$154.50"],
+            "style": "double"
+          }` }}'
