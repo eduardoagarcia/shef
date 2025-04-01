@@ -33,3 +33,6 @@ go.work.sum
 ._*
 .Spotlight-V100
 .Trashes
+
+# AI
+/CLAUDE.md
