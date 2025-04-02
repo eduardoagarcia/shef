@@ -1,0 +1,36 @@
+components:
+  - name: "Component Input Test"
+    id: "input_test"
+    inputs:
+      - name: "Name Input"
+        id: "name"
+    operations:
+      - name: "Component First"
+        command: echo {{ .name }}
+
+      - name: "Name"
+        id: "name"
+        command: echo "quix"
+
+      - name: "Component Last"
+        command: echo {{ .name }}
+
+recipes:
+  - name: "component_input_scope"
+    description: "A test to ensure scope of a recipe"
+    category: "test"
+    operations:
+      - name: "Recipe First"
+        command: echo {{ .name }}
+
+      - name: "Name"
+        id: "name"
+        command: echo "foo"
+
+      - name: "Test Component Inputs"
+        uses: "input_test"
+        with:
+          name: "bar"
+
+      - name: "Recipe Last"
+        command: echo {{ .name }}

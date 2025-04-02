@@ -1,0 +1,23 @@
+# Set up home directory
+env HOME=$WORK/home
+env NO_COLOR=1
+mkdir -p $HOME
+rm -rf $HOME/.shef
+rm -rf .shef
+
+# Create recipe directory
+mkdir -p .shef
+
+# Copy component input test file
+cp component_input_scope_recipe.yaml .shef/
+
+# Run the component input test recipe
+exec shef component_input_scope
+
+# Validate test
+stdout 'false'
+stdout 'foo'
+stdout 'bar'
+stdout 'quix'
+stdout 'bar'
+stdout 'quix'

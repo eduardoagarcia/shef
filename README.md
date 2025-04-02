@@ -1383,6 +1383,7 @@ Components provide the following benefits:
 - **Maintainability**: Update a single component rather than modifying multiple recipes
 - **Modularity**: Break complex workflows into logical, reusable blocks
 - **Standardization**: Create consistent patterns across your organization
+- **Parameterization**: Pass inputs to components for flexibility and customization
 
 ### Defining Components
 
@@ -1393,6 +1394,23 @@ components:
   - id: "backup-database"
     name: "Database Backup Component"
     description: "Creates a timestamped database backup"
+    inputs:
+      - id: "db_name"
+        name: "Database Name"
+        description: "The name of the database to back up"
+        required: true
+      - id: "db_user"
+        name: "Database Username"
+        description: "Username for database connection"
+        required: true
+      - id: "db_password"
+        name: "Database Password"
+        description: "Password for database connection"
+        required: true
+      - id: "output_dir"
+        name: "Output Directory"
+        description: "Directory to store backups"
+        default: "./backups"
     operations:
       - name: "Get Current Timestamp"
         id: "timestamp"
@@ -1401,7 +1419,7 @@ components:
 
       - name: "Create Backup"
         id: "backup_file"
-        command: "mysqldump --user={{ .db_user }} --password={{ .db_password }} {{ .db_name }} > backup_{{ .timestamp }}.sql"
+        command: "mysqldump --user={{ .db_user }} --password={{ .db_password }} {{ .db_name }} > {{ .output_dir }}/backup_{{ .timestamp }}.sql"
 ```
 
 #### Key Components
@@ -1409,6 +1427,12 @@ components:
 - **id**: Unique identifier for referencing the component (required)
 - **name**: Human-readable name for the component
 - **description**: Purpose and functionality of the component
+- **inputs**: Define inputs that the component accepts
+  - **id**: Variable name for the input (required)
+  - **name**: Display name for the input
+  - **description**: Purpose of the input parameter
+  - **required**: Whether the input must be provided
+  - **default**: Default value if input is not provided
 - **operations**: List of operations to execute when the component is used
 
 ### Using Components in Recipes
@@ -1439,19 +1463,43 @@ recipes:
 
       - name: "Backup Database"
         uses: "backup_database"
+        with:
+          db_name: "{{ .db_name }}"
+          db_user: "{{ .db_user }}"
+          db_password: "{{ .db_password }}"
+          output_dir: "/backups/nightly"
         id: "db_backup"
 
       - name: "Show Backup Complete"
         command: "echo 'Backup completed: {{ .backup_file }}'"
 ```
 
-### Component Variables
+### Component Variables and Inputs
 
-Components can access all variables in the recipe's execution context:
+Components can access variables from multiple sources:
 
-1. **Recipe Variables**: Variables defined in the recipe can be used inside components
-2. **Prompt Results**: Values from recipe prompts are available to components
-3. **Operation Outputs**: Outputs from operations before the component are accessible
+1. **Component Inputs**: Values provided through the `with` field
+   - Each input is available within the component using its ID
+   - Required inputs must be provided, while optional inputs can use their default values
+   - Inputs have their own namespace to prevent collisions
+
+2. **Recipe Context**: If not provided through `with`, components can access:
+   - **Recipe Variables**: Variables defined in the recipe's `vars` section
+   - **Prompt Results**: Values from recipe prompts
+   - **Operation Outputs**: Outputs from operations before the component
+
+#### Using the `with` Parameter
+
+The `with` parameter allows you to pass values to component inputs:
+
+```yaml
+- name: "Use Component With Parameters"
+  uses: "my_component"
+  with:
+    param1: "value1"             # Static value
+    param2: "{{ .user_input }}"  # Dynamic value from a prompt
+    param3: 42                   # Numeric value
+```
 
 ### Capturing Component Outputs
 
