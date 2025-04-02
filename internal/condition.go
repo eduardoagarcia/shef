@@ -8,6 +8,14 @@ import (
 
 // evaluateCondition determines if a condition is true based on the execution context
 func evaluateCondition(condition string, ctx *ExecutionContext) (bool, error) {
+	result, err := evaluateConditionWrapper(condition, ctx)
+
+	Log(CategoryCondition, fmt.Sprintf("Condition result: %v", result))
+
+	return result, err
+}
+
+func evaluateConditionWrapper(condition string, ctx *ExecutionContext) (bool, error) {
 	if condition == "" {
 		return true, nil
 	}

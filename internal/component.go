@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"regexp"
 	"sync"
 )
 
@@ -120,7 +119,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 
 					inputOp := Operation{
 						Name:    fmt.Sprintf("Set component input: %s", name),
-						ID:      fmt.Sprintf("comp_%s_%s", instanceID, inputVar),
+						ID:      inputVar,
 						Command: fmt.Sprintf("echo '%v'", value),
 						Silent:  true,
 					}
@@ -141,7 +140,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 					if input.Default != nil {
 						defaultOp := Operation{
 							Name:    fmt.Sprintf("Set default input: %s", input.Name),
-							ID:      fmt.Sprintf("comp_%s_%s", instanceID, input.ID),
+							ID:      input.ID,
 							Command: fmt.Sprintf("echo '%v'", input.Default),
 							Silent:  true,
 						}
@@ -157,14 +156,8 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 				clonedOps[i] = compOp
 				applyOperationProperties(&clonedOps[i], op)
 
-				originalID := clonedOps[i].ID
-
-				processComponentOperationVars(&clonedOps[i], instanceID)
-
 				if clonedOps[i].ID != "" {
-					opMap[originalID] = clonedOps[i]
-					namespacedID := fmt.Sprintf("%s_%s", instanceID, originalID)
-					opMap[namespacedID] = clonedOps[i]
+					opMap[clonedOps[i].ID] = clonedOps[i]
 				}
 			}
 
@@ -220,56 +213,4 @@ func applyOperationProperties(target *Operation, source Operation) {
 	target.Silent = target.Silent || source.Silent
 	target.Break = target.Break || source.Break
 	target.Exit = target.Exit || source.Exit
-}
-
-// processComponentOperationVars updates operations within components to use component-scoped variables
-func processComponentOperationVars(op *Operation, instanceID string) {
-	if op.Command != "" {
-		op.Command = updateTemplateVarsForComponent(op.Command, instanceID)
-	}
-
-	if op.Condition != "" {
-		op.Condition = updateConditionVarsForComponent(op.Condition, instanceID)
-	}
-
-	if op.Transform != "" {
-		op.Transform = updateTemplateVarsForComponent(op.Transform, instanceID)
-	}
-
-	for i := range op.Prompts {
-		if op.Prompts[i].Default != "" {
-			op.Prompts[i].Default = updateTemplateVarsForComponent(op.Prompts[i].Default, instanceID)
-		}
-		if op.Prompts[i].Message != "" {
-			op.Prompts[i].Message = updateTemplateVarsForComponent(op.Prompts[i].Message, instanceID)
-		}
-	}
-
-	for i := range op.Operations {
-		processComponentOperationVars(&op.Operations[i], instanceID)
-	}
-}
-
-// updateTemplateVarsForComponent replaces template variables in a template string with component-scoped versions
-func updateTemplateVarsForComponent(templateStr string, instanceID string) string {
-	regexPattern := regexp.MustCompile(`\{\{\s*\.(\w+)\s*\}\}`)
-	replacement := fmt.Sprintf(`{{ .comp_%s_$1 }}`, instanceID)
-
-	result := regexPattern.ReplaceAllString(templateStr, replacement)
-
-	Log(CategoryComponent, fmt.Sprintf("Updated component variable references in template: %s → %s", templateStr, result))
-
-	return result
-}
-
-// updateConditionVarsForComponent replaces variable references in conditions with component-scoped versions
-func updateConditionVarsForComponent(condition string, instanceID string) string {
-	regexPattern := regexp.MustCompile(`\.(\w+)\b`)
-	replacement := fmt.Sprintf(`.comp_%s_$1`, instanceID)
-
-	result := regexPattern.ReplaceAllString(condition, replacement)
-
-	Log(CategoryComponent, fmt.Sprintf("Updated component variable references in condition: %s → %s", condition, result))
-
-	return result
 }
