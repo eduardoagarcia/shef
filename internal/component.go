@@ -67,6 +67,7 @@ func LoadComponents(sources []string) error {
 // ExpandComponentReferences recursively replaces component references with their operations
 func ExpandComponentReferences(operations []Operation, opMap map[string]Operation) ([]Operation, error) {
 	var expanded []Operation
+	componentInstances := make(map[string]int)
 
 	for _, op := range operations {
 		if op.ID != "" {
@@ -81,7 +82,74 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 				return nil, fmt.Errorf("component not found: %s", op.Uses)
 			}
 
-			Log(CategoryComponent, fmt.Sprintf("Expanding component reference: %s", op.Uses))
+			componentInstances[op.Uses]++
+			instanceNum := componentInstances[op.Uses]
+
+			var instanceID string
+			if op.ID != "" {
+				instanceID = fmt.Sprintf("%s_%s_%d", op.Uses, op.ID, instanceNum)
+			} else {
+				instanceID = fmt.Sprintf("%s_%d", op.Uses, instanceNum)
+			}
+
+			Log(CategoryComponent, fmt.Sprintf("Expanding component reference: %s (instance: %s)", op.Uses, instanceID))
+
+			var inputOps []Operation
+			if op.With != nil && len(op.With) > 0 {
+				Log(CategoryComponent, fmt.Sprintf("Processing component inputs for: %s (instance: %s)", op.Uses, instanceID))
+
+				if len(component.Inputs) > 0 {
+					for _, input := range component.Inputs {
+						if input.Required {
+							if _, exists := op.With[input.ID]; !exists {
+								return nil, fmt.Errorf("required input '%s' missing for component: %s", input.ID, op.Uses)
+							}
+						}
+					}
+				}
+
+				for name, value := range op.With {
+					var inputVar string = name
+					for _, input := range component.Inputs {
+						if input.ID == name {
+							inputVar = input.ID
+							break
+						}
+					}
+
+					inputOp := Operation{
+						Name:    fmt.Sprintf("Set component input: %s", name),
+						ID:      inputVar,
+						Command: fmt.Sprintf("echo '%v'", value),
+						Silent:  true,
+					}
+					inputOps = append(inputOps, inputOp)
+
+					opMap[inputOp.ID] = inputOp
+				}
+			}
+
+			if len(component.Inputs) > 0 {
+				for _, input := range component.Inputs {
+					if op.With != nil {
+						if _, exists := op.With[input.ID]; exists {
+							continue
+						}
+					}
+
+					if input.Default != nil {
+						defaultOp := Operation{
+							Name:    fmt.Sprintf("Set default input: %s", input.Name),
+							ID:      input.ID,
+							Command: fmt.Sprintf("echo '%v'", input.Default),
+							Silent:  true,
+						}
+						inputOps = append(inputOps, defaultOp)
+
+						opMap[defaultOp.ID] = defaultOp
+					}
+				}
+			}
 
 			clonedOps := make([]Operation, len(component.Operations))
 			for i, compOp := range component.Operations {
@@ -114,6 +182,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 				}
 			}
 
+			expanded = append(expanded, inputOps...)
 			expanded = append(expanded, componentOps...)
 		} else {
 			if len(op.Operations) > 0 {

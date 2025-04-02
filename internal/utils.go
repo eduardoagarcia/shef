@@ -77,14 +77,7 @@ func updateDurationVars(ctx *ExecutionContext, startTime time.Time) {
 
 // parseOptionsFromOutput converts multi-line output to a string slice of options
 func parseOptionsFromOutput(output string) []string {
-	result := []string{}
-	for _, line := range strings.Split(output, "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" {
-			result = append(result, line)
-		}
-	}
-	return result
+	return toList(output)
 }
 
 // handleDefaultEmpty ensures proper string template replacement
@@ -104,4 +97,124 @@ func ensureWorkingDirectory(path string) error {
 		Log(CategoryFileSystem, fmt.Sprintf("Created working directory: %s", path))
 	}
 	return nil
+}
+
+// toList converts any input value to a normalized list representation
+func toList(input interface{}) []string {
+	if input == nil {
+		return []string{}
+	}
+
+	var result []string
+
+	switch v := input.(type) {
+	case []string:
+		for _, s := range v {
+			if clean := strings.TrimSpace(s); clean != "" {
+				result = append(result, clean)
+			}
+		}
+
+	case []interface{}:
+		for _, item := range v {
+			if s := fmt.Sprintf("%v", item); s != "" && s != "<nil>" {
+				result = append(result, strings.TrimSpace(s))
+			}
+		}
+
+	case string:
+		if v == "" {
+			return []string{}
+		}
+
+		trimmed := strings.TrimSpace(v)
+
+		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			inner := strings.TrimSpace(trimmed[1 : len(trimmed)-1])
+			if inner == "" {
+				return []string{}
+			}
+
+			foundComma := strings.Contains(inner, ",")
+
+			if foundComma {
+				for _, item := range strings.Split(inner, ",") {
+					cleaned := strings.Trim(strings.TrimSpace(item), "\"'")
+					if cleaned != "" {
+						result = append(result, cleaned)
+					}
+				}
+			} else {
+				for _, item := range strings.Fields(inner) {
+					cleaned := strings.Trim(item, "\"'")
+					if cleaned != "" {
+						result = append(result, cleaned)
+					}
+				}
+			}
+			return result
+		}
+
+		if strings.Contains(trimmed, "\n") {
+			for _, line := range strings.Split(trimmed, "\n") {
+				if clean := strings.TrimSpace(line); clean != "" {
+					result = append(result, clean)
+				}
+			}
+			return result
+		}
+
+		if strings.Contains(trimmed, ",") {
+			for _, item := range strings.Split(trimmed, ",") {
+				if clean := strings.TrimSpace(item); clean != "" {
+					result = append(result, clean)
+				}
+			}
+			return result
+		}
+
+		result = append(result, trimmed)
+
+	default:
+		if s := fmt.Sprintf("%v", v); s != "" && s != "<nil>" {
+			result = append(result, strings.TrimSpace(s))
+		}
+	}
+
+	return result
+}
+
+// formatResult formats a string slice result to match the original input format
+// This preserves the format of the original input (array, newline-separated string,
+// comma-separated string, or space-separated array syntax) for a consistent user experience
+func formatResult(result []string, originalInput interface{}) interface{} {
+	if len(result) == 0 {
+		switch originalInput.(type) {
+		case []string, []interface{}:
+			return []string{}
+		default:
+			return ""
+		}
+	}
+
+	switch v := originalInput.(type) {
+	case string:
+		trimmed := strings.TrimSpace(v)
+
+		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			return "[" + strings.Join(result, " ") + "]"
+		}
+
+		if strings.Contains(trimmed, ",") && !strings.Contains(trimmed, "\n") {
+			return strings.Join(result, ", ")
+		}
+
+		return strings.Join(result, "\n")
+
+	case []string, []interface{}:
+		return result
+
+	default:
+		return strings.Join(result, "\n")
+	}
 }

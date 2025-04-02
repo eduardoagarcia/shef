@@ -75,6 +75,7 @@ func stringFunctions(funcs template.FuncMap) {
 	funcs["replace"] = strings.ReplaceAll
 	funcs["filter"] = filterLines
 	funcs["grep"] = filterLines
+	funcs["overlap"] = findOverlap
 	funcs["cut"] = cutFields
 	funcs["exec"] = execCommand
 	funcs["count"] = count
@@ -328,6 +329,45 @@ func filterLines(input, pattern string) string {
 		}
 	}
 	return strings.Join(result, "\n")
+}
+
+// findOverlap returns elements from first list that contain any string from the second list
+func findOverlap(source, filters interface{}) interface{} {
+	sourceList := toList(source)
+	filterList := toList(filters)
+
+	if len(sourceList) == 0 || len(filterList) == 0 {
+		Log(CategoryTemplate, "overlap function - empty input(s), returning empty result")
+		return formatResult([]string{}, source)
+	}
+
+	filterMap := make(map[string]bool)
+	for _, filter := range filterList {
+		filterMap[filter] = true
+	}
+
+	var matches []string
+	for _, item := range sourceList {
+		if filterMap[item] {
+			Log(CategoryTemplate, fmt.Sprintf("overlap function - exact match found: '%s'", item))
+			matches = append(matches, item)
+			continue
+		}
+
+		for _, filter := range filterList {
+			if strings.Contains(item, filter) {
+				Log(CategoryTemplate, fmt.Sprintf("overlap function - contains match found: '%s' contains '%s'", item, filter))
+				matches = append(matches, item)
+				break
+			}
+		}
+	}
+
+	result := formatResult(matches, source)
+
+	Log(CategoryTemplate, fmt.Sprintf("overlap function - total matches found: %d", len(matches)))
+	Log(CategoryTemplate, fmt.Sprintf("overlap function - final result: %v", result))
+	return result
 }
 
 // cutFields extracts a specific field from each line using the delimiter

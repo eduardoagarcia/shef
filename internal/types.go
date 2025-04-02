@@ -26,22 +26,23 @@ type Recipe struct {
 
 // Operation defines a single executable step in a recipe
 type Operation struct {
-	Name          string      `yaml:"name"`
-	ID            string      `yaml:"id,omitempty"`
-	Uses          string      `yaml:"uses,omitempty"`
-	Command       string      `yaml:"command,omitempty"`
-	ControlFlow   interface{} `yaml:"control_flow,omitempty"`
-	Operations    []Operation `yaml:"operations,omitempty"`
-	ExecutionMode string      `yaml:"execution_mode,omitempty"`
-	OutputFormat  string      `yaml:"output_format,omitempty"`
-	Silent        bool        `yaml:"silent,omitempty"`
-	Condition     string      `yaml:"condition,omitempty"`
-	OnSuccess     string      `yaml:"on_success,omitempty"`
-	OnFailure     string      `yaml:"on_failure,omitempty"`
-	Transform     string      `yaml:"transform,omitempty"`
-	Prompts       []Prompt    `yaml:"prompts,omitempty"`
-	Break         bool        `yaml:"break,omitempty"`
-	Exit          bool        `yaml:"exit,omitempty"`
+	Name          string                 `yaml:"name"`
+	ID            string                 `yaml:"id,omitempty"`
+	Uses          string                 `yaml:"uses,omitempty"`
+	With          map[string]interface{} `yaml:"with,omitempty"`
+	Command       string                 `yaml:"command,omitempty"`
+	ControlFlow   interface{}            `yaml:"control_flow,omitempty"`
+	Operations    []Operation            `yaml:"operations,omitempty"`
+	ExecutionMode string                 `yaml:"execution_mode,omitempty"`
+	OutputFormat  string                 `yaml:"output_format,omitempty"`
+	Silent        bool                   `yaml:"silent,omitempty"`
+	Condition     string                 `yaml:"condition,omitempty"`
+	OnSuccess     string                 `yaml:"on_success,omitempty"`
+	OnFailure     string                 `yaml:"on_failure,omitempty"`
+	Transform     string                 `yaml:"transform,omitempty"`
+	Prompts       []Prompt               `yaml:"prompts,omitempty"`
+	Break         bool                   `yaml:"break,omitempty"`
+	Exit          bool                   `yaml:"exit,omitempty"`
 }
 
 // Prompt defines interactive user input required during recipe execution
@@ -109,12 +110,22 @@ type ExecutionContext struct {
 	CurrentLoopIdx   int
 }
 
-// Component defines a reusable set of operations
-type Component struct {
+// ComponentInput defines an input parameter for a component
+type ComponentInput struct {
 	ID          string      `yaml:"id"`
 	Name        string      `yaml:"name"`
 	Description string      `yaml:"description,omitempty"`
-	Operations  []Operation `yaml:"operations"`
+	Required    bool        `yaml:"required,omitempty"`
+	Default     interface{} `yaml:"default,omitempty"`
+}
+
+// Component defines a reusable set of operations
+type Component struct {
+	ID          string           `yaml:"id"`
+	Name        string           `yaml:"name"`
+	Description string           `yaml:"description,omitempty"`
+	Inputs      []ComponentInput `yaml:"inputs,omitempty"`
+	Operations  []Operation      `yaml:"operations"`
 }
 
 // LoopContext tracks state for a specific loop

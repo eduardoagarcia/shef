@@ -1,0 +1,33 @@
+components:
+  - id: "parameterized_component"
+    name: "Parameterized Echo Component"
+    description: "A component that accepts input parameters"
+    inputs:
+      - id: "message"
+        name: "Message to Echo"
+        description: "The message that will be echoed"
+        required: true
+      - id: "prefix"
+        name: "Message Prefix"
+        description: "Optional prefix for the message"
+        default: "Message"
+    operations:
+      - name: "Echo Parameterized Message"
+        id: "parameterized_output"
+        command: echo "{{ .prefix }} {{ .message }}"
+
+recipes:
+  - name: "component_input_test_recipe"
+    description: "Tests component input functionality"
+    category: "test"
+    operations:
+      - name: "Use Parameterized Component with Default Prefix"
+        uses: "parameterized_component"
+        with:
+          message: "Hello with default prefix"
+
+      - name: "Use Parameterized Component with Custom Prefix"
+        uses: "parameterized_component"
+        with:
+          message: "Hello with custom prefix"
+          prefix: "Custom"
