@@ -157,7 +157,7 @@ recipes:
 
       - name: "Show Result"
         command: |
-          {{ if eq .confirm_push true }}
+          {{ if eq .confirm_push "true" }}
           echo {{ color "green" "Successfully created and pushed" }} {{ style "bold" (color "yellow" .new_version) }} {{ color "green" "to origin" }}
           {{ else }}
           echo {{ color "green" "Successfully created" }} {{ style "bold" (color "yellow" .new_version) }}
