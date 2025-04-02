@@ -17,6 +17,8 @@ recipes:
       Options:
         -f              Filter and highlight log entries
         --lines=NUMBER  Number of context lines before and after matches (default: 5)
+        --since=STRING  Show logs from the specified time forward
+                        Examples: "1h" (last hour), "3d" (last 3 days), "2025-01-01" (since date)
 
       Positional Arguments:
         STRING  Text to search for in logs (uses first argument)
@@ -26,6 +28,7 @@ recipes:
         shef docker logs 'error'                # Stream logs highlighting "error" entries
         shef docker logs -f 'error'             # Filter and highlight "error" entries
         shef docker logs -f 'error' --lines=10  # Filter with 10 lines of context
+        shef docker logs --since=3h             # Stream all logs from the last 3 hours
 
       Features:
         - Uses the stream execution mode to display logs in real-time
@@ -35,9 +38,16 @@ recipes:
       "filter": ""
       "filter_base": "2>&1 | grep --color=always -i"
       "filter_lines": 5
+      "since": ""
     operations:
       - name: "Docker Container Select"
         uses: "docker_container_select"
+        silent: true
+
+      - name: "Since"
+        id: "since"
+        command: echo '--since="{{ .since }}"'
+        condition: .since != "false"
         silent: true
 
       - name: "Filter Lines"
@@ -59,5 +69,5 @@ recipes:
         silent: true
 
       - name: "Stream Logs"
-        command: docker logs --follow {{ .docker_selected_container }} {{ .filter }}
+        command: docker logs --follow {{ .since }} {{ .docker_selected_container }} {{ .filter }}
         execution_mode: "stream"
