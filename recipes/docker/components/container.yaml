@@ -15,7 +15,7 @@ components:
       - name: "Filter Containers"
         id: "docker_list_containers"
         transform: '{{ overlap .docker_list_containers .list_filter }}'
-        condition: .list_filter != "[]"
+        condition: .list_filter != "false" && .list_filter != "[]"
         silent: true
 
   - id: "docker_container_select"
