@@ -71,25 +71,28 @@ components:
   - id: "docker_container_shell"
     name: "Docker Container Shell"
     description: "Determines what shell a container uses"
+    inputs:
+      - name: "Docker Container Shell Container"
+        id: "docker_shell_container"
     operations:
       - name: "Get Shell"
         id: "docker_shell"
         command: |
-          if docker exec {{ .docker_selected_container }} which bash >/dev/null 2>&1; then
+          if docker exec {{ .docker_shell_container }} which bash >/dev/null 2>&1; then
             echo "bash"
-          elif docker exec {{ .docker_selected_container }} which zsh >/dev/null 2>&1; then
+          elif docker exec {{ .docker_shell_container }} which zsh >/dev/null 2>&1; then
             echo "zsh"
-          elif docker exec {{ .docker_selected_container }} which dash >/dev/null 2>&1; then
+          elif docker exec {{ .docker_shell_container }} which dash >/dev/null 2>&1; then
             echo "dash"
-          elif docker exec {{ .docker_selected_container }} which ksh >/dev/null 2>&1; then
+          elif docker exec {{ .docker_shell_container }} which ksh >/dev/null 2>&1; then
             echo "ksh"
-          elif docker exec {{ .docker_selected_container }} which tcsh >/dev/null 2>&1; then
+          elif docker exec {{ .docker_shell_container }} which tcsh >/dev/null 2>&1; then
             echo "tcsh"
-          elif docker exec {{ .docker_selected_container }} which fish >/dev/null 2>&1; then
+          elif docker exec {{ .docker_shell_container }} which fish >/dev/null 2>&1; then
             echo "fish"
-          elif docker exec {{ .docker_selected_container }} which ash >/dev/null 2>&1; then
+          elif docker exec {{ .docker_shell_container }} which ash >/dev/null 2>&1; then
             echo "ash"
-          elif docker exec {{ .docker_selected_container }} which sh >/dev/null 2>&1; then
+          elif docker exec {{ .docker_shell_container }} which sh >/dev/null 2>&1; then
             echo "sh"
           else
             exit 1

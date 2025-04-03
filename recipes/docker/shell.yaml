@@ -26,6 +26,8 @@ recipes:
 
       - name: "Docker Container Shell"
         uses: "docker_container_shell"
+        with:
+          docker_shell_container: "{{ .docker_selected_container }}"
         silent: true
 
       - name: "Execute Shell"
