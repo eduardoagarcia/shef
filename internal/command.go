@@ -11,16 +11,16 @@ import (
 )
 
 // executeCommand runs a shell command in the specified execution mode
-func executeCommand(cmdStr string, input string, executionMode string, outputFormat string, workdir string) (string, error) {
+func executeCommand(cmdStr string, input string, executionMode string, outputFormat string, workdir string, useUserShell bool) (string, error) {
 	if executionMode == "" {
 		executionMode = "standard"
 	}
 
 	switch executionMode {
 	case "standard":
-		return executeStandardCommand(cmdStr, input, outputFormat, workdir)
+		return executeStandardCommand(cmdStr, input, outputFormat, workdir, useUserShell)
 	case "interactive", "stream":
-		return executeInteractiveCommand(cmdStr, workdir)
+		return executeInteractiveCommand(cmdStr, workdir, useUserShell)
 	case "background":
 		return string(TaskPending), nil
 	default:
@@ -28,9 +28,24 @@ func executeCommand(cmdStr string, input string, executionMode string, outputFor
 	}
 }
 
+// prepShellCmd determines the shell and user context for a command
+func prepShellCmd(cmdStr string, useUserShell bool) string {
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "/bin/bash"
+	}
+
+	if useUserShell {
+		cmdStr = fmt.Sprintf("%s -i -c '%s'", shell, cmdStr)
+	}
+
+	return cmdStr
+}
+
 // executeStandardCommand runs a command and captures its output
-func executeStandardCommand(cmdStr string, input string, outputFormat string, workdir string) (string, error) {
-	cmd := exec.Command("sh", "-c", cmdStr)
+func executeStandardCommand(cmdStr string, input string, outputFormat string, workdir string, useUserShell bool) (string, error) {
+	command := prepShellCmd(cmdStr, useUserShell)
+	cmd := exec.Command(ExecShell, "-c", command)
 
 	if workdir != "" {
 		cmd.Dir = workdir
@@ -73,8 +88,9 @@ func formatOutput(output string, outputFormat string) (string, error) {
 }
 
 // executeInteractiveCommand runs a command with direct connection to terminal I/O
-func executeInteractiveCommand(cmdStr string, workdir string) (string, error) {
-	cmd := exec.Command("sh", "-c", cmdStr)
+func executeInteractiveCommand(cmdStr string, workdir string, useUserShell bool) (string, error) {
+	command := prepShellCmd(cmdStr, useUserShell)
+	cmd := exec.Command(ExecShell, "-c", command)
 
 	if workdir != "" {
 		cmd.Dir = workdir
@@ -191,7 +207,7 @@ func initializeBackgroundTask(taskID, cmd string, ctx *ExecutionContext) {
 func executeBackgroundTask(op Operation, cmd string, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, workdir string) {
 	defer ctx.BackgroundWg.Done()
 
-	output, err := executeStandardCommand(cmd, ctx.Data, op.OutputFormat, workdir)
+	output, err := executeStandardCommand(cmd, ctx.Data, op.OutputFormat, workdir, ctx.UserShell)
 
 	ctx.BackgroundMutex.Lock()
 	defer ctx.BackgroundMutex.Unlock()

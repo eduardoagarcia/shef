@@ -1,6 +1,7 @@
 package internal
 
 const (
+	ExecShell             = "sh"
 	ExitPrompt            = "Exit"
 	GithubRepo            = "https://github.com/eduardoagarcia/shef"
 	PublicRecipesFilename = "recipes.tar.gz"

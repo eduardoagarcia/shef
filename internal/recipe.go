@@ -24,6 +24,7 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		OperationOutputs: make(map[string]string),
 		OperationResults: make(map[string]bool),
 		LoopStack:        make([]*LoopContext, 0),
+		UserShell:        recipe.UserShell,
 	}
 
 	ctx.templateFuncs = extendTemplateFuncs(templateFuncs, ctx)
@@ -149,7 +150,7 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		}
 
 		// 6. Execute command normally
-		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat, workdir)
+		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat, workdir, ctx.UserShell)
 		operationSuccess := err == nil
 		if op.ID != "" {
 			ctx.OperationResults[op.ID] = operationSuccess
