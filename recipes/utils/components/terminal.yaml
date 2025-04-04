@@ -1,0 +1,37 @@
+components:
+  - name: "Get Complete Command Name history"
+    id: "get_complete_command_name_history"
+    operations:
+      - name: "Get History"
+        id: "complete_command_name_history"
+        command: |
+          case $SHELL in
+            */bash)
+              history_data=$(cat ~/.bash_history)
+              ;;
+            */zsh)
+              history_data=$(cat ~/.zsh_history | sed 's/: [0-9]*:[0-9]*;//')
+              ;;
+            */fish)
+              history_data=$(cat ~/.local/share/fish/fish_history | grep -o '"cmd": *"[^"]*"' | sed 's/"cmd": *"//;s/"$//')
+              ;;
+            *)
+              history_data="Unknown shell, can't determine history file"
+              ;;
+          esac
+          echo "$history_data" | awk '{print $1}'
+        raw_command: true
+        user_shell: true
+        silent: true
+
+  - name: "Get Complete Command Name Usage"
+    id: "get_complete_command_name_usage"
+    operations:
+      - name: "Get Command History"
+        uses: "get_complete_command_name_history"
+        silent: true
+
+      - name: "Get Commands"
+        id: "complete_command_name_usage"
+        command: echo '{{ .complete_command_name_history }}' | sort | uniq -c | sort -nr | awk '{print $1" "$2}'
+        silent: true
