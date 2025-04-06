@@ -26,25 +26,27 @@ type Recipe struct {
 
 // Operation defines a single executable step in a recipe
 type Operation struct {
-	Name          string                 `yaml:"name"`
-	ID            string                 `yaml:"id,omitempty"`
-	Uses          string                 `yaml:"uses,omitempty"`
-	With          map[string]interface{} `yaml:"with,omitempty"`
-	Command       string                 `yaml:"command,omitempty"`
-	ControlFlow   interface{}            `yaml:"control_flow,omitempty"`
-	Operations    []Operation            `yaml:"operations,omitempty"`
-	ExecutionMode string                 `yaml:"execution_mode,omitempty"`
-	OutputFormat  string                 `yaml:"output_format,omitempty"`
-	Silent        bool                   `yaml:"silent,omitempty"`
-	Condition     string                 `yaml:"condition,omitempty"`
-	OnSuccess     string                 `yaml:"on_success,omitempty"`
-	OnFailure     string                 `yaml:"on_failure,omitempty"`
-	Transform     string                 `yaml:"transform,omitempty"`
-	RawCommand    bool                   `yaml:"raw_command,omitempty"`
-	UserShell     bool                   `yaml:"user_shell,omitempty"`
-	Prompts       []Prompt               `yaml:"prompts,omitempty"`
-	Break         bool                   `yaml:"break,omitempty"`
-	Exit          bool                   `yaml:"exit,omitempty"`
+	Name                       string                 `yaml:"name"`
+	ID                         string                 `yaml:"id,omitempty"`
+	Uses                       string                 `yaml:"uses,omitempty"`
+	With                       map[string]interface{} `yaml:"with,omitempty"`
+	Command                    string                 `yaml:"command,omitempty"`
+	ControlFlow                interface{}            `yaml:"control_flow,omitempty"`
+	Operations                 []Operation            `yaml:"operations,omitempty"`
+	ExecutionMode              string                 `yaml:"execution_mode,omitempty"`
+	OutputFormat               string                 `yaml:"output_format,omitempty"`
+	Silent                     bool                   `yaml:"silent,omitempty"`
+	Condition                  string                 `yaml:"condition,omitempty"`
+	OnSuccess                  string                 `yaml:"on_success,omitempty"`
+	OnFailure                  string                 `yaml:"on_failure,omitempty"`
+	Transform                  string                 `yaml:"transform,omitempty"`
+	RawCommand                 bool                   `yaml:"raw_command,omitempty"`
+	UserShell                  bool                   `yaml:"user_shell,omitempty"`
+	Prompts                    []Prompt               `yaml:"prompts,omitempty"`
+	Break                      bool                   `yaml:"break,omitempty"`
+	Exit                       bool                   `yaml:"exit,omitempty"`
+	ComponentInstanceID        string                 `yaml:"-"`
+	IsComponentOutputCollector bool                   `yaml:"-"`
 }
 
 // Prompt defines interactive user input required during recipe execution
@@ -99,17 +101,18 @@ type BackgroundTask struct {
 
 // ExecutionContext maintains state during recipe execution
 type ExecutionContext struct {
-	Data             string
-	Vars             map[string]interface{}
-	OperationOutputs map[string]string
-	OperationResults map[string]bool
-	ProgressMode     bool
-	templateFuncs    template.FuncMap
-	BackgroundTasks  map[string]*BackgroundTask
-	BackgroundMutex  sync.RWMutex
-	BackgroundWg     sync.WaitGroup
-	LoopStack        []*LoopContext
-	CurrentLoopIdx   int
+	Data                          string
+	Vars                          map[string]interface{}
+	OperationOutputs              map[string]string
+	OperationResults              map[string]bool
+	ProgressMode                  bool
+	templateFuncs                 template.FuncMap
+	BackgroundTasks               map[string]*BackgroundTask
+	BackgroundMutex               sync.RWMutex
+	BackgroundWg                  sync.WaitGroup
+	LoopStack                     []*LoopContext
+	CurrentLoopIdx                int
+	ExecutedOperationsByComponent map[string][]string
 }
 
 // ComponentInput defines an input parameter for a component

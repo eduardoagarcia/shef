@@ -246,6 +246,11 @@ func handleBackgroundTaskFailure(op Operation, task *BackgroundTask, ctx *Execut
 	ctx.Vars["error"] = err.Error()
 	ctx.OperationOutputs[op.ID] = fmt.Sprintf("Error: %s", err.Error())
 
+	if op.ComponentInstanceID != "" {
+		ctx.ExecutedOperationsByComponent[op.ComponentInstanceID] =
+			append(ctx.ExecutedOperationsByComponent[op.ComponentInstanceID], op.ID)
+	}
+
 	LogBackgroundTask(op.ID, "failed", map[string]interface{}{"error": err.Error()})
 
 	if op.OnFailure != "" {
@@ -268,6 +273,11 @@ func handleBackgroundTaskSuccess(op Operation, task *BackgroundTask, ctx *Execut
 	task.Output = output
 	ctx.OperationOutputs[op.ID] = strings.TrimSpace(output)
 	ctx.OperationResults[op.ID] = true
+
+	if op.ComponentInstanceID != "" {
+		ctx.ExecutedOperationsByComponent[op.ComponentInstanceID] =
+			append(ctx.ExecutedOperationsByComponent[op.ComponentInstanceID], op.ID)
+	}
 
 	if output != "" && !op.Silent {
 		fmt.Println(output)
