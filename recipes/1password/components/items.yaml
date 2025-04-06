@@ -6,7 +6,7 @@ components:
 
   - id: "op_item_select"
     operations:
-      - id: "op_items_names"
+      - id: "op_item_names"
         uses: "op_get_all_item_names"
 
       - command: echo "{{ .op_item_name }}"
@@ -15,4 +15,4 @@ components:
           - id: "op_item_name"
             type: "select"
             message: "Select a 1Password Item"
-            source_operation: "op_items_names"
+            source_operation: "op_item_names"
