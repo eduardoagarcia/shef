@@ -1,0 +1,5 @@
+components:
+  - id: "op_lock"
+    operations:
+      - command: op signout --all
+        silent: true
