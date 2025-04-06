@@ -1,0 +1,18 @@
+components:
+  - id: "op_get_all_item_names"
+    operations:
+      - command: op item list --format=json | jq -r '.[] | "\(.title)"' | sort -f
+        silent: true
+
+  - id: "op_item_select"
+    operations:
+      - id: "op_items_names"
+        uses: "op_get_all_item_names"
+
+      - command: echo "{{ .op_item_name }}"
+        silent: true
+        prompts:
+          - id: "op_item_name"
+            type: "select"
+            message: "Select a 1Password Item"
+            source_operation: "op_items_names"

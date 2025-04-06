@@ -1,10 +1,7 @@
 components:
-  - name: "Get Complete Command Name history"
-    id: "get_complete_command_name_history"
+  - id: "get_complete_command_history"
     operations:
-      - name: "Get History"
-        id: "complete_command_name_history"
-        command: |
+      - command: |
           case $SHELL in
             */bash)
               history_data=$(cat ~/.bash_history)
@@ -24,14 +21,12 @@ components:
         user_shell: true
         silent: true
 
-  - name: "Get Complete Command Name Usage"
-    id: "get_complete_command_name_usage"
+  - id: "get_complete_command_name_usage"
     operations:
-      - name: "Get Command History"
-        uses: "get_complete_command_name_history"
+      - uses: "get_complete_command_history"
+        id: "command_history"
         silent: true
 
       - name: "Get Commands"
-        id: "complete_command_name_usage"
-        command: echo '{{ .complete_command_name_history }}' | sort | uniq -c | sort -nr | awk '{print $1" "$2}'
+        command: echo '{{ .command_history }}' | sort | uniq -c | sort -nr | awk '{print $1" "$2}'
         silent: true
