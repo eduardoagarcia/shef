@@ -1,82 +1,65 @@
 components:
   - id: "docker_container_list"
-    name: "Docker Container List"
     description: "Gets all Docker containers and filter results, if desired"
     inputs:
-      - name: "Container List Filter"
-        id: "list_filter"
+      - id: "list_filter"
         description: "Filter the container results. Must be a string list: '[container-1 container-2 container-3]'"
     operations:
-      - name: "List Docker Containers"
-        id: "docker_list_containers"
+      - id: "docker_list_containers"
         command: docker ps --format "{{ `{{ .Names }}` }}"
         silent: true
 
-      - name: "Filter Containers"
-        id: "docker_list_containers"
+      - id: "docker_list_containers"
         transform: '{{ overlap .docker_list_containers .list_filter }}'
         condition: .list_filter != "false" && .list_filter != "[]"
         silent: true
 
   - id: "docker_container_select"
-    name: "Docker Container Select"
     description: "Gets all Docker containers and prompts the user to select one"
     inputs:
-      - name: "Container Select Filter"
-        id: "select_filter"
-        description: "Filter the select container list"
+      - id: "select_filter"
     operations:
-      - name: "Docker Container Select"
-        uses: "docker_container_list"
-        silent: true
+      - uses: "docker_container_list"
+        id: "containers"
         with:
           list_filter: "{{ .select_filter }}"
+        silent: true
 
-      - name: "Select Docker Container"
-        id: "docker_selected_container"
+      - id: "docker_selected_container"
         command: echo "{{ .docker_container }}"
         silent: true
         prompts:
-          - name: "Container Select"
-            id: "docker_container"
+          - id: "docker_container"
             type: "select"
             message: "Select a container"
-            source_operation: "docker_list_containers"
+            source_operation: "containers"
 
   - id: "docker_container_multiselect"
-    name: "Docker Container Multi-Select"
     description: "Gets all Docker containers and prompts the user to select one or more containers"
     inputs:
-      - name: "Container Multi-Select Filter"
-        id: "multiselect_filter"
-        description: "Filter the multi-select container list"
+      - id: "multiselect_filter"
     operations:
-      - name: "Docker Container Multi-Select"
-        uses: "docker_container_list"
+      - uses: "docker_container_list"
+        id: "containers"
         with:
           list_filter: "{{ .multiselect_filter }}"
         silent: true
 
-      - name: "Multi-Select Docker Container"
-        id: "docker_multiselect_containers"
+      - id: "docker_multiselect_containers"
         command: echo {{ .docker_multiselect_containers }}
         silent: true
         prompts:
-          - name: "Container Select"
-            id: "docker_multiselect_containers"
+          - id: "docker_multiselect_containers"
             type: "multiselect"
             message: "Select one or more containers"
-            source_operation: "docker_list_containers"
+            source_operation: "containers"
 
-  - id: "docker_container_shell"
-    name: "Docker Container Shell"
-    description: "Determines what shell a container uses"
+  - id: "which_docker_container_shell"
+    description: "Determines which shell a container uses"
     inputs:
-      - name: "Docker Container Shell Container"
-        id: "docker_shell_container"
+      - id: "docker_shell_container"
     operations:
-      - name: "Get Shell"
-        id: "docker_shell"
+      - id: "docker_shell"
         command: |
           if docker exec {{ .docker_shell_container }} which bash >/dev/null 2>&1; then
             echo "bash"
@@ -99,7 +82,6 @@ components:
           fi
         on_failure: "handle_shell_error"
 
-      - name: "Error"
-        id: "handle_shell_error"
+      - id: "handle_shell_error"
         command: echo {{ color "red" "No common shell found in container." }}
         exit: true

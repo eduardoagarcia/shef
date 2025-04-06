@@ -21,7 +21,6 @@ type Recipe struct {
 	Help        string                 `yaml:"help,omitempty"`
 	Vars        map[string]interface{} `yaml:"vars,omitempty"`
 	Workdir     string                 `yaml:"workdir,omitempty"`
-	UserShell   bool                   `yaml:"user_shell,omitempty"`
 	Operations  []Operation            `yaml:"operations"`
 }
 
@@ -41,6 +40,8 @@ type Operation struct {
 	OnSuccess     string                 `yaml:"on_success,omitempty"`
 	OnFailure     string                 `yaml:"on_failure,omitempty"`
 	Transform     string                 `yaml:"transform,omitempty"`
+	RawCommand    bool                   `yaml:"raw_command,omitempty"`
+	UserShell     bool                   `yaml:"user_shell,omitempty"`
 	Prompts       []Prompt               `yaml:"prompts,omitempty"`
 	Break         bool                   `yaml:"break,omitempty"`
 	Exit          bool                   `yaml:"exit,omitempty"`
@@ -109,7 +110,6 @@ type ExecutionContext struct {
 	BackgroundWg     sync.WaitGroup
 	LoopStack        []*LoopContext
 	CurrentLoopIdx   int
-	UserShell        bool
 }
 
 // ComponentInput defines an input parameter for a component

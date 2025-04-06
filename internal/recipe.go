@@ -24,7 +24,6 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		OperationOutputs: make(map[string]string),
 		OperationResults: make(map[string]bool),
 		LoopStack:        make([]*LoopContext, 0),
-		UserShell:        recipe.UserShell,
 	}
 
 	ctx.templateFuncs = extendTemplateFuncs(templateFuncs, ctx)
@@ -130,9 +129,15 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		}
 
 		// 4. Prepare command
-		cmd, err := renderTemplate(op.Command, ctx.templateVars())
-		if err != nil {
-			return false, fmt.Errorf("failed to render command template: %w", err)
+		cmd := op.Command
+		var err error
+		if !op.RawCommand {
+			cmd, err = renderTemplate(op.Command, ctx.templateVars())
+			if err != nil {
+				return false, fmt.Errorf("failed to render command template: %w", err)
+			}
+		} else {
+			Log(CategoryTemplate, "Using raw command (bypassing template rendering)")
 		}
 		LogCommand(cmd, nil)
 		ctx.Vars["error"] = ""
@@ -150,7 +155,7 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		}
 
 		// 6. Execute command normally
-		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat, workdir, ctx.UserShell)
+		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat, workdir, op.UserShell, op.RawCommand)
 		operationSuccess := err == nil
 		if op.ID != "" {
 			ctx.OperationResults[op.ID] = operationSuccess

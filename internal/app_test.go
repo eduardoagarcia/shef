@@ -546,7 +546,7 @@ func TestExecuteCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockCmd.On("Execute", tt.cmd, tt.input, tt.executionMode, tt.outputFormat).Return(tt.mockOutput, tt.mockError).Once()
 
-			got, err := executeCommand(tt.cmd, tt.input, tt.executionMode, tt.outputFormat, "", false)
+			got, err := executeCommand(tt.cmd, tt.input, tt.executionMode, tt.outputFormat, "", false, false)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

@@ -168,18 +168,23 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 
 			if op.ID != "" && len(componentOps) > 0 {
 				lastOpIndex := len(componentOps) - 1
-				origID := componentOps[lastOpIndex].ID
-				componentOps[lastOpIndex].ID = op.ID
+				lastOp := componentOps[lastOpIndex]
 
-				if origID != "" && origID != op.ID {
-					copyOp := Operation{
-						Name:    fmt.Sprintf("Copy output from %s to %s", origID, op.ID),
-						Command: fmt.Sprintf("echo \"{{ .%s }}\"", origID),
-						ID:      op.ID,
-						Silent:  true,
-					}
-					componentOps = append(componentOps, copyOp)
+				var sourceID string
+				if lastOp.ID != "" {
+					sourceID = lastOp.ID
+				} else {
+					sourceID = fmt.Sprintf("%s_lastop_%d", op.Uses, instanceNum)
+					componentOps[lastOpIndex].ID = sourceID
 				}
+
+				copyOp := Operation{
+					Name:    fmt.Sprintf("Copy component output from %s to %s", sourceID, op.ID),
+					Command: fmt.Sprintf("echo \"{{ .%s }}\"", sourceID),
+					ID:      op.ID,
+					Silent:  true,
+				}
+				componentOps = append(componentOps, copyOp)
 			}
 
 			expanded = append(expanded, inputOps...)

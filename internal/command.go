@@ -11,16 +11,16 @@ import (
 )
 
 // executeCommand runs a shell command in the specified execution mode
-func executeCommand(cmdStr string, input string, executionMode string, outputFormat string, workdir string, useUserShell bool) (string, error) {
+func executeCommand(cmdStr string, input string, executionMode string, outputFormat string, workdir string, useUserShell bool, rawCommand bool) (string, error) {
 	if executionMode == "" {
 		executionMode = "standard"
 	}
 
 	switch executionMode {
 	case "standard":
-		return executeStandardCommand(cmdStr, input, outputFormat, workdir, useUserShell)
+		return executeStandardCommand(cmdStr, input, outputFormat, workdir, useUserShell, rawCommand)
 	case "interactive", "stream":
-		return executeInteractiveCommand(cmdStr, workdir, useUserShell)
+		return executeInteractiveCommand(cmdStr, workdir, useUserShell, rawCommand)
 	case "background":
 		return string(TaskPending), nil
 	default:
@@ -28,11 +28,22 @@ func executeCommand(cmdStr string, input string, executionMode string, outputFor
 	}
 }
 
+// escapeShellString properly escapes a string for shell execution
+func escapeShellString(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "'", "'\\''")
+	return s
+}
+
 // prepShellCmd determines the shell and user context for a command
-func prepShellCmd(cmdStr string, useUserShell bool) string {
+func prepShellCmd(cmdStr string, useUserShell bool, rawCommand bool) string {
 	shell := os.Getenv("SHELL")
 	if shell == "" {
 		shell = "/bin/bash"
+	}
+
+	if rawCommand {
+		cmdStr = escapeShellString(cmdStr)
 	}
 
 	if useUserShell {
@@ -43,8 +54,8 @@ func prepShellCmd(cmdStr string, useUserShell bool) string {
 }
 
 // executeStandardCommand runs a command and captures its output
-func executeStandardCommand(cmdStr string, input string, outputFormat string, workdir string, useUserShell bool) (string, error) {
-	command := prepShellCmd(cmdStr, useUserShell)
+func executeStandardCommand(cmdStr string, input string, outputFormat string, workdir string, useUserShell bool, rawCommand bool) (string, error) {
+	command := prepShellCmd(cmdStr, useUserShell, rawCommand)
 	cmd := exec.Command(ExecShell, "-c", command)
 
 	if workdir != "" {
@@ -88,8 +99,8 @@ func formatOutput(output string, outputFormat string) (string, error) {
 }
 
 // executeInteractiveCommand runs a command with direct connection to terminal I/O
-func executeInteractiveCommand(cmdStr string, workdir string, useUserShell bool) (string, error) {
-	command := prepShellCmd(cmdStr, useUserShell)
+func executeInteractiveCommand(cmdStr string, workdir string, useUserShell bool, rawCommand bool) (string, error) {
+	command := prepShellCmd(cmdStr, useUserShell, rawCommand)
 	cmd := exec.Command(ExecShell, "-c", command)
 
 	if workdir != "" {
@@ -162,9 +173,14 @@ func executeBackgroundCommand(op Operation, ctx *ExecutionContext, opMap map[str
 		Log(CategoryBackground, fmt.Sprintf("Rendered background task ID: '%s' -> '%s'", originalID, renderedID))
 	}
 
-	cmd, err := renderTemplate(op.Command, ctx.templateVars())
-	if err != nil {
-		return fmt.Errorf("failed to render command template: %w", err)
+	cmd := op.Command
+	if !op.RawCommand {
+		cmd, err = renderTemplate(op.Command, ctx.templateVars())
+		if err != nil {
+			return fmt.Errorf("failed to render command template: %w", err)
+		}
+	} else {
+		Log(CategoryTemplate, fmt.Sprintf("Using raw command for background task '%s' (bypassing template rendering)", op.ID))
 	}
 
 	ctx.BackgroundMutex.Lock()
@@ -207,7 +223,7 @@ func initializeBackgroundTask(taskID, cmd string, ctx *ExecutionContext) {
 func executeBackgroundTask(op Operation, cmd string, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int, workdir string) {
 	defer ctx.BackgroundWg.Done()
 
-	output, err := executeStandardCommand(cmd, ctx.Data, op.OutputFormat, workdir, ctx.UserShell)
+	output, err := executeStandardCommand(cmd, ctx.Data, op.OutputFormat, workdir, op.UserShell, op.RawCommand)
 
 	ctx.BackgroundMutex.Lock()
 	defer ctx.BackgroundMutex.Unlock()

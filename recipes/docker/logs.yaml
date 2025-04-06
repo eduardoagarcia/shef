@@ -40,8 +40,8 @@ recipes:
       "filter_lines": 5
       "since": ""
     operations:
-      - name: "Docker Container Select"
-        uses: "docker_container_select"
+      - uses: "docker_container_select"
+        id: "container"
         silent: true
 
       - name: "Since"
@@ -69,5 +69,5 @@ recipes:
         silent: true
 
       - name: "Stream Logs"
-        command: docker logs --follow {{ .since }} {{ .docker_selected_container }} {{ .filter }}
+        command: docker logs --follow {{ .since }} {{ .container }} {{ .filter }}
         execution_mode: "stream"
