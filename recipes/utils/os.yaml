@@ -1,0 +1,17 @@
+recipes:
+  - name: "open"
+    description: "Open an application"
+    category: "os"
+    operations:
+      - uses: "app_select"
+        with:
+          app_filter: "{{ .input }}"
+        id: "app"
+
+      - command: echo {{ color "red" "No applications found" }}
+        condition: .app == "false"
+
+      - uses: "open_app"
+        with:
+          app: "{{ .app }}"
+        condition: .app != "false"
