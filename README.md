@@ -262,6 +262,8 @@ Operations are the building blocks of recipes:
   on_success: "success_op"          # [Optional] Operation to run on success (if not defined, Shef continues to next operation)
   on_failure: "failure_op"          # [Optional] Operation to run on failure
   transform: "{{ trim .output }}"   # [Optional] Transform output
+  raw_command: false                # [Optional] When true, bypasses template rendering for the command. Default is false.
+  user_shell: false                 # [Optional] When true, runs command in user's interactive shell. Default is false.
   prompts:                          # [Optional] Interactive prompts (can include one or more prompts)
     - name: "Prompt Name"
       id: "var_id"
