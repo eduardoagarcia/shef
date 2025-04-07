@@ -19,11 +19,12 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 	})
 
 	ctx := &ExecutionContext{
-		Data:             "",
-		Vars:             make(map[string]interface{}),
-		OperationOutputs: make(map[string]string),
-		OperationResults: make(map[string]bool),
-		LoopStack:        make([]*LoopContext, 0),
+		Data:                          "",
+		Vars:                          make(map[string]interface{}),
+		OperationOutputs:              make(map[string]string),
+		OperationResults:              make(map[string]bool),
+		LoopStack:                     make([]*LoopContext, 0),
+		ExecutedOperationsByComponent: make(map[string][]string),
 	}
 
 	ctx.templateFuncs = extendTemplateFuncs(templateFuncs, ctx)
@@ -129,9 +130,15 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		}
 
 		// 4. Prepare command
-		cmd, err := renderTemplate(op.Command, ctx.templateVars())
-		if err != nil {
-			return false, fmt.Errorf("failed to render command template: %w", err)
+		cmd := op.Command
+		var err error
+		if !op.RawCommand {
+			cmd, err = renderTemplate(op.Command, ctx.templateVars())
+			if err != nil {
+				return false, fmt.Errorf("failed to render command template: %w", err)
+			}
+		} else {
+			Log(CategoryTemplate, "Using raw command (bypassing template rendering)")
 		}
 		LogCommand(cmd, nil)
 		ctx.Vars["error"] = ""
@@ -140,7 +147,12 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 			workdir = fmt.Sprintf("%v", workdirVal)
 		}
 
-		// 5. Execute command in the background
+		// 5. Component Output Collection
+		if op.IsComponentOutputCollector && op.ComponentInstanceID != "" {
+			return handleComponentOutputCollector(op, ctx)
+		}
+
+		// 6. Execute command in the background
 		if op.ExecutionMode == "background" {
 			if err := executeBackgroundCommand(op, ctx, opMap, executeOp, depth, workdir); err != nil {
 				return false, err
@@ -148,19 +160,19 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 			return op.Exit, nil
 		}
 
-		// 6. Execute command normally
-		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat, workdir)
+		// 7. Execute command normally
+		output, err := executeCommand(cmd, ctx.Data, op.ExecutionMode, op.OutputFormat, workdir, op.UserShell, op.RawCommand)
 		operationSuccess := err == nil
 		if op.ID != "" {
 			ctx.OperationResults[op.ID] = operationSuccess
 		}
 
-		// 7. Handle command errors
+		// 8. Handle command errors
 		if err != nil {
 			return handleCommandError(op, ctx, opMap, executeOp, err, depth)
 		}
 
-		// 8. Process command output
+		// 9. Process command output
 		return processCommandOutput(op, output, ctx, opMap, executeOp, depth)
 	}
 
@@ -319,6 +331,29 @@ func handleCommandError(op Operation, ctx *ExecutionContext, opMap map[string]Op
 	return false, nil
 }
 
+// handleComponentOutputCollector processes component output collector operations
+func handleComponentOutputCollector(op Operation, ctx *ExecutionContext) (bool, error) {
+	Log(CategoryComponent, fmt.Sprintf("Processing component output collector for %s", op.ComponentInstanceID))
+
+	executedOps := ctx.ExecutedOperationsByComponent[op.ComponentInstanceID]
+	if len(executedOps) > 0 {
+		lastOpID := executedOps[len(executedOps)-1]
+
+		if lastOutput, exists := ctx.OperationOutputs[lastOpID]; exists {
+			ctx.OperationOutputs[op.ID] = lastOutput
+			Log(CategoryComponent, fmt.Sprintf("Set component output from %s to %s", lastOpID, op.ID))
+		} else {
+			ctx.OperationOutputs[op.ID] = ""
+			Log(CategoryComponent, fmt.Sprintf("Operation %s executed but didn't produce output", lastOpID))
+		}
+	} else {
+		ctx.OperationOutputs[op.ID] = ""
+		Log(CategoryComponent, fmt.Sprintf("No operations executed in component %s", op.ComponentInstanceID))
+	}
+
+	return op.Exit, nil
+}
+
 // processCommandOutput handles successful command output
 func processCommandOutput(op Operation, output string, ctx *ExecutionContext, opMap map[string]Operation, executeOp func(Operation, int) (bool, error), depth int) (bool, error) {
 	LogOutput(output, map[string]interface{}{
@@ -341,6 +376,10 @@ func processCommandOutput(op Operation, output string, ctx *ExecutionContext, op
 
 	if op.ID != "" {
 		ctx.OperationOutputs[op.ID] = strings.TrimSpace(output)
+		if op.ComponentInstanceID != "" {
+			ctx.ExecutedOperationsByComponent[op.ComponentInstanceID] =
+				append(ctx.ExecutedOperationsByComponent[op.ComponentInstanceID], op.ID)
+		}
 	}
 
 	if output != "" && !op.Silent {

@@ -1,0 +1,29 @@
+components:
+  - id: "op_get_all_item_names"
+    inputs:
+      - id: "item_filter"
+    operations:
+      - command: op item list --format=json | jq -r '.[] | "\(.title)"' | sort -f
+        silent: true
+        condition: .item_filter == "false"
+
+      - command: op item list --format=json | jq -r '.[] | "\(.title)"' | sort -f | grep -i "{{ .item_filter }}"
+        silent: true
+        condition: .item_filter != "false"
+
+  - id: "op_item_select"
+    inputs:
+      - id: "select_item_filter"
+    operations:
+      - id: "op_item_names"
+        uses: "op_get_all_item_names"
+        with:
+          item_filter: "{{ .select_item_filter }}"
+
+      - command: echo "{{ .op_item_name }}"
+        silent: true
+        prompts:
+          - id: "op_item_name"
+            type: "select"
+            message: "Select a 1Password Item"
+            source_operation: "op_item_names"

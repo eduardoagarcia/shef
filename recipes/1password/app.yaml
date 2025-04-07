@@ -1,0 +1,19 @@
+recipes:
+  - name: "open"
+    description: "Open 1Password"
+    category: "op"
+    operations:
+      - uses: "get_filtered_apps"
+        with:
+          app_filter: "1Password"
+        id: "op_app"
+
+      - uses: "open_app"
+        with:
+          app: "{{ .op_app }}"
+
+  - name: "lock"
+    description: "Lock 1Password"
+    category: "op"
+    operations:
+      - uses: "op_lock"

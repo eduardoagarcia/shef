@@ -1,0 +1,31 @@
+components:
+  - id: "copy_to_clipboard"
+    inputs:
+      - id: "value_to_copy"
+    operations:
+      - id: "clipboard_cmd"
+        command: |
+          if [[ "$OSTYPE" == "darwin"* && -x "$(command -v pbcopy)" ]]; then
+            echo "pbcopy"
+          elif [[ "$OSTYPE" == "linux-gnu"* && -x "$(command -v xclip)" ]]; then
+            echo "xclip -selection clipboard"
+          elif [[ "$OSTYPE" == "linux-gnu"* && -x "$(command -v xsel)" ]]; then
+            echo "xsel --clipboard"
+          elif [[ ("$OSTYPE" == "msys" || "$OSTYPE" == "win32") && -x "$(command -v clip)" ]]; then
+            echo "clip"
+          else
+            echo "none"
+          fi
+        silent: true
+
+      - name: "Copy to Clipboard"
+        command: printf "%s" "{{ .value_to_copy }}" | {{ .clipboard_cmd }}
+        condition: .clipboard_cmd != "none"
+
+      - name: "Clipboard Success Message"
+        command: echo {{ color "green" "Copied to the clipboard!" }}
+        condition: .clipboard_cmd != "none"
+
+      - name: "No Clipboard Available"
+        command: echo {{ color "red" "Unable to copy to the clipboard, no clipboard utility available." }}
+        condition: .clipboard_cmd == "none"

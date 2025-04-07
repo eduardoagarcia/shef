@@ -150,28 +150,8 @@ func TableFuncMap() map[string]interface{} {
 	}
 
 	funcs["table"] = func(headers interface{}, rows interface{}, style interface{}, args ...interface{}) string {
-		var headerStrs []string
-		if headersArr, ok := headers.([]interface{}); ok {
-			headerStrs = make([]string, len(headersArr))
-			for i, h := range headersArr {
-				headerStrs[i] = fmt.Sprintf("%v", h)
-			}
-		} else if headersArr, ok := headers.([]string); ok {
-			headerStrs = headersArr
-		}
-
-		var rowStrs [][]string
-		if rowsArr, ok := rows.([]interface{}); ok {
-			rowStrs = make([][]string, len(rowsArr))
-			for i, row := range rowsArr {
-				if rowArr, ok := row.([]interface{}); ok {
-					rowStrs[i] = make([]string, len(rowArr))
-					for j, cell := range rowArr {
-						rowStrs[i][j] = fmt.Sprintf("%v", cell)
-					}
-				}
-			}
-		}
+		headerList := toList(headers)
+		rowsList := toNestedList(rows)
 
 		styleStr := "rounded"
 		if s, ok := style.(string); ok {
@@ -179,7 +159,7 @@ func TableFuncMap() map[string]interface{} {
 		}
 
 		if len(args) == 0 {
-			return renderSimpleTable(headerStrs, rowStrs, styleStr)
+			return renderSimpleTable(headerList, rowsList, styleStr)
 		}
 
 		t := table.NewWriter()
@@ -198,15 +178,15 @@ func TableFuncMap() map[string]interface{} {
 		}
 		t.SetStyle(tableStyle)
 
-		if len(headerStrs) > 0 {
+		if len(headerList) > 0 {
 			headerRow := table.Row{}
-			for _, h := range headerStrs {
+			for _, h := range headerList {
 				headerRow = append(headerRow, h)
 			}
 			t.AppendHeader(headerRow)
 		}
 
-		for _, r := range rowStrs {
+		for _, r := range rowsList {
 			tableRow := table.Row{}
 			for _, cell := range r {
 				tableRow = append(tableRow, cell)
@@ -215,12 +195,24 @@ func TableFuncMap() map[string]interface{} {
 		}
 
 		if len(args) > 0 {
-			if alignments, ok := args[0].([]interface{}); ok {
+			var alignments []interface{}
+			if len(args) > 0 {
+				alignments = args[0].([]interface{})
+				if alignStr, ok := args[0].(string); ok {
+					alignList := toList(alignStr)
+					alignments = make([]interface{}, len(alignList))
+					for i, a := range alignList {
+						alignments[i] = a
+					}
+				}
+			}
+
+			if alignments != nil && len(alignments) > 0 {
 				columnConfigs := make([]table.ColumnConfig, len(alignments))
 				for i, align := range alignments {
 					alignStr, ok := align.(string)
 					if !ok {
-						continue
+						alignStr = fmt.Sprintf("%v", align)
 					}
 
 					columnConfig := table.ColumnConfig{

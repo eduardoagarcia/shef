@@ -1,0 +1,135 @@
+components:
+  - id: "get_os"
+    operations:
+      - command: |
+          case "$(uname -s)" in
+            Darwin)
+              echo "macos"
+              ;;
+            Linux)
+              echo "linux"
+              ;;
+            MINGW*|MSYS*|CYGWIN*)
+              echo "windows"
+              ;;
+            *)
+              echo "unknown"
+              ;;
+          esac
+        silent: true
+
+  - id: "open_app"
+    inputs:
+      - id: "app"
+    operations:
+      - uses: "get_os"
+        id: "os"
+
+      - command: |
+          case "{{ .os }}" in
+            macos)
+              open -a "{{ .app }}"
+              ;;
+            linux)
+              if command -v gtk-launch >/dev/null 2>&1; then
+                gtk-launch "{{ .app }}"
+              elif command -v flatpak >/dev/null 2>&1 && flatpak list --app | cut -f2 | grep -q -i "^{{ .app }}$"; then
+                flatpak run "$(flatpak list --app | grep -i "^{{ .app }}$" | cut -f1)"
+              elif command -v xdg-open >/dev/null 2>&1; then
+                xdg-open "$(find /usr/share/applications /usr/local/share/applications ~/.local/share/applications -name "*{{ .app }}*.desktop" 2>/dev/null | head -1)"
+              else
+                nohup "{{ .app }}" >/dev/null 2>&1 &
+              fi
+              ;;
+            windows)
+              powershell -command "Start-Process '{{ .app }}'"
+              ;;
+            *)
+              echo "false"
+              ;;
+            esac
+        silent: true
+
+  - id: "get_all_apps"
+    operations:
+      - uses: "get_os"
+        id: "os"
+
+      - command: |
+          case "{{ .os }}" in
+            macos)
+              ls /Applications | sed 's/\.app$//' | sort -f
+              ;;
+            linux)
+              if [ -d "/usr/share/applications" ] || [ -d "/usr/local/share/applications" ] || [ -d ~/.local/share/applications ]; then
+                find /usr/share/applications /usr/local/share/applications ~/.local/share/applications -name "*.desktop" 2>/dev/null | xargs -I{} grep -l "^Type=Application" {} | xargs -I{} grep -l "^NoDisplay=false" {} 2>/dev/null | xargs -I{} basename {} .desktop | sort -f
+              elif command -v flatpak >/dev/null 2>&1; then
+                flatpak list --app | cut -f2 | sort -f
+              elif command -v snap >/dev/null 2>&1; then
+                snap list | tail -n +2 | awk '{print $1}' | sort -f
+              elif [ -d "/opt" ]; then
+                find /opt -maxdepth 1 -type d | tail -n +2 | xargs -I{} basename {} | sort -f
+              else
+                echo "false"
+              fi
+              ;;
+            windows)
+              powershell -command "Get-StartApps | ForEach-Object { $_.Name } | Sort-Object"
+              ;;
+            *)
+              echo "false"
+              ;;
+            esac
+        silent: true
+
+  - id: "get_filtered_apps"
+    inputs:
+      - id: "app_filter"
+    operations:
+      - uses: "get_all_apps"
+        id: "all_apps"
+
+      - command: echo '{{ .all_apps }}'
+        condition: .all_apps != "false" && .app_filter == "false"
+        on_failure: "handle_failure"
+        silent: true
+
+      - command: echo '{{ .all_apps }}' | grep -i "{{ .app_filter }}"
+        condition: .all_apps != "false" && .app_filter != "false"
+        on_failure: "handle_failure"
+        silent: true
+
+      - command: echo "false"
+        condition: .all_apps == "false"
+        on_failure: "handle_failure"
+        silent: true
+
+      - id: "handle_failure"
+        command: echo "false"
+        silent: true
+
+  - id: "app_select"
+    inputs:
+      - id: "app_filter"
+    operations:
+      - uses: "get_filtered_apps"
+        with:
+          app_filter: "{{ .app_filter }}"
+        id: "all_apps"
+
+      - command: echo "{{ .all_apps }}"
+        condition: '{{ count .all_apps }} == 1'
+        silent: true
+
+      - command: echo "{{ .app_name }}"
+        prompts:
+          - id: "app_name"
+            type: "select"
+            message: "Select an Application"
+            source_operation: "all_apps"
+        condition: .all_apps != "false && {{ count .all_apps }} > 1
+        silent: true
+
+      - command: echo "false"
+        condition: .all_apps == "false" || {{ count .all_apps }} == 0
+        silent: true

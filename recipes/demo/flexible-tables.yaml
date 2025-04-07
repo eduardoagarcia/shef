@@ -1,0 +1,72 @@
+recipes:
+  - name: "tables-flexible"
+    description: "A demo of flexible table input formats"
+    category: "demo"
+    help: |
+      This recipe demonstrates the flexible table input formats in Shef.
+
+      It shows how to:
+      - Use newline-separated headers
+      - Create tables with comma-separated row strings
+      - Build tables with array-style input
+      - Mix different input formats
+      - Generate and use dynamic data in tables
+
+      The table function accepts different input formats:
+      - Headers as a newline or comma-separated string
+      - Rows as comma-separated strings
+      - Array syntax for both headers and rows
+      - Dynamic data from command outputs
+    operations:
+      - name: "Newline-Separated Headers"
+        command: |
+          echo "Table with newline-separated headers:"
+          echo '{{ table
+            "Name\nAge\nCity"
+            (list
+              (makeRow "John Doe" "34" "New York")
+              (makeRow "Jane Smith" "28" "San Francisco")
+            )
+            "rounded"
+          }}'
+
+      - name: "Comma-Separated Rows"
+        command: |
+          echo "Table with comma-separated row strings:"
+          echo '{{ table
+            (makeHeaders "Product" "Price" "Stock")
+            "Apple,$1.25,125\nOrange,$0.90,83\nBanana,$0.50,42"
+            "double"
+          }}'
+
+      - name: "Array Input"
+        command: |
+          echo "Table with array input:"
+          echo '{{ table
+            "[Name, Age, Role]"
+            "[[John, 34, Developer], [Jane, 28, Designer], [Bob, 45, Manager]]"
+            "light"
+          }}'
+
+      - name: "Mixed Input Formats"
+        command: |
+          echo "Table with mixed input formats:"
+          echo '{{ table
+            "Language,First Released,Paradigm"
+            (list
+              "Go,2009,Concurrent"
+              "Python,1991,Multi-paradigm"
+              "Rust,2010,Multi-paradigm"
+            )
+            "rounded"
+          }}'
+
+      - name: "Generate Dynamic Data"
+        id: "dynamic_data"
+        command: echo '[[Service, Status, Port], [Web Server, Running, 8080], [Database, Stopped, 5432], [Cache, Running, 6379]]'
+        silent: true
+
+      - name: "Dynamic Data Table"
+        command: |
+          echo "Table with dynamic input data:"
+          echo '{{ table "[Column A, Column B, Column C]" .dynamic_data "bold" }}'

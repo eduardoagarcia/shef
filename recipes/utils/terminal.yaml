@@ -1,0 +1,23 @@
+recipes:
+  - name: "history"
+    description: "Get your ranked terminal command history"
+    category: "terminal"
+    operations:
+      - uses: "get_complete_command_name_usage"
+        id: "history"
+        silent: true
+
+      - name: "Format 25 Top Commands"
+        id: "top_25_commands"
+        command: echo '{{ .history }}' | head -n 25 | awk '{print ""$1","$2""}'
+        transform: '{{ (replace .output "\n" "\n,") }}'
+        silent: true
+
+      - name: "table"
+        command: |
+          echo '{{ table
+            (list (style "bold" "Usage") (style "bold" "Command"))
+            .top_25_commands
+            "rounded"
+            (list "right" "left")
+          }}'

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -178,6 +179,136 @@ func toList(input interface{}) []string {
 	default:
 		if s := fmt.Sprintf("%v", v); s != "" && s != "<nil>" {
 			result = append(result, strings.TrimSpace(s))
+		}
+	}
+
+	return result
+}
+
+// toNestedList converts input to a nested list structure
+func toNestedList(input interface{}) [][]string {
+	var result [][]string
+
+	if input == nil {
+		return result
+	}
+
+	switch v := input.(type) {
+	case [][]string:
+		return v
+
+	case [][]interface{}:
+		result = make([][]string, len(v))
+		for i, row := range v {
+			result[i] = make([]string, len(row))
+			for j, cell := range row {
+				result[i][j] = fmt.Sprintf("%v", cell)
+			}
+		}
+		return result
+
+	case []interface{}:
+		for _, row := range v {
+			if rowArr, ok := row.([]interface{}); ok {
+				cells := make([]string, len(rowArr))
+				for j, cell := range rowArr {
+					cells[j] = fmt.Sprintf("%v", cell)
+				}
+				result = append(result, cells)
+			} else if rowStr, ok := row.([]string); ok {
+				result = append(result, rowStr)
+			} else {
+				rowCells := toList(row)
+				if len(rowCells) > 0 {
+					result = append(result, rowCells)
+				}
+			}
+		}
+		return result
+
+	case string:
+		if v == "" {
+			return result
+		}
+
+		trimmed := strings.TrimSpace(v)
+
+		if strings.HasPrefix(trimmed, "[[") && strings.HasSuffix(trimmed, "]]") {
+			var jsonArray [][]interface{}
+			err := json.Unmarshal([]byte(trimmed), &jsonArray)
+
+			if err == nil {
+				for _, row := range jsonArray {
+					cells := make([]string, len(row))
+					for j, cell := range row {
+						cells[j] = fmt.Sprintf("%v", cell)
+					}
+					result = append(result, cells)
+				}
+				return result
+			}
+
+			inner := strings.TrimSpace(trimmed[1 : len(trimmed)-1])
+
+			depth := 0
+			var currentRow strings.Builder
+			inQuotes := false
+			quoteChar := ' '
+
+			for _, char := range inner {
+				if (char == '"' || char == '\'') && (depth <= 1) {
+					if inQuotes && char == quoteChar {
+						inQuotes = false
+					} else if !inQuotes {
+						inQuotes = true
+						quoteChar = char
+					}
+					currentRow.WriteRune(char)
+					continue
+				}
+
+				if inQuotes {
+					currentRow.WriteRune(char)
+					continue
+				}
+
+				if char == '[' {
+					depth++
+					if depth == 1 {
+						currentRow.Reset()
+					}
+					currentRow.WriteRune(char)
+				} else if char == ']' {
+					depth--
+					currentRow.WriteRune(char)
+					if depth == 0 {
+						rowContent := currentRow.String()
+						if strings.HasPrefix(rowContent, "[") && strings.HasSuffix(rowContent, "]") {
+							rowContent = strings.TrimSpace(rowContent[1 : len(rowContent)-1])
+						}
+						rowCells := toList(rowContent)
+						if len(rowCells) > 0 {
+							result = append(result, rowCells)
+						}
+					}
+				} else {
+					currentRow.WriteRune(char)
+				}
+			}
+
+			return result
+		}
+
+		rows := toList(trimmed)
+		for _, row := range rows {
+			result = append(result, toList(row))
+		}
+		return result
+
+	default:
+		str := fmt.Sprintf("%v", v)
+		if str != "" && str != "<nil>" {
+			return toNestedList(str)
 		}
 	}
 
