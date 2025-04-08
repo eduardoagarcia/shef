@@ -1,0 +1,432 @@
+recipes:
+  - name: "test"
+    description: "Test the utils"
+    category: "utils"
+    operations:
+      - uses: "generate.uuid4"
+        id: "uuid"
+
+      - uses: "string.lower"
+        id: "uuid_lower"
+        with:
+          string: "{{ .uuid }}"
+
+      - uses: "string.upper"
+        with:
+          string: "{{ .uuid_lower }}"
+
+      - uses: "generate.uuid5"
+        with:
+          namespace: "dns"  # dns url oid x500
+          name: "{{ .uuid_lower }}"
+
+      - uses: "string.camel"
+        with:
+          string: "this is a test"
+
+      - uses: "string.pascal"
+        with:
+          string: "this is a test"
+
+      - uses: "string.snake"
+        with:
+          string: "a SNAKE case to TEST ---"
+
+      - uses: "string.kebab"
+        with:
+          string: "a SNAKE case to TEST ---__"
+
+      - uses: "string.slug"
+        id: "kebab_slug"
+        with:
+          string: "This is another test for ---___#%#@$@# 99 slugs!"
+
+      - uses: "string.title"
+        with:
+          string: "this is a test"
+
+      - uses: "string.reverse"
+        with:
+          string: "this is a test"
+
+      - uses: "string.count.words"
+        with:
+          string: "this is a test"
+
+      - uses: "string.count.chars"
+        with:
+          string: "this is a test"
+
+      - uses: "data.base64.encode"
+        id: "base64_encoded"
+        with:
+          data: "{{ .uuid_lower }}"
+
+      - uses: "data.base64.decode"
+        with:
+          data: "{{ .base64_encoded }}"
+
+      - uses: "data.hex.encode"
+        id: "hex_encoded"
+        with:
+          data: "{{ .uuid_lower }}"
+
+      - uses: "data.hex.decode"
+        with:
+          data: "{{ .hex_encoded }}"
+
+      - uses: "data.binary.encode"
+        id: "binary_encoded"
+        with:
+          data: "{{ .uuid_lower }}"
+
+      - uses: "data.binary.decode"
+        with:
+          data: "{{ .binary_encoded }}"
+
+      - uses: "generate.password"
+        id: "encrypt_password"
+
+      - uses: "generate.alphanumeric"
+
+      - uses: "generate.number"
+
+      - uses: "generate.timestamp"
+
+      - uses: "generate.date"
+
+      - uses: "generate.time"
+
+      - uses: "generate.hex_color"
+
+      - uses: "generate.mac"
+
+      - uses: "generate.ipv4"
+
+      - uses: "generate.ipv6"
+
+      - uses: "crypto.md5"
+        with:
+          data: "{{ .uuid_lower }}"
+
+      - uses: "crypto.sha1"
+        with:
+          data: "{{ .uuid_lower }}"
+
+      - uses: "crypto.sha256"
+        with:
+          data: "{{ .uuid_lower }}"
+
+      - uses: "crypto.sha512"
+        with:
+          data: "{{ .uuid_lower }}"
+
+      - uses: "crypto.rot13"
+        with:
+          data: "{{ .uuid_lower }}"
+
+      - uses: "crypto.aes.encrypt"
+        id: "aes_encrypted_data"
+        with:
+          data: "{{ .uuid_lower }}"
+          passphrase: "{{ .encrypt_password }}"
+
+      - uses: "crypto.aes.decrypt"
+        id: "aes_encrypted_data"
+        with:
+          data: "{{ .aes_encrypted_data }}"
+          passphrase: "{{ .encrypt_password }}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#  # Basic encoding/decoding
+#  - name: "to_base64"
+#    description: "Base64 encode a string"
+#    category: "data"
+#    operations:
+#      - uses: "to_base64"
+#        with:
+#          data: "{{ .input }}"
+#        id: "data"
+#
+#  - name: "from_base64"
+#    description: "Base64 decode a string"
+#    category: "data"
+#    operations:
+#      - uses: "from_base64"
+#        with:
+#          data: "{{ .input }}"
+#        id: "data"
+#
+#  - name: "to_hex"
+#    description: "Convert text to hexadecimal"
+#    category: "data"
+#    operations:
+#      - uses: "to_hex"
+#        with:
+#          data: "{{ .input }}"
+#        id: "data"
+#
+#  - name: "from_hex"
+#    description: "Convert hexadecimal to text"
+#    category: "data"
+#    operations:
+#      - uses: "from_hex"
+#        with:
+#          data: "{{ .input }}"
+#        id: "data"
+#
+#  - name: "to_binary"
+#    description: "Convert text to binary"
+#    category: "data"
+#    operations:
+#      - uses: "to_binary"
+#        with:
+#          data: "{{ .input }}"
+#        id: "data"
+#
+#  - name: "from_binary"
+#    description: "Convert binary to text"
+#    category: "data"
+#    operations:
+#      - uses: "from_binary"
+#        with:
+#          data: "{{ .input }}"
+#        id: "data"
+#
+#  - name: "to_url"
+#    description: "URL encode text"
+#    category: "data"
+#    operations:
+#      - uses: "to_url"
+#        with:
+#          data: "{{ .input }}"
+#        id: "data"
+#
+#  - name: "from_url"
+#    description: "URL decode text"
+#    category: "data"
+#    operations:
+#      - uses: "from_url"
+#        with:
+#          data: "{{ .input }}"
+#        id: "data"
+#
+#  # Data analysis
+#  - name: "frequency_analysis"
+#    description: "Analyze character frequency in text"
+#    category: "data"
+#    operations:
+#      - uses: "frequency_analysis"
+#        with:
+#          data: "{{ .input }}"
+#        id: "analysis"
+#
+#  - name: "entropy"
+#    description: "Calculate entropy of input data"
+#    category: "data"
+#    operations:
+#      - uses: "entropy"
+#        with:
+#          data: "{{ .input }}"
+#        id: "entropy"
+#
+#  # Text operations
+#  - name: "find_replace"
+#    description: "Find and replace text"
+#    category: "data"
+#    operations:
+#      - name: "Find and Replace"
+#        prompts:
+#          - name: "Find pattern"
+#            id: "find"
+#            type: "input"
+#            message: "Enter text to find:"
+#          - name: "Replace with"
+#            id: "replace"
+#            type: "input"
+#            message: "Enter replacement text:"
+#        uses: "find_replace"
+#        with:
+#          data: "{{ .input }}"
+#          find: "{{ .find }}"
+#          replace: "{{ .replace }}"
+#        id: "result"
+#
+#  - name: "split"
+#    description: "Split text by delimiter"
+#    category: "data"
+#    operations:
+#      - name: "Split Text"
+#        prompts:
+#          - name: "Delimiter"
+#            id: "delimiter"
+#            type: "input"
+#            message: "Enter delimiter character:"
+#            default: ","
+#        uses: "split"
+#        with:
+#          data: "{{ .input }}"
+#          delimiter: "{{ .delimiter }}"
+#        id: "result"
+#
+#  - name: "regex_extract"
+#    description: "Extract text matching a regex pattern"
+#    category: "data"
+#    operations:
+#      - name: "Regular Expression Extract"
+#        prompts:
+#          - name: "Pattern"
+#            id: "pattern"
+#            type: "input"
+#            message: "Enter regex pattern:"
+#        uses: "regex_extract"
+#        with:
+#          data: "{{ .input }}"
+#          pattern: "{{ .pattern }}"
+#        id: "result"
+#
+#  # Format converters
+#  - name: "to_unix_timestamps"
+#    description: "Convert dates to UNIX timestamps"
+#    category: "data"
+#    operations:
+#      - uses: "to_unix_timestamps"
+#        with:
+#          data: "{{ .input }}"
+#        id: "timestamps"
+#
+#  - name: "from_unix_timestamp"
+#    description: "Convert UNIX timestamp to human-readable date"
+#    category: "data"
+#    operations:
+#      - name: "Convert Timestamp"
+#        prompts:
+#          - name: "Timestamp"
+#            id: "timestamp"
+#            type: "input"
+#            message: "Enter UNIX timestamp:"
+#            default: "{{ .input }}"
+#        uses: "from_unix_timestamp"
+#        with:
+#          timestamp: "{{ .timestamp }}"
+#        id: "date"
+#
+#  - name: "csv_to_json"
+#    description: "Convert CSV to JSON"
+#    category: "data"
+#    operations:
+#      - name: "CSV to JSON"
+#        prompts:
+#          - name: "Has Header"
+#            id: "header"
+#            type: "confirm"
+#            message: "Does the CSV have a header row?"
+#            default: true
+#        uses: "csv_to_json"
+#        with:
+#          data: "{{ .input }}"
+#          header: "{{ if .header }}true{{ else }}false{{ end }}"
+#        id: "json"
+#
+#  - name: "json_to_csv"
+#    description: "Convert JSON to CSV"
+#    category: "data"
+#    operations:
+#      - uses: "json_to_csv"
+#        with:
+#          data: "{{ .input }}"
+#        id: "csv"
+#
+#  # Data sorting and filtering
+#  - name: "sort_data"
+#    description: "Sort text lines"
+#    category: "data"
+#    operations:
+#      - name: "Sort Data"
+#        prompts:
+#          - name: "Sort numerically"
+#            id: "numeric"
+#            type: "confirm"
+#            message: "Sort numerically?"
+#            default: false
+#          - name: "Sort in reverse"
+#            id: "reverse"
+#            type: "confirm"
+#            message: "Sort in reverse order?"
+#            default: false
+#        uses: "sort_data"
+#        with:
+#          data: "{{ .input }}"
+#          numeric: "{{ if .numeric }}true{{ else }}false{{ end }}"
+#          reverse: "{{ if .reverse }}true{{ else }}false{{ end }}"
+#        id: "sorted"
+#
+#  - name: "unique_lines"
+#    description: "Find unique lines in text"
+#    category: "data"
+#    operations:
+#      - name: "Find Unique Lines"
+#        prompts:
+#          - name: "Show counts"
+#            id: "count"
+#            type: "confirm"
+#            message: "Show occurrence counts?"
+#            default: false
+#        uses: "unique_lines"
+#        with:
+#          data: "{{ .input }}"
+#          count: "{{ if .count }}true{{ else }}false{{ end }}"
+#        id: "uniques"
+#
+#  - name: "extract_email"
+#    description: "Extract email addresses from text"
+#    category: "data"
+#    operations:
+#      - uses: "extract_email"
+#        with:
+#          data: "{{ .input }}"
+#        id: "emails"
+#
+#  - name: "extract_ip"
+#    description: "Extract IPv4 addresses from text"
+#    category: "data"
+#    operations:
+#      - uses: "extract_ip"
+#        with:
+#          data: "{{ .input }}"
+#        id: "ips"

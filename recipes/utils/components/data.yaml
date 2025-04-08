@@ -1,0 +1,183 @@
+components:
+  - id: "data.base64.encode"
+    inputs:
+      - id: "data"
+    operations:
+      - command: printf "{{ .data }}" | base64
+        output_format: "trim"
+
+  - id: "data.base64.decode"
+    inputs:
+      - id: "data"
+    operations:
+      - command: printf "{{ .data }}" | base64 -d
+        output_format: "trim"
+
+  - id: "data.hex.encode"
+    inputs:
+      - id: "data"
+    operations:
+      - command: printf "{{ .data }}" | xxd -p -c 1000000
+        output_format: "trim"
+
+  - id: "data.hex.decode"
+    inputs:
+      - id: "data"
+    operations:
+      - command: printf "{{ .data }}" | xxd -p -r
+        output_format: "trim"
+
+  - id: "data.binary.encode"
+    inputs:
+      - id: "data"
+    operations:
+      - command: echo "{{ .data }}" | xxd -b | cut -d' ' -f2-6 | tr -d ' \n'
+        output_format: "trim"
+
+  - id: "data.binary.decode"
+    inputs:
+      - id: "data"
+    operations:
+      - command: echo "{{ .data }}" | perl -ne 's/([01]{8})/chr(oct("0b$1"))/ge; print'
+        output_format: "trim"
+
+#  - id: "to_url"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: printf "{{ .data }}" | python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip()), end='')"
+#
+#  - id: "from_url"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: printf "{{ .data }}" | python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read().strip()), end='')"
+#
+#  # Data analysis
+#  - id: "frequency_analysis"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: printf "{{ .data }}" | grep -o . | sort | uniq -c | sort -nr
+#
+#  - id: "entropy"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: |
+#          printf "{{ .data }}" | python3 -c "
+#          import sys, math
+#          s = sys.stdin.read()
+#          freq = {c: s.count(c) for c in set(s)}
+#          entropy = -sum((freq[c]/len(s))*math.log2(freq[c]/len(s)) for c in freq)
+#          print(f'Entropy: {entropy:.4f} bits per symbol')
+#          "
+#
+#  # Text operations
+#  - id: "find_replace"
+#    inputs:
+#      - id: "data"
+#      - id: "find"
+#      - id: "replace"
+#    operations:
+#      - command: printf "{{ .data }}" | sed "s/{{ .find }}/{{ .replace }}/g"
+#
+#  - id: "split"
+#    inputs:
+#      - id: "data"
+#      - id: "delimiter"
+#    operations:
+#      - command: printf "{{ .data }}" | tr "{{ .delimiter }}" "\n"
+#
+#  - id: "regex_extract"
+#    inputs:
+#      - id: "data"
+#      - id: "pattern"
+#    operations:
+#      - command: printf "{{ .data }}" | grep -oE "{{ .pattern }}" || echo ""
+#
+#  # Format converters
+#  - id: "to_unix_timestamps"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: printf "{{ .data }}" | date -f - +%s
+#
+#  - id: "from_unix_timestamp"
+#    inputs:
+#      - id: "timestamp"
+#    operations:
+#      - command: date -r "$(echo "{{ .timestamp }}" | tr -d '\n')" "+%Y-%m-%d %H:%M:%S"
+#
+#  - id: "csv_to_json"
+#    inputs:
+#      - id: "data"
+#      - id: "header"
+#        default: "true"
+#    operations:
+#      - command: |
+#          printf "{{ .data }}" | python3 -c "
+#          import csv, json, sys
+#          r = csv.reader(sys.stdin)
+#          h = next(r) if '{{ .header }}' == 'true' else None
+#          print(json.dumps([dict(zip(h, row)) if h else row for row in r]))
+#          "
+#
+#  - id: "json_to_csv"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: |
+#          printf "{{ .data }}" | python3 -c "
+#          import csv, json, sys
+#          d = json.loads(sys.stdin.read())
+#          k = d[0].keys() if isinstance(d[0], dict) else None
+#          w = csv.writer(sys.stdout)
+#          if k:
+#              w.writerow(k)
+#          w.writerows([x.values() if isinstance(x, dict) else x for x in d])
+#          "
+#
+#  # Data sorting and filtering
+#  - id: "sort_data"
+#    inputs:
+#      - id: "data"
+#      - id: "numeric"
+#        default: "false"
+#      - id: "reverse"
+#        default: "false"
+#    operations:
+#      - command: |
+#          printf "{{ .data }}" | sort {{ if eq .numeric "true" }}-n{{ end }} {{ if eq .reverse "true" }}-r{{ end }}
+#
+#  - id: "unique_lines"
+#    inputs:
+#      - id: "data"
+#      - id: "count"
+#        default: "false"
+#    operations:
+#      - command: printf "{{ .data }}" | sort | uniq {{ if eq .count "true" }}-c{{ end }}
+#
+#  - id: "extract_email"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: |
+#          result=$(printf "{{ .data }}" | grep -Eo '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b')
+#          if [ -z "$result" ]; then
+#            echo "No email addresses found"
+#          else
+#            echo "$result"
+#          fi
+#
+#  - id: "extract_ip"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: |
+#          result=$(printf "{{ .data }}" | grep -Eo '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b')
+#          if [ -z "$result" ]; then
+#            echo "No IP addresses found"
+#          else
+#            echo "$result"
+#          fi

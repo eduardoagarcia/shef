@@ -1,0 +1,120 @@
+components:
+  - id: "generate.password"
+    inputs:
+      - id: "length"
+        default: 16
+    operations:
+      - command: LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*()-_=+' < /dev/urandom | head -c "{{ .length }}"
+        output_format: "trim"
+
+  - id: "generate.alphanumeric"
+    inputs:
+      - id: "length"
+        default: 16
+    operations:
+      - command: LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "{{ .length }}"
+        output_format: "trim"
+
+  - id: "generate.number"
+    inputs:
+      - id: "min"
+        default: 1
+      - id: "max"
+        default: 1000
+    operations:
+      - command: echo "$((RANDOM % ({{ .max }} - {{ .min }} + 1) + {{ .min }}))"
+        output_format: "trim"
+
+  - id: "generate.date"
+    inputs:
+      - id: "format"
+        default: "%Y-%m-%d"
+    operations:
+      - command: date +"{{ .format }}"
+        output_format: "trim"
+
+  - id: "generate.time"
+    inputs:
+      - id: "format"
+        default: "%H:%M:%S"
+    operations:
+      - uses: "generate.date"
+        with:
+          format: "{{ .format }}"
+
+  - id: "generate.timestamp"
+    operations:
+      - command: date +%s
+        output_format: "trim"
+
+  - id: "generate.hex_color"
+    operations:
+      - command: printf "#%06x" $((RANDOM * RANDOM % 16777215))
+        output_format: "trim"
+
+  - id: "generate.mac"
+    operations:
+      - command: printf "%02x:%02x:%02x:%02x:%02x:%02x" $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256))
+        output_format: "trim"
+
+  - id: "generate.ipv4"
+    operations:
+      - command: printf "%d.%d.%d.%d" $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256))
+        output_format: "trim"
+
+  - id: "generate.ipv6"
+    operations:
+      - command: printf "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x" $((RANDOM%65536)) $((RANDOM%65536)) $((RANDOM%65536)) $((RANDOM%65536)) $((RANDOM%65536)) $((RANDOM%65536)) $((RANDOM%65536)) $((RANDOM%65536))
+        output_format: "trim"
+
+  - id: "generate.uuid4"
+    operations:
+      - command: uuidgen
+        output_format: "trim"
+
+  - id: "generate.uuid5"
+    inputs:
+      - id: "namespace"
+        default: "url"
+      - id: "name"
+        required: true
+    operations:
+      - uses: "generate.uuid5.namespace"
+        id: "namespace_uuid"
+        with:
+          namespace: "{{ .namespace }}"
+        silent: true
+
+      - command: python3 -c "import uuid; print(uuid.uuid5(uuid.UUID('{{ .namespace_uuid }}'), '{{ .name }}'))"
+        output_format: "trim"
+
+  - id: "generate.uuid5.namespace"
+    inputs:
+      - id: "namespace"
+        default: "url"
+    operations:
+      - uses: "string.lower"
+        id: "namespace"
+        with:
+          string: "{{ .namespace }}"
+        silent: true
+
+      - command: |
+          case "{{ .namespace }}" in
+            dns)
+              echo "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+              ;;
+            url)
+              echo "6ba7b811-9dad-11d1-80b4-00c04fd430c8"
+              ;;
+            oid)
+              echo "6ba7b812-9dad-11d1-80b4-00c04fd430c8"
+              ;;
+            x500)
+              echo "6ba7b814-9dad-11d1-80b4-00c04fd430c8"
+              ;;
+            *)
+              echo "6ba7b811-9dad-11d1-80b4-00c04fd430c8"
+              ;;
+          esac
+        output_format: "trim"
