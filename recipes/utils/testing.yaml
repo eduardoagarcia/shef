@@ -137,6 +137,97 @@ recipes:
           data: "{{ .aes_encrypted_data }}"
           passphrase: "{{ .encrypt_password }}"
 
+      - uses: "file.write"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+          contents: |
+            This is line 1
+            This is line 2
+            This is line 3
+            This is line 4
+            This is line 5
+
+            String with special chars: $HOME * & |
+
+            "hello world"
+            'more quotes'
+            '"nested quotes 1"'
+            "'nested quotes 2'"
+            '"broken quotes 1'"
+
+            2394q23rij3t4;fioaf9q2304u@#%Q# $ TQAGDFGADF
+            $5.50
+
+            updated
+
+      - uses: "file.read"
+        id: "opened_file"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+
+      - uses: "file.write"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}_write_test.txt"
+          contents: '{{ .opened_file }}'
+
+      - uses: "file.filename"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+
+      - uses: "file.extension"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+
+      - uses: "file.path"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+
+      - uses: "file.backup"
+        id: "backup_filename"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+
+      - uses: "dir.create"
+        with:
+          dir: "/Users/eduardoagarcia/Desktop/boop/boop2"
+      - uses: "file.write"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/boop/boop_test.txt"
+          contents: 'this is a boop test!'
+
+      - uses: "dir.sync"
+        with:
+          src: "/Users/eduardoagarcia/Desktop/boop"
+          dst: "/Users/eduardoagarcia/Desktop/boop-synced"
+
+      - prompts:
+          - name: Confirmation
+            id: confirmation
+            type: confirm
+            message: "Do you want to proceed with cleanup?"
+            default: "true"
+
+      - uses: "file.delete"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+
+      - uses: "file.delete"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}_write_test.txt"
+
+      - uses: "file.delete"
+        with:
+          file: "{{ .backup_filename }}"
+
+      - uses: "dir.delete"
+        with:
+          dir: "/Users/eduardoagarcia/Desktop/boop"
+          force: true
+
+      - uses: "dir.delete"
+        with:
+          dir: "/Users/eduardoagarcia/Desktop/boop-synced"
+          force: true
 
 
 

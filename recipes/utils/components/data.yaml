@@ -31,7 +31,7 @@ components:
     inputs:
       - id: "data"
     operations:
-      - command: echo "{{ .data }}" | xxd -b | cut -d' ' -f2-6 | tr -d ' \n'
+      - command: echo "{{ .data }}" | perl -ne 'print join("", map {sprintf("%08b", ord($_))} split("", $_))'
         output_format: "trim"
 
   - id: "data.binary.decode"
