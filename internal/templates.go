@@ -443,6 +443,7 @@ func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error)
 
 	result := buf.String()
 	result = handleDefaultEmpty(result)
+	result = escapeEchoInput(result)
 
 	return result, nil
 }
@@ -454,4 +455,12 @@ func transformOutput(output, transform string, ctx *ExecutionContext) (string, e
 	vars["output"] = output
 
 	return renderTemplate(transform, vars)
+}
+
+// escapeEchoInput handles special characters within an echo string
+func escapeEchoInput(input string) string {
+	if len(input) > 6 && strings.HasPrefix(input, "echo '") && strings.HasSuffix(input, "'") {
+		return fmt.Sprintf("echo '%s'", strings.ReplaceAll(input[6:len(input)-1], "'", "'\\''"))
+	}
+	return input
 }
