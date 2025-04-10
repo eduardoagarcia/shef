@@ -5,6 +5,8 @@ components:
     operations:
       - command: printf "{{ .data }}" | md5
         output_format: "trim"
+        unset:
+          - "data"
 
   - id: "crypto.sha1"
     inputs:
@@ -12,6 +14,8 @@ components:
     operations:
       - command: printf "{{ .data }}" | shasum -a 1 | cut -d ' ' -f 1
         output_format: "trim"
+        unset:
+          - "data"
 
   - id: "crypto.sha256"
     inputs:
@@ -19,6 +23,8 @@ components:
     operations:
       - command: printf "{{ .data }}" | shasum -a 256 | cut -d ' ' -f 1
         output_format: "trim"
+        unset:
+          - "data"
 
   - id: "crypto.sha512"
     inputs:
@@ -26,6 +32,8 @@ components:
     operations:
       - command: printf "{{ .data }}" | shasum -a 512 | cut -d ' ' -f 1
         output_format: "trim"
+        unset:
+          - "data"
 
   - id: "crypto.rot13"
     inputs:
@@ -33,6 +41,8 @@ components:
     operations:
       - command: printf "{{ .data }}" | tr 'A-Za-z' 'N-ZA-Mn-za-m'
         output_format: "trim"
+        unset:
+          - "data"
 
   - id: "crypto.aes.encrypt"
     inputs:
@@ -48,6 +58,10 @@ components:
           printf "{{ .data }}" | openssl enc -aes-256-cbc -a -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}"
           set -H
         output_format: "trim"
+        unset:
+          - "data"
+          - "passphrase"
+          - "iterations"
 
   - id: "crypto.aes.decrypt"
     inputs:
@@ -60,6 +74,10 @@ components:
     operations:
       - command: echo "{{ .data }}" | openssl enc -aes-256-cbc -a -d -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}"
         output_format: "trim"
+        unset:
+          - "data"
+          - "passphrase"
+          - "iterations"
 
 #
 #  # File checksums

@@ -6,6 +6,8 @@ components:
     operations:
       - command: LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*()-_=+' < /dev/urandom | head -c "{{ .length }}"
         output_format: "trim"
+        unset:
+          - "length"
 
   - id: "generate.alphanumeric"
     inputs:
@@ -14,6 +16,8 @@ components:
     operations:
       - command: LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "{{ .length }}"
         output_format: "trim"
+        unset:
+          - "length"
 
   - id: "generate.number"
     inputs:
@@ -24,6 +28,9 @@ components:
     operations:
       - command: echo "$((RANDOM % ({{ .max }} - {{ .min }} + 1) + {{ .min }}))"
         output_format: "trim"
+        unset:
+          - "min"
+          - "max"
 
   - id: "generate.date"
     inputs:
@@ -32,6 +39,8 @@ components:
     operations:
       - command: date +"{{ .format }}"
         output_format: "trim"
+        unset:
+          - "format"
 
   - id: "generate.time"
     inputs:
@@ -41,6 +50,9 @@ components:
       - uses: "generate.date"
         with:
           format: "{{ .format }}"
+
+      - unset:
+          - "format"
 
   - id: "generate.timestamp"
     operations:
@@ -87,6 +99,9 @@ components:
 
       - command: python3 -c "import uuid; print(uuid.uuid5(uuid.UUID('{{ .namespace_uuid }}'), '{{ .name }}'))"
         output_format: "trim"
+        unset:
+          - "namespace"
+          - "name"
 
   - id: "generate.uuid5.namespace"
     inputs:
@@ -118,3 +133,5 @@ components:
               ;;
           esac
         output_format: "trim"
+        unset:
+          - "namespace"

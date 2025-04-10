@@ -1,6 +1,6 @@
 components:
   - id: "file.exists"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -62,7 +62,7 @@ components:
           - "file"
 
   - id: "file.rename"
-    input:
+    inputs:
       - id: "old"
         required: true
       - id: "new"
@@ -74,7 +74,7 @@ components:
           - "new"
 
   - id: "file.backup"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -87,7 +87,6 @@ components:
         silent: true
 
       - command: cp {{ .file }} {{ .backup_filename }}
-        condition: .file_exists == "true"
 
       - command: echo "{{ .backup_filename }}"
         unset:
@@ -98,7 +97,7 @@ components:
           - "file_parts_extension"
 
   - id: "file.lower"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -122,7 +121,7 @@ components:
           - "file_parts_extension"
 
   - id: "file.lower.name"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -146,7 +145,7 @@ components:
           - "file_parts_extension"
 
   - id: "file.lower.extension"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -170,7 +169,7 @@ components:
           - "file_parts_extension"
 
   - id: "file.upper"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -194,7 +193,7 @@ components:
           - "file_parts_extension"
 
   - id: "file.upper.name"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -218,7 +217,7 @@ components:
           - "file_parts_extension"
 
   - id: "file.upper.extension"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -242,7 +241,7 @@ components:
           - "file_parts_extension"
 
   - id: "file.parts"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -265,7 +264,7 @@ components:
         silent: true
 
   - id: "file.filename"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -273,7 +272,7 @@ components:
         output_format: "trim"
 
   - id: "file.extension"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:
@@ -283,7 +282,7 @@ components:
         output_format: "trim"
 
   - id: "file.path"
-    input:
+    inputs:
       - id: "file"
         required: true
     operations:

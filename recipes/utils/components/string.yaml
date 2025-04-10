@@ -5,6 +5,8 @@ components:
     operations:
       - command: echo {{ .string }} | tr '[:lower:]' '[:upper:]'
         output_format: "trim"
+        unset:
+          - "string"
 
   - id: "string.lower"
     inputs:
@@ -12,6 +14,8 @@ components:
     operations:
       - command: echo {{ .string }} | tr '[:upper:]' '[:lower:]'
         output_format: "trim"
+        unset:
+          - "string"
 
   - id: "string.camel"
     inputs:
@@ -19,6 +23,8 @@ components:
     operations:
       - command: echo "{{ .string }}" | awk 'BEGIN{RS="[^a-zA-Z0-9]+"} {if (NR==1) {printf tolower($0)} else {printf toupper(substr($0,1,1)) tolower(substr($0,2))}}'
         output_format: "trim"
+        unset:
+          - "string"
 
   - id: "string.pascal"
     inputs:
@@ -26,6 +32,8 @@ components:
     operations:
       - command: echo "{{ .string }}" | awk 'BEGIN{RS="[^a-zA-Z0-9]+"} {printf toupper(substr($0,1,1)) tolower(substr($0,2))}'
         output_format: "trim"
+        unset:
+          - "string"
 
   - id: "string.snake"
     inputs:
@@ -33,6 +41,8 @@ components:
     operations:
       - command: echo "{{ .string }}" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^[:alnum:]]/_/g' | sed -e 's/__*/_/g' | sed -e 's/^_//' -e 's/_$//'
         output_format: "trim"
+        unset:
+          - "string"
 
   - id: "string.kebab"
     inputs:
@@ -40,6 +50,8 @@ components:
     operations:
       - command: echo "{{ .string }}" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^[:alnum:]]/-/g' | sed -e 's/--*/-/g' | sed -e 's/^-//' -e 's/-$//'
         output_format: "trim"
+        unset:
+          - "string"
 
   - id: "string.slug"
     inputs:
@@ -49,12 +61,17 @@ components:
         with:
           string: '{{ .string }}'
 
+      - unset:
+          - "string"
+
   - id: "string.title"
     inputs:
       - id: "string"
     operations:
       - command: echo "{{ .string }}" | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2));}1'
         output_format: "trim"
+        unset:
+          - "string"
 
   - id: "string.reverse"
     inputs:
@@ -62,6 +79,8 @@ components:
     operations:
       - command: echo "{{ .string }}" | rev
         output_format: "trim"
+        unset:
+          - "string"
 
   - id: "string.count.words"
     inputs:
@@ -69,6 +88,8 @@ components:
     operations:
       - command: printf "%s" "{{ .string }}" | wc -w
         output_format: "trim"
+        unset:
+          - "string"
 
   - id: "string.count.chars"
     inputs:
@@ -76,3 +97,5 @@ components:
     operations:
       - command: printf "%s" "{{ .string }}" | wc -c
         output_format: "trim"
+        unset:
+          - "string"

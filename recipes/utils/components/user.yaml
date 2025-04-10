@@ -1,5 +1,10 @@
 components:
-  - id: "get_complete_command_history"
+  - id: "user.home"
+    operations:
+      - command: echo $HOME
+        output_format: "trim"
+
+  - id: "user.history"
     operations:
       - command: |
           case $SHELL in
@@ -21,12 +26,11 @@ components:
         user_shell: true
         silent: true
 
-  - id: "get_complete_command_name_usage"
+  - id: "user.history.usage"
     operations:
-      - uses: "get_complete_command_history"
-        id: "command_history"
+      - uses: "user.history"
+        id: "user_history"
         silent: true
 
-      - name: "Get Commands"
-        command: echo '{{ .command_history }}' | sort | uniq -c | sort -nr | awk '{print $1" "$2}'
+      - command: echo '{{ .user_history }}' | sort | uniq -c | sort -nr | awk '{print $1" "$2}'
         silent: true

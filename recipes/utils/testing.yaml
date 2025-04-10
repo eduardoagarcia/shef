@@ -1,4 +1,23 @@
 recipes:
+  - name: "unset"
+    description: "Test unset"
+    category: "utils"
+    operations:
+      - id: "name_var"
+        command: echo "hello world"
+      - id: "address_var"
+        command: echo "9400 tea rose trail"
+
+      - command: echo "{{ .name_var }}"
+      - command: echo "{{ .address_var }}"
+
+      - unset:
+          - "name_var"
+          - "address_var"
+
+      - command: echo "{{ .name_var }}"
+      - command: echo "{{ .address_var }}"
+
   - name: "test"
     description: "Test the utils"
     category: "utils"
@@ -34,10 +53,9 @@ recipes:
 
       - uses: "string.kebab"
         with:
-          string: "a SNAKE case to TEST ---__"
+          string: "a KEBAB case to TEST ---__ 7653#$%@#$%^5@#4$%24@#%@#$"
 
       - uses: "string.slug"
-        id: "kebab_slug"
         with:
           string: "This is another test for ---___#%#@$@# 99 slugs!"
 
@@ -165,6 +183,18 @@ recipes:
         with:
           file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
 
+      - uses: "file.read"
+        id: "opened_file_break"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}_broken.txt"
+        on_failure: ":" # noop
+
+      - command: 'echo "broken file output: {{ .opened_file_break }}"'
+
+      - uses: "file.exists"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}_broken.txt"
+
       - uses: "file.write"
         with:
           file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}_write_test.txt"
@@ -190,6 +220,7 @@ recipes:
       - uses: "dir.create"
         with:
           dir: "/Users/eduardoagarcia/Desktop/boop/boop2"
+
       - uses: "file.write"
         with:
           file: "/Users/eduardoagarcia/Desktop/boop/boop_test.txt"
@@ -199,6 +230,55 @@ recipes:
         with:
           src: "/Users/eduardoagarcia/Desktop/boop"
           dst: "/Users/eduardoagarcia/Desktop/boop-synced"
+
+      - uses: "user.home"
+
+      - uses: "file.upper.name"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+
+      - uses: "file.upper.extension"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+
+      - uses: "file.create"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/UPPER_NAME.UPPER_EXTENSION"
+
+      - uses: "file.lower.name"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/UPPER_NAME.UPPER_EXTENSION"
+
+      - uses: "file.lower.extension"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/UPPER_NAME.UPPER_EXTENSION"
+
+      - uses: "file.upper"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/{{ .uuid_lower }}.txt"
+
+      - uses: "file.lower"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/UPPER_NAME.UPPER_EXTENSION"
+
+      - uses: "dir.pwd"
+
+      - uses: "dir.list"
+
+      - uses: "dir.list"
+        with:
+          dir: "/Users/eduardoagarcia/Desktop"
+
+      - uses: "dir.list"
+        with:
+          dir: "/Users/eduardoagarcia/Desktop/UPPER_NAME.UPPER_EXTENSION"
+        on_failure: ":"
+
+      - command: echo "src {{ .src }}"
+      - command: echo "dst {{ .dst }}"
+      - command: echo "dir {{ .dir }}"
+      - command: echo "old {{ .old }}"
+      - command: echo "new {{ .new }}"
 
       - prompts:
           - name: Confirmation
@@ -228,6 +308,10 @@ recipes:
         with:
           dir: "/Users/eduardoagarcia/Desktop/boop-synced"
           force: true
+
+      - uses: "file.delete"
+        with:
+          file: "/Users/eduardoagarcia/Desktop/UPPER_NAME.UPPER_EXTENSION"
 
 
 

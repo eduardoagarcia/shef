@@ -1,0 +1,81 @@
+components:
+  - id: "dir.exists"
+    inputs:
+      - id: "dir"
+        required: true
+    operations:
+      - command: '[ -d "{{ .dir }}" ] && echo "true" || echo "false"'
+        unset:
+          - "dir"
+
+  - id: "dir.create"
+    inputs:
+      - id: "dir"
+        required: true
+    operations:
+      - command: mkdir -p {{ .dir }}
+        unset:
+          - "dir"
+
+  - id: "dir.delete"
+    inputs:
+      - id: "dir"
+        required: true
+      - id: "force"
+        default: false
+    operations:
+      - command: rmdir {{ .dir }}
+        condition: .force == "false"
+
+      - command: rm -rf {{ .dir }}
+        condition: .force == "true"
+
+      - unset:
+          - "dir"
+          - "force"
+
+  - id: "dir.rename"
+    inputs:
+      - id: "old"
+        required: true
+      - id: "new"
+        required: true
+    operations:
+      - command: mv {{ .old }} {{ .new }}
+        unset:
+          - "old"
+          - "new"
+
+  - id: "dir.sync"
+    inputs:
+      - id: "src"
+        required: true
+      - id: "dst"
+        required: true
+    operations:
+      - command: |
+          src="{{ .src }}"
+          dst="{{ .dst }}"
+          rsync -a --delete "${src%/}/" "${dst%/}/"
+        unset:
+          - "src"
+          - "dst"
+
+  - id: "dir.pwd"
+    operations:
+      - command: pwd
+        output_format: "trim"
+
+  - id: "dir.list"
+    inputs:
+      - id: "dir"
+    operations:
+      - uses: "dir.pwd"
+        id: "dir"
+        condition: .dir == "false"
+        silent: true
+
+      - command: ls -1 -a
+        workdir: "{{ .dir }}"
+        unset:
+          - "dir"
