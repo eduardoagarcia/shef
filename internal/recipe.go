@@ -89,9 +89,9 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		IncreaseIndent()
 		defer DecreaseIndent()
 
-		if op.Unset != "" {
+		if op.Cleanup != "" {
 			defer func(operation Operation, context *ExecutionContext) {
-				handleUnset(operation, context)
+				handleCleanup(operation, context)
 			}(op, ctx)
 		}
 
@@ -382,61 +382,61 @@ func handleComponentOutputCollector(op Operation, ctx *ExecutionContext) (bool, 
 	return op.Exit, nil
 }
 
-// handleUnset processes the unset operation which removes variables from the context
-func handleUnset(op Operation, ctx *ExecutionContext) {
-	if op.Unset == nil {
+// handleCleanup processes the cleanup operation which removes variables from the context
+func handleCleanup(op Operation, ctx *ExecutionContext) {
+	if op.Cleanup == nil {
 		return
 	}
 
-	var varsToUnset []string
+	var varsToCleanup []string
 
-	switch unset := op.Unset.(type) {
+	switch cleanup := op.Cleanup.(type) {
 	case string:
-		if unset == "" {
+		if cleanup == "" {
 			return
 		}
-		varsToUnset = []string{unset}
+		varsToCleanup = []string{cleanup}
 	case []interface{}:
-		for _, v := range unset {
+		for _, v := range cleanup {
 			if strVal, ok := v.(string); ok && strVal != "" {
-				varsToUnset = append(varsToUnset, strVal)
+				varsToCleanup = append(varsToCleanup, strVal)
 			}
 		}
 	case []string:
-		for _, v := range unset {
+		for _, v := range cleanup {
 			if v != "" {
-				varsToUnset = append(varsToUnset, v)
+				varsToCleanup = append(varsToCleanup, v)
 			}
 		}
 	default:
-		if strVal, ok := op.Unset.(string); ok && strVal != "" {
-			varsToUnset = []string{strVal}
+		if strVal, ok := op.Cleanup.(string); ok && strVal != "" {
+			varsToCleanup = []string{strVal}
 		} else {
-			Log(CategoryOperation, "Invalid unset value type")
+			Log(CategoryOperation, "Invalid cleanup value type")
 			return
 		}
 	}
 
-	if len(varsToUnset) == 0 {
+	if len(varsToCleanup) == 0 {
 		return
 	}
 
-	for _, varName := range varsToUnset {
-		unsetVarName := varName
-		if strings.Contains(unsetVarName, "{") {
-			processedName, err := renderTemplate(unsetVarName, ctx.templateVars())
+	for _, varName := range varsToCleanup {
+		cleanupVarName := varName
+		if strings.Contains(cleanupVarName, "{") {
+			processedName, err := renderTemplate(cleanupVarName, ctx.templateVars())
 			if err == nil {
-				unsetVarName = processedName
+				cleanupVarName = processedName
 			} else {
-				LogError("Failed to render unset template", err, map[string]interface{}{"template": unsetVarName})
+				LogError("Failed to render cleanup template", err, map[string]interface{}{"template": cleanupVarName})
 				continue
 			}
 		}
 
-		Log(CategoryOperation, fmt.Sprintf("Unsetting variable: %s", unsetVarName))
-		delete(ctx.Vars, unsetVarName)
-		delete(ctx.OperationOutputs, unsetVarName)
-		delete(ctx.OperationResults, unsetVarName)
+		Log(CategoryOperation, fmt.Sprintf("Cleaning variable: %s", cleanupVarName))
+		delete(ctx.Vars, cleanupVarName)
+		delete(ctx.OperationOutputs, cleanupVarName)
+		delete(ctx.OperationResults, cleanupVarName)
 	}
 }
 

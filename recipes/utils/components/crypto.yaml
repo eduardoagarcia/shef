@@ -5,7 +5,7 @@ components:
     operations:
       - command: printf "{{ .data }}" | md5
         output_format: "trim"
-        unset:
+        cleanup:
           - "data"
 
   - id: "crypto.sha1"
@@ -14,7 +14,7 @@ components:
     operations:
       - command: printf "{{ .data }}" | shasum -a 1 | cut -d ' ' -f 1
         output_format: "trim"
-        unset:
+        cleanup:
           - "data"
 
   - id: "crypto.sha256"
@@ -23,7 +23,7 @@ components:
     operations:
       - command: printf "{{ .data }}" | shasum -a 256 | cut -d ' ' -f 1
         output_format: "trim"
-        unset:
+        cleanup:
           - "data"
 
   - id: "crypto.sha512"
@@ -32,7 +32,7 @@ components:
     operations:
       - command: printf "{{ .data }}" | shasum -a 512 | cut -d ' ' -f 1
         output_format: "trim"
-        unset:
+        cleanup:
           - "data"
 
   - id: "crypto.rot13"
@@ -41,7 +41,7 @@ components:
     operations:
       - command: printf "{{ .data }}" | tr 'A-Za-z' 'N-ZA-Mn-za-m'
         output_format: "trim"
-        unset:
+        cleanup:
           - "data"
 
   - id: "crypto.aes.encrypt"
@@ -58,7 +58,7 @@ components:
           printf "{{ .data }}" | openssl enc -aes-256-cbc -a -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}"
           set -H
         output_format: "trim"
-        unset:
+        cleanup:
           - "data"
           - "passphrase"
           - "iterations"
@@ -74,7 +74,7 @@ components:
     operations:
       - command: echo "{{ .data }}" | openssl enc -aes-256-cbc -a -d -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}"
         output_format: "trim"
-        unset:
+        cleanup:
           - "data"
           - "passphrase"
           - "iterations"

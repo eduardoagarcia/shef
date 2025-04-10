@@ -45,7 +45,7 @@ type Operation struct {
 	Prompts                    []Prompt               `yaml:"prompts,omitempty"`
 	Break                      bool                   `yaml:"break,omitempty"`
 	Exit                       bool                   `yaml:"exit,omitempty"`
-	Unset                      interface{}            `yaml:"unset,omitempty"`
+	Cleanup                    interface{}            `yaml:"cleanup,omitempty"`
 	Workdir                    string                 `yaml:"workdir,omitempty"`
 	ComponentInstanceID        string                 `yaml:"-"`
 	IsComponentOutputCollector bool                   `yaml:"-"`

@@ -5,7 +5,7 @@ components:
         required: true
     operations:
       - command: '[ -d "{{ .dir }}" ] && echo "true" || echo "false"'
-        unset:
+        cleanup:
           - "dir"
 
   - id: "dir.create"
@@ -14,7 +14,7 @@ components:
         required: true
     operations:
       - command: mkdir -p {{ .dir }}
-        unset:
+        cleanup:
           - "dir"
 
   - id: "dir.delete"
@@ -30,7 +30,7 @@ components:
       - command: rm -rf {{ .dir }}
         condition: .force == "true"
 
-      - unset:
+      - cleanup:
           - "dir"
           - "force"
 
@@ -42,7 +42,7 @@ components:
         required: true
     operations:
       - command: mv {{ .old }} {{ .new }}
-        unset:
+        cleanup:
           - "old"
           - "new"
 
@@ -57,7 +57,7 @@ components:
           src="{{ .src }}"
           dst="{{ .dst }}"
           rsync -a --delete "${src%/}/" "${dst%/}/"
-        unset:
+        cleanup:
           - "src"
           - "dst"
 
@@ -77,5 +77,5 @@ components:
 
       - command: ls -1 -a
         workdir: "{{ .dir }}"
-        unset:
+        cleanup:
           - "dir"

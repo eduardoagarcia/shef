@@ -3,7 +3,7 @@ recipes:
     description: "Get your ranked terminal command history"
     category: "terminal"
     operations:
-      - uses: "get_complete_command_name_usage"
+      - uses: "user.history.usage"
         id: "history"
         silent: true
 

@@ -1,6 +1,6 @@
 recipes:
-  - name: "unset"
-    description: "Test unset"
+  - name: "cleanup"
+    description: "Test cleaenup"
     category: "utils"
     operations:
       - id: "name_var"
@@ -11,12 +11,19 @@ recipes:
       - command: echo "{{ .name_var }}"
       - command: echo "{{ .address_var }}"
 
-      - unset:
+      - cleanup:
           - "name_var"
           - "address_var"
 
       - command: echo "{{ .name_var }}"
       - command: echo "{{ .address_var }}"
+
+      - uses: "data.base64.encode"
+        id: "base64_encoded"
+        with:
+          data: "this_is_a_test"
+
+      - command: 'echo "data: {{ .data }}"'
 
   - name: "test"
     description: "Test the utils"

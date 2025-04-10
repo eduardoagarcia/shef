@@ -49,7 +49,7 @@ components:
               ;;
             esac
         silent: true
-        unset:
+        cleanup:
           - "app"
 
   - id: "get_all_apps"
@@ -110,7 +110,7 @@ components:
         command: echo "false"
         silent: true
 
-      - unset:
+      - cleanup:
           - "app_filter"
 
   - id: "app_select"
@@ -138,5 +138,5 @@ components:
       - command: echo "false"
         condition: .all_apps == "false" || {{ count .all_apps }} == 0
         silent: true
-        unset:
+        cleanup:
           - "app_filter"

@@ -6,7 +6,7 @@ components:
     operations:
       - command: '[ -f {{ .file }} ] && echo "true" || echo "false"'
         output_format: "trim"
-        unset:
+        cleanup:
           - "file"
 
   - id: "file.read"
@@ -16,7 +16,7 @@ components:
     operations:
       - command: cat "{{ .file }}"
         output_format: "trim"
-        unset:
+        cleanup:
           - "file"
 
   - id: "file.write"
@@ -30,7 +30,7 @@ components:
           cat > {{ .file }} << 'EOF'
           {{ .contents }}
           EOF
-        unset:
+        cleanup:
           - "file"
           - "contents"
 
@@ -40,7 +40,7 @@ components:
         required: true
     operations:
       - command: touch {{ .file }}
-        unset:
+        cleanup:
           - "file"
 
   - id: "file.delete"
@@ -49,7 +49,7 @@ components:
         required: true
     operations:
       - command: rm "{{ .file }}"
-        unset:
+        cleanup:
           - "file"
 
   - id: "file.empty"
@@ -58,7 +58,7 @@ components:
         required: true
     operations:
       - command: "> {{ .file }}"
-        unset:
+        cleanup:
           - "file"
 
   - id: "file.rename"
@@ -69,7 +69,7 @@ components:
         required: true
     operations:
       - command: mv {{ .old }} {{ .new }}
-        unset:
+        cleanup:
           - "old"
           - "new"
 
@@ -89,7 +89,7 @@ components:
       - command: cp {{ .file }} {{ .backup_filename }}
 
       - command: echo "{{ .backup_filename }}"
-        unset:
+        cleanup:
           - "file"
           - "backup_filename"
           - "file_parts_path"
@@ -113,7 +113,7 @@ components:
         silent: true
 
       - command: echo "{{ .file_parts_path }}/{{ .filename }}"
-        unset:
+        cleanup:
           - "file"
           - "filename"
           - "file_parts_path"
@@ -137,7 +137,7 @@ components:
         silent: true
 
       - command: echo "{{ .file_parts_path }}/{{ .filename }}.{{ .file_parts_extension }}"
-        unset:
+        cleanup:
           - "file"
           - "filename"
           - "file_parts_path"
@@ -161,7 +161,7 @@ components:
         silent: true
 
       - command: echo "{{ .file_parts_path }}/{{ .file_parts_filename }}.{{ .extension }}"
-        unset:
+        cleanup:
           - "file"
           - "extension"
           - "file_parts_path"
@@ -185,7 +185,7 @@ components:
         silent: true
 
       - command: echo "{{ .file_parts_path }}/{{ .filename }}"
-        unset:
+        cleanup:
           - "file"
           - "filename"
           - "file_parts_path"
@@ -209,7 +209,7 @@ components:
         silent: true
 
       - command: echo "{{ .file_parts_path }}/{{ .filename }}.{{ .file_parts_extension }}"
-        unset:
+        cleanup:
           - "file"
           - "filename"
           - "file_parts_path"
@@ -233,7 +233,7 @@ components:
         silent: true
 
       - command: echo "{{ .file_parts_path }}/{{ .file_parts_filename }}.{{ .extension }}"
-        unset:
+        cleanup:
           - "file"
           - "extension"
           - "file_parts_path"
