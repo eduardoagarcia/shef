@@ -86,27 +86,43 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 			instanceNum := componentInstances[op.Uses]
 
 			var instanceID string
+			parentPrefix := ""
+			if op.ComponentInstanceID != "" {
+				parentPrefix = op.ComponentInstanceID + "_"
+			}
+
 			if op.ID != "" {
-				instanceID = fmt.Sprintf("%s_%s_%d", op.Uses, op.ID, instanceNum)
+				instanceID = fmt.Sprintf("%s%s_%s_%d", parentPrefix, op.Uses, op.ID, instanceNum)
 			} else {
-				instanceID = fmt.Sprintf("%s_%d", op.Uses, instanceNum)
+				instanceID = fmt.Sprintf("%s%s_%d", parentPrefix, op.Uses, instanceNum)
 			}
 
 			Log(CategoryComponent, fmt.Sprintf("Expanding component reference: %s (instance: %s)", op.Uses, instanceID))
 
 			var inputOps []Operation
-			if op.With != nil && len(op.With) > 0 {
+			if len(component.Inputs) > 0 {
 				Log(CategoryComponent, fmt.Sprintf("Processing component inputs for: %s (instance: %s)", op.Uses, instanceID))
+				Log(CategoryComponent, fmt.Sprintf("Component input count: %d", len(component.Inputs)))
 
-				if len(component.Inputs) > 0 {
-					for _, input := range component.Inputs {
-						if input.Required {
-							if _, exists := op.With[input.ID]; !exists {
-								return nil, fmt.Errorf("required input '%s' missing for component: %s", input.ID, op.Uses)
-							}
+				for _, input := range component.Inputs {
+					Log(CategoryComponent, fmt.Sprintf("Input: %s", input.ID))
+					Log(CategoryComponent, fmt.Sprintf("Input required: %v", input.Required))
+
+					if input.Required {
+						if op.With == nil {
+							return nil, fmt.Errorf("required input '%s' missing for component: %s", input.ID, op.Uses)
 						}
+
+						if _, exists := op.With[input.ID]; !exists {
+							return nil, fmt.Errorf("required input '%s' missing for component: %s", input.ID, op.Uses)
+						}
+
+						Log(CategoryComponent, fmt.Sprintf("With: %v", op.With[input.ID]))
 					}
 				}
+			}
+
+			if op.With != nil && len(op.With) > 0 {
 
 				for name, value := range op.With {
 					var inputVar string = name
@@ -155,6 +171,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 			for i, compOp := range component.Operations {
 				clonedOps[i] = compOp
 				applyOperationProperties(&clonedOps[i], op)
+				clonedOps[i].ComponentInstanceID = instanceID
 
 				if clonedOps[i].ID != "" {
 					opMap[clonedOps[i].ID] = clonedOps[i]
@@ -210,6 +227,10 @@ func applyOperationProperties(target *Operation, source Operation) {
 		} else {
 			target.Condition = source.Condition
 		}
+	}
+
+	if source.OnFailure == ":" && target.OnFailure == "" {
+		target.OnFailure = ":"
 	}
 
 	target.Silent = target.Silent || source.Silent

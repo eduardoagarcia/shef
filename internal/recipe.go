@@ -89,6 +89,12 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		IncreaseIndent()
 		defer DecreaseIndent()
 
+		if op.Unset != "" {
+			defer func(operation Operation, context *ExecutionContext) {
+				handleUnset(operation, context)
+			}(op, ctx)
+		}
+
 		renderedID := op.ID
 		if op.ID != "" {
 			var err error
@@ -143,7 +149,19 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		LogCommand(cmd, nil)
 		ctx.Vars["error"] = ""
 		workdir := ""
-		if workdirVal, exists := ctx.Vars["workdir"]; exists {
+		if op.Workdir != "" {
+			renderedWorkdir, err := renderTemplate(op.Workdir, ctx.templateVars())
+			if err != nil {
+				LogError("Failed to render workdir template", err, map[string]interface{}{"workdir": op.Workdir})
+				return false, fmt.Errorf("failed to render workdir template: %w", err)
+			}
+			workdir = renderedWorkdir
+			Log(CategoryFileSystem, fmt.Sprintf("Using operation-level working directory: %s", workdir))
+			if err := ensureWorkingDirectory(workdir); err != nil {
+				LogError("Failed to create operation working directory", err, map[string]interface{}{"workdir": workdir})
+				return false, err
+			}
+		} else if workdirVal, exists := ctx.Vars["workdir"]; exists {
 			workdir = fmt.Sprintf("%v", workdirVal)
 		}
 
@@ -301,6 +319,11 @@ func handleCommandError(op Operation, ctx *ExecutionContext, opMap map[string]Op
 	})
 
 	if op.OnFailure != "" {
+		if op.OnFailure == ":" {
+			Log(CategoryOperation, "No-op failure handler - ignoring error and continuing")
+			return op.Exit, nil
+		}
+
 		Log(CategoryOperation, fmt.Sprintf("Executing on_failure handler: %s", op.OnFailure))
 
 		nextOp, exists := opMap[op.OnFailure]
@@ -347,11 +370,74 @@ func handleComponentOutputCollector(op Operation, ctx *ExecutionContext) (bool, 
 			Log(CategoryComponent, fmt.Sprintf("Operation %s executed but didn't produce output", lastOpID))
 		}
 	} else {
-		ctx.OperationOutputs[op.ID] = ""
-		Log(CategoryComponent, fmt.Sprintf("No operations executed in component %s", op.ComponentInstanceID))
+		if inputVal, exists := ctx.OperationOutputs[op.ID]; exists && inputVal != "" {
+			Log(CategoryComponent, fmt.Sprintf("No operations executed in component %s, preserving existing variable %s",
+				op.ComponentInstanceID, op.ID))
+		} else {
+			ctx.OperationOutputs[op.ID] = ""
+			Log(CategoryComponent, fmt.Sprintf("No operations executed in component %s", op.ComponentInstanceID))
+		}
 	}
 
 	return op.Exit, nil
+}
+
+// handleUnset processes the unset operation which removes variables from the context
+func handleUnset(op Operation, ctx *ExecutionContext) {
+	if op.Unset == nil {
+		return
+	}
+
+	var varsToUnset []string
+
+	switch unset := op.Unset.(type) {
+	case string:
+		if unset == "" {
+			return
+		}
+		varsToUnset = []string{unset}
+	case []interface{}:
+		for _, v := range unset {
+			if strVal, ok := v.(string); ok && strVal != "" {
+				varsToUnset = append(varsToUnset, strVal)
+			}
+		}
+	case []string:
+		for _, v := range unset {
+			if v != "" {
+				varsToUnset = append(varsToUnset, v)
+			}
+		}
+	default:
+		if strVal, ok := op.Unset.(string); ok && strVal != "" {
+			varsToUnset = []string{strVal}
+		} else {
+			Log(CategoryOperation, "Invalid unset value type")
+			return
+		}
+	}
+
+	if len(varsToUnset) == 0 {
+		return
+	}
+
+	for _, varName := range varsToUnset {
+		unsetVarName := varName
+		if strings.Contains(unsetVarName, "{") {
+			processedName, err := renderTemplate(unsetVarName, ctx.templateVars())
+			if err == nil {
+				unsetVarName = processedName
+			} else {
+				LogError("Failed to render unset template", err, map[string]interface{}{"template": unsetVarName})
+				continue
+			}
+		}
+
+		Log(CategoryOperation, fmt.Sprintf("Unsetting variable: %s", unsetVarName))
+		delete(ctx.Vars, unsetVarName)
+		delete(ctx.OperationOutputs, unsetVarName)
+		delete(ctx.OperationResults, unsetVarName)
+	}
 }
 
 // processCommandOutput handles successful command output
