@@ -55,7 +55,9 @@ components:
     operations:
       - command: |
           set +H
-          printf "{{ .data }}" | openssl enc -aes-256-cbc -a -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}"
+          openssl enc -aes-256-cbc -a -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" << 'EOF'
+          {{ .data }}
+          EOF
           set -H
         output_format: "trim"
         cleanup:
@@ -72,7 +74,12 @@ components:
       - id: "iterations"
         default: 10000
     operations:
-      - command: echo "{{ .data }}" | openssl enc -aes-256-cbc -a -d -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}"
+      - command: |
+          set +H
+          openssl enc -aes-256-cbc -a -d -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" << 'EOF'
+          {{ .data }}
+          EOF
+          set -H
         output_format: "trim"
         cleanup:
           - "data"

@@ -96,6 +96,48 @@ components:
           - "file_parts_filename"
           - "file_parts_extension"
 
+  - id: "file.encrypt"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "passphrase"
+        required: true
+      - id: "iterations"
+        default: 10000
+    operations:
+      - command: openssl enc -aes-256-cbc -a -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" -in {{ .file }} -out {{ .file }}.enc
+
+      - uses: "file.rename"
+        with:
+          old: "{{ .file }}.enc"
+          new: "{{ .file }}"
+
+      - cleanup:
+          - "file"
+          - "passphrase"
+          - "iterations"
+
+  - id: "file.decrypt"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "passphrase"
+        required: true
+      - id: "iterations"
+        default: 10000
+    operations:
+      - command: openssl enc -aes-256-cbc -a -d -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" -in {{ .file }} -out {{ .file }}.dec
+
+      - uses: "file.rename"
+        with:
+          old: "{{ .file }}.dec"
+          new: "{{ .file }}"
+
+      - cleanup:
+          - "file"
+          - "passphrase"
+          - "iterations"
+
   - id: "file.lower"
     inputs:
       - id: "file"
