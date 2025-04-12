@@ -233,6 +233,10 @@ func applyOperationProperties(target *Operation, source Operation) {
 		target.OnFailure = ":"
 	}
 
+	if source.Workdir != "" && target.Workdir == "" {
+		target.Workdir = source.Workdir
+	}
+
 	target.Silent = target.Silent || source.Silent
 	target.Break = target.Break || source.Break
 	target.Exit = target.Exit || source.Exit

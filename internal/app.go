@@ -38,6 +38,7 @@ func buildApp() *cli.App {
 			listCommand(),
 			syncCommand(),
 			whichCommand(),
+			componentCommand(),
 		},
 	}
 }
@@ -210,6 +211,26 @@ func whichCommand() *cli.Command {
 			args := c.Args().Slice()
 			sourcePriority := getSourcePriority(c)
 			return handleWhichCommand(args, sourcePriority)
+		},
+	}
+}
+
+// componentCommand defines the 'run-component' command
+func componentCommand() *cli.Command {
+	return &cli.Command{
+		Name:        "component",
+		Aliases:     []string{"comp", "c"},
+		Usage:       "Run a component directly with parameters as component inputs",
+		Description: "Run components directly by providing the component id and input parameters",
+		ArgsUsage:   "component_id [--param1=value1 --param2=value2 ...]",
+		Action: func(c *cli.Context) error {
+			if c.Args().Len() == 0 {
+				fmt.Println("Error: component id is required")
+				return nil
+			}
+
+			componentID := c.Args().First()
+			return dispatchComponent(componentID, c.Args().Tail())
 		},
 	}
 }
