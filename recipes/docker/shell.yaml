@@ -21,15 +21,15 @@ recipes:
         - Exit the shell (usually with 'exit' command)
     operations:
       - uses: "docker.container.select"
-        id: "container"
+        id: "docker_container"
         silent: true
 
       - uses: "docker.which.shell"
         id: "docker_shell"
         with:
-          container: "{{ .container }}"
+          container: "{{ .docker_container }}"
         silent: true
 
       - name: "Execute Shell"
-        command: docker exec -it {{ .container }} {{ .docker_shell }}
+        command: docker exec -it {{ .docker_container }} {{ .docker_shell }}
         execution_mode: "interactive"
