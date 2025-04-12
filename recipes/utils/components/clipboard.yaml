@@ -1,7 +1,7 @@
 components:
-  - id: "copy_to_clipboard"
+  - id: "clipboard.copy"
     inputs:
-      - id: "value_to_copy"
+      - id: "value"
     operations:
       - id: "clipboard_cmd"
         command: |
@@ -19,8 +19,10 @@ components:
         silent: true
 
       - name: "Copy to Clipboard"
-        command: printf "%s" "{{ .value_to_copy }}" | {{ .clipboard_cmd }}
+        command: printf "%s" "{{ .value }}" | {{ .clipboard_cmd }}
         condition: .clipboard_cmd != "none"
+        cleanup:
+          - "value"
 
       - name: "Clipboard Success Message"
         command: echo {{ color "green" "Copied to the clipboard!" }}
