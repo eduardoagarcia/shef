@@ -61,6 +61,18 @@ components:
         cleanup:
           - "file"
 
+  - id: "file.copy"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "copy"
+        required: true
+    operations:
+      - command: cp {{ .file }} {{ .copy }}
+        cleanup:
+          - "file"
+          - "copy"
+
   - id: "file.rename"
     inputs:
       - id: "old"
@@ -137,6 +149,16 @@ components:
           - "file"
           - "passphrase"
           - "iterations"
+
+  - id: "file.fullpath"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - command: readlink -f {{ .file }}
+        output_format: "trim"
+        cleanup:
+          - "file"
 
   - id: "file.lower"
     inputs:
