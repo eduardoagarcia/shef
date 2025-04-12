@@ -1,5 +1,5 @@
 components:
-  - id: "get_os"
+  - id: "os.get"
     operations:
       - command: |
           case "$(uname -s)" in
@@ -18,43 +18,9 @@ components:
           esac
         silent: true
 
-  - id: "open_app"
-    inputs:
-      - id: "app"
+  - id: "os.apps"
     operations:
-      - uses: "get_os"
-        id: "os"
-
-      - command: |
-          case "{{ .os }}" in
-            macos)
-              open -a "{{ .app }}"
-              ;;
-            linux)
-              if command -v gtk-launch >/dev/null 2>&1; then
-                gtk-launch "{{ .app }}"
-              elif command -v flatpak >/dev/null 2>&1 && flatpak list --app | cut -f2 | grep -q -i "^{{ .app }}$"; then
-                flatpak run "$(flatpak list --app | grep -i "^{{ .app }}$" | cut -f1)"
-              elif command -v xdg-open >/dev/null 2>&1; then
-                xdg-open "$(find /usr/share/applications /usr/local/share/applications ~/.local/share/applications -name "*{{ .app }}*.desktop" 2>/dev/null | head -1)"
-              else
-                nohup "{{ .app }}" >/dev/null 2>&1 &
-              fi
-              ;;
-            windows)
-              powershell -command "Start-Process '{{ .app }}'"
-              ;;
-            *)
-              echo "false"
-              ;;
-            esac
-        silent: true
-        cleanup:
-          - "app"
-
-  - id: "get_all_apps"
-    operations:
-      - uses: "get_os"
+      - uses: "os.get"
         id: "os"
 
       - command: |
@@ -84,25 +50,27 @@ components:
             esac
         silent: true
 
-  - id: "get_filtered_apps"
+  - id: "os.apps.filtered"
     inputs:
-      - id: "app_filter"
+      - id: "filter"
     operations:
-      - uses: "get_all_apps"
-        id: "all_apps"
+      - uses: "os.apps"
+        id: "apps"
 
-      - command: echo '{{ .all_apps }}'
-        condition: .all_apps != "false" && .app_filter == "false"
+      - command: echo "{{ .apps }}"
+        condition: .apps != "false" && .filter == "false"
         on_failure: "handle_failure"
         silent: true
 
-      - command: echo '{{ .all_apps }}' | grep -i "{{ .app_filter }}"
-        condition: .all_apps != "false" && .app_filter != "false"
+      - command: echo '{{ .apps }}' | grep -i "{{ .filter }}"
+        condition: .apps != "false" && .filter != "false"
         on_failure: "handle_failure"
         silent: true
+        cleanup:
+          - "filter"
 
       - command: echo "false"
-        condition: .all_apps == "false"
+        condition: .apps == "false"
         on_failure: "handle_failure"
         silent: true
 
@@ -110,20 +78,17 @@ components:
         command: echo "false"
         silent: true
 
-      - cleanup:
-          - "app_filter"
-
-  - id: "app_select"
+  - id: "os.app.select"
     inputs:
-      - id: "app_filter"
+      - id: "filter"
     operations:
-      - uses: "get_filtered_apps"
+      - uses: "os.apps.filtered"
         with:
-          app_filter: "{{ .app_filter }}"
-        id: "all_apps"
+          filter: "{{ .filter }}"
+        id: "apps"
 
-      - command: echo "{{ .all_apps }}"
-        condition: '{{ count .all_apps }} == 1'
+      - command: echo "{{ .apps }}"
+        condition: '{{ count .apps }} == 1 && {{ .apps }} != "false"'
         silent: true
 
       - command: echo "{{ .app_name }}"
@@ -131,12 +96,46 @@ components:
           - id: "app_name"
             type: "select"
             message: "Select an Application"
-            source_operation: "all_apps"
-        condition: .all_apps != "false && {{ count .all_apps }} > 1
+            source_operation: "apps"
+        condition: .apps != "false && {{ count .apps }} > 1
         silent: true
 
       - command: echo "false"
-        condition: .all_apps == "false" || {{ count .all_apps }} == 0
+        condition: .apps == "false" || {{ count .apps }} == 0
         silent: true
         cleanup:
-          - "app_filter"
+          - "filter"
+
+  - id: "os.app.open"
+    inputs:
+      - id: "app"
+    operations:
+      - uses: "os.get"
+        id: "os"
+
+      - command: |
+          case "{{ .os }}" in
+            macos)
+              open -a "{{ .app }}"
+              ;;
+            linux)
+              if command -v gtk-launch >/dev/null 2>&1; then
+                gtk-launch "{{ .app }}"
+              elif command -v flatpak >/dev/null 2>&1 && flatpak list --app | cut -f2 | grep -q -i "^{{ .app }}$"; then
+                flatpak run "$(flatpak list --app | grep -i "^{{ .app }}$" | cut -f1)"
+              elif command -v xdg-open >/dev/null 2>&1; then
+                xdg-open "$(find /usr/share/applications /usr/local/share/applications ~/.local/share/applications -name "*{{ .app }}*.desktop" 2>/dev/null | head -1)"
+              else
+                nohup "{{ .app }}" >/dev/null 2>&1 &
+              fi
+              ;;
+            windows)
+              powershell -command "Start-Process '{{ .app }}'"
+              ;;
+            *)
+              echo "false"
+              ;;
+            esac
+        silent: true
+        cleanup:
+          - "app"
