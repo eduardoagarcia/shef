@@ -3,12 +3,12 @@ recipes:
     description: "Open 1Password"
     category: "op"
     operations:
-      - uses: "get_filtered_apps"
+      - uses: "os.apps.filtered"
         with:
-          app_filter: "1Password"
+          filter: "1Password"
         id: "op_app"
 
-      - uses: "open_app"
+      - uses: "os.app.open"
         with:
           app: "{{ .op_app }}"
 
@@ -16,4 +16,4 @@ recipes:
     description: "Lock 1Password"
     category: "op"
     operations:
-      - uses: "op_lock"
+      - uses: "op.lock"

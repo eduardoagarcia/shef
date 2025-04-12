@@ -20,13 +20,13 @@ recipes:
         - Automatically retrieves container names from docker ps
         - Exit the shell (usually with 'exit' command)
     operations:
-      - uses: "docker_container_select"
+      - uses: "docker.container.select"
         id: "container"
         silent: true
 
-      - uses: "which_docker_container_shell"
+      - uses: "docker.which.shell"
         with:
-          docker_shell_container: "{{ .container }}"
+          container: "{{ .container }}"
         silent: true
 
       - name: "Execute Shell"

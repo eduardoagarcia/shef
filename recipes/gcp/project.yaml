@@ -20,14 +20,14 @@ recipes:
     operations:
       - name: "GCP Project Select"
         id: "project"
-        uses: "gcp_project_select"
+        uses: "gcp.project.select"
         condition: .w != "true" && .which != "true"
         silent: true
         on_success: "exit"
 
       - name: "GCP Current Project"
         id: "project"
-        uses: "gcp_current_project"
+        uses: "gcp.project.current"
         condition: .w == "true" || .which == "true"
         silent: true
         on_success: "exit"
