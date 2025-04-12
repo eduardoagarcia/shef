@@ -25,6 +25,7 @@ recipes:
         silent: true
 
       - uses: "docker.which.shell"
+        id: "docker_shell"
         with:
           container: "{{ .container }}"
         silent: true
