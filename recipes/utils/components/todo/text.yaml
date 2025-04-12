@@ -1,0 +1,24 @@
+components:
+  # Basic Text Processing
+  # Command: echo "line1\nline2\nline3" | sort                      # Sort lines alphabetically
+  # Command: echo "line1\nline2\nline1" | uniq                      # Remove duplicate lines
+  # Command: echo "line1\nline2\nline3" | cut -d',' -f1            # Cut first field using comma delimiter
+  # Command: echo "line1\nline2\nline3" | awk '{print $1}'         # Print first field using space delimiter
+  # Command: echo "line1\nline2\nline3" | sed 's/line/text/'       # Replace "line" with "text"
+  # Command: echo "line1\nline2\nline3" | head -n 2                # Get first 2 lines
+  # Command: echo "line1\nline2\nline3" | tail -n 2                # Get last 2 lines
+  # Command: echo "  text  " | xargs                                # Trim whitespace
+  # Command: echo "text" | fold -w 40 -s                           # Wrap text at 40 characters
+  # Command: echo "line1\nline2\nline3" | grep "line1"             # Find lines matching pattern
+  # Command: echo "line1\nline2\nline3" | grep -v "line1"          # Find lines NOT matching pattern
+  # Command: echo "line1\nline2\nline3" | wc -l                    # Count lines
+  # Command: echo "text" | wc -w                                    # Count words
+  # Command: echo "text" | wc -c                                    # Count characters
+  # Command: join -t, file1.txt file2.txt                          # Join two files on a common field
+  # Command: paste -d, file1.txt file2.txt                         # Paste files side by side with delimiter
+  # Command: echo "line1\nline2\nline3" | tr '\n' ','              # Translate newlines to commas
+  # Command: echo "TEXT" | tr '[:upper:]' '[:lower:]'              # Convert to lowercase
+  # Command: echo "line1\nline2\nline3" | nl                       # Number lines
+  # Command: echo "line1\nline2\nline3" | tac                      # Reverse line order
+  # Command: echo "Hello, World!" | fmt -w 50                      # Format text to specified width
+  # Command: echo "line1\nline2\nline3" | pr -h "Header" -2        # Format text for printing with header

@@ -1,0 +1,39 @@
+components:
+  # Advanced Networking
+  # Command: ip a                                                   # Show all network interfaces
+  # Command: ip -br a                                               # Brief network interface info
+  # Command: ip link set eth0 up                                    # Bring interface up
+  # Command: ip link set eth0 down                                  # Bring interface down
+  # Command: ip addr add 192.168.1.100/24 dev eth0                  # Add IP to interface
+  # Command: ip addr del 192.168.1.100/24 dev eth0                  # Remove IP from interface
+  # Command: ip route                                               # Show routing table
+  # Command: ip route add default via 192.168.1.1                   # Add default gateway
+  # Command: ip route add 192.168.2.0/24 via 192.168.1.254          # Add static route
+  # Command: ip route del 192.168.2.0/24                            # Delete static route
+  # Command: ip neigh                                               # Show neighbor table (ARP)
+  # Command: ip neigh flush dev eth0                                # Clear ARP cache for interface
+  # Command: ss -tuln                                               # List listening ports
+  # Command: ss -ta                                                 # Show all TCP connections
+  # Command: ss -ua                                                 # Show all UDP connections
+  # Command: ss -l -p                                               # Show listening sockets with processes
+  # Command: ss -t -o                                               # TCP connections with timer info
+  # Command: ss dst 192.168.1.100                                   # Connections to specific host
+  # Command: ss sport = :80                                         # Connections from source port 80
+  # Command: ss dport = :443                                        # Connections to destination port 443
+  # Command: ss -o state established                                # Only established connections
+  # Command: ss -o state time-wait                                  # TIME-WAIT connections
+  # Command: ifconfig eth0 192.168.1.100 netmask 255.255.255.0      # Set IP (old way)
+  # Command: route add default gw 192.168.1.1                       # Add default route (old way)
+  # Command: dig +short @8.8.8.8 example.com                        # DNS lookup using Google DNS
+  # Command: host -t MX example.com                                 # Get mail exchange records
+  # Command: host -t TXT example.com                                # Get TXT records
+  # Command: mtr example.com                                        # Traceroute and ping combined
+  # Command: tcpdump -i eth0 -n                                     # Capture packets on interface
+  # Command: tcpdump -i eth0 port 80                                # Capture HTTP traffic
+  # Command: tcpdump -i eth0 src 192.168.1.100                      # Capture from source IP
+  # Command: tcpdump -i eth0 dst 192.168.1.100                      # Capture to destination IP
+  # Command: tcpdump -i eth0 -w capture.pcap                        # Write capture to file
+  # Command: tcpdump -r capture.pcap                                # Read capture from file
+  # Command: netcat -l -p 8080                                      # Listen on port 8080
+  # Command: netcat 192.168.1.100 80                                # Connect to host:port
+  # Command: nmap -p 22 192.168.1.0/24                              # Scan subnet for SSH servers

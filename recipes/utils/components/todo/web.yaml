@@ -1,0 +1,28 @@
+components:
+  # Web Operations
+  # Command: curl -s https://example.com                           # Fetch web page
+  # Command: curl -I https://example.com                           # Get HTTP headers only
+  # Command: curl -s https://example.com -o file.html              # Download to file
+  # Command: curl -s -L https://example.com                        # Follow redirects
+  # Command: curl -s -X POST -d "param=value" https://example.com  # Basic POST request
+  # Command: curl -s -X PUT -d "param=value" https://example.com   # Basic PUT request
+  # Command: curl -s -X DELETE https://example.com/resource        # Basic DELETE request
+  # Command: curl -s -H "Content-Type: application/json" https://example.com # Set header
+  # Command: curl -s --user username:password https://example.com  # Basic auth
+  # Command: curl -s -k https://example.com                        # Ignore SSL errors
+  # Command: curl -s -A "Mozilla/5.0" https://example.com          # Set user agent
+  # Command: curl -s -e "https://google.com" https://example.com   # Set referer
+  # Command: curl -s -b "name=value" https://example.com           # Set cookie
+  # Command: curl -s -c cookies.txt https://example.com            # Save cookies
+  # Command: curl -s -d @data.json -H "Content-Type: application/json" https://example.com # POST JSON
+  # Command: curl -s --data-urlencode "name=value with spaces" https://example.com # URL encoded data
+  # Command: curl -s -F "file=@filename.txt" https://example.com   # File upload
+  # Command: curl -s https://example.com | grep "pattern"          # Search response
+  # Command: curl -s https://example.com | sed 's/<[^>]*>//g'      # Strip HTML tags
+  # Command: curl -s https://example.com | html2text               # Convert HTML to text
+  # Command: curl -s ifconfig.me                                   # Get public IP
+  # Command: curl -s https://worldtimeapi.org/api/ip | jq '.datetime' # Get time from API
+  # Command: curl -s https://wttr.in/?format=3                     # Get weather
+  # Command: wget -q -O - https://example.com                      # Alternative to curl
+  # Command: dig +short example.com                                # DNS lookup
+  # Command: nslookup example.com                                  # Alternate DNS lookup

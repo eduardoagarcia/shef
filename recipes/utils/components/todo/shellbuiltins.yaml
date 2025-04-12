@@ -1,0 +1,31 @@
+components:
+  # Shell Built-ins
+  # Command: echo "text"                                           # Print text to standard output
+  # Command: printf "%s\\n" "text"                                 # Formatted print to standard output
+  # Command: read var                                              # Read input into variable
+  # Command: read -p "Prompt: " var                                # Read input with prompt
+  # Command: read -s var                                           # Read input silently (passwords)
+  # Command: set                                                   # Display all shell variables
+  # Command: set -e                                                # Exit on error
+  # Command: set -x                                                # Print commands before execution
+  # Command: set +x                                                # Turn off command printing
+  # Command: export VAR=value                                      # Export variable to environment
+  # Command: export -p                                             # List all exported variables
+  # Command: source file.sh                                        # Execute commands from file in current shell
+  # Command: . file.sh                                             # Same as source
+  # Command: alias ls='ls --color=auto'                            # Create command alias
+  # Command: alias                                                 # List all aliases
+  # Command: unalias alias_name                                    # Remove alias
+  # Command: test -f file                                          # Test if file exists
+  # Command: test -d directory                                     # Test if directory exists
+  # Command: test $a -eq $b                                        # Test if integers are equal
+  # Command: [ -f file ]                                           # Alternative test syntax
+  # Command: [[ $string =~ $pattern ]]                             # Regular expression test
+  # Command: cd directory                                          # Change directory
+  # Command: cd -                                                  # Change to previous directory
+  # Command: cd ~                                                  # Change to home directory
+  # Command: pwd                                                   # Print working directory
+  # Command: pushd directory                                       # Push directory onto stack and change to it
+  # Command: popd                                                  # Pop directory from stack and change to it
+  # Command: dirs -v                                               # View directory stack
+  # Command: command command_name                                  # Run command_name even if it's aliased/overridden

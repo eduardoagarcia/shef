@@ -1,0 +1,165 @@
+#components:
+#  # Compression operations
+#  - id: "compress_gzip"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: printf "{{ .data }}" | gzip -c | base64
+#
+#  - id: "decompress_gzip"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: printf "{{ .data }}" | base64 -d | gunzip
+#
+#  - id: "compress_zlib"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: |
+#          python3 -c "
+#          import zlib, base64, sys
+#          data = sys.stdin.read().encode()
+#          compressed = zlib.compress(data)
+#          print(base64.b64encode(compressed).decode(), end='')
+#          " <<< "{{ .data }}"
+#
+#  - id: "decompress_zlib"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: |
+#          python3 -c "
+#          import zlib, base64, sys
+#          data = base64.b64decode(sys.stdin.read())
+#          decompressed = zlib.decompress(data)
+#          print(decompressed.decode(), end='')
+#          " <<< "{{ .data }}"
+#
+#  - id: "compress_bzip2"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: printf "{{ .data }}" | bzip2 -c | base64
+#
+#  - id: "decompress_bzip2"
+#    inputs:
+#      - id: "data"
+#    operations:
+#      - command: printf "{{ .data }}" | base64 -d | bunzip2
+#
+#  # File type identification
+#  - id: "identify_file_type"
+#    inputs:
+#      - id: "file_path"
+#    operations:
+#      - command: file -b "{{ .file_path }}"
+#
+#  - id: "identify_file_mime"
+#    inputs:
+#      - id: "file_path"
+#    operations:
+#      - command: file --mime-type -b "{{ .file_path }}"
+#
+#  # File operations
+#  - id: "file_head"
+#    inputs:
+#      - id: "file_path"
+#      - id: "lines"
+#        default: "10"
+#    operations:
+#      - command: head -n {{ .lines }} "{{ .file_path }}"
+#
+#  - id: "file_tail"
+#    inputs:
+#      - id: "file_path"
+#      - id: "lines"
+#        default: "10"
+#    operations:
+#      - command: tail -n {{ .lines }} "{{ .file_path }}"
+#
+#  - id: "file_size"
+#    inputs:
+#      - id: "file_path"
+#    operations:
+#      - command: |
+#          python3 -c "
+#          import os, sys
+#
+#          file_path = '{{ .file_path }}'
+#
+#          if not os.path.exists(file_path):
+#              print(f'Error: File not found: {file_path}')
+#              sys.exit(1)
+#
+#          size_bytes = os.path.getsize(file_path)
+#
+#          # Convert to human-readable format
+#          units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+#          size = float(size_bytes)
+#          unit_index = 0
+#
+#          while size >= 1024 and unit_index < len(units) - 1:
+#              size /= 1024.0
+#              unit_index += 1
+#
+#          print(f'{size:.2f} {units[unit_index]} ({size_bytes:,} bytes)')
+#          "
+#
+#  # Archive handling
+#  - id: "create_zip"
+#    inputs:
+#      - id: "files"
+#      - id: "output_zip"
+#    operations:
+#      - command: zip -j "{{ .output_zip }}" {{ .files }} && echo "Created {{ .output_zip }}"
+#
+#  - id: "extract_zip"
+#    inputs:
+#      - id: "zip_file"
+#      - id: "output_dir"
+#        default: "."
+#    operations:
+#      - command: unzip -q "{{ .zip_file }}" -d "{{ .output_dir }}" && echo "Extracted to {{ .output_dir }}"
+#
+#  - id: "list_zip_contents"
+#    inputs:
+#      - id: "zip_file"
+#    operations:
+#      - command: unzip -l "{{ .zip_file }}"
+#
+#  - id: "create_tar"
+#    inputs:
+#      - id: "files"
+#      - id: "output_tar"
+#      - id: "compress"
+#        default: "gzip"
+#    operations:
+#      - command: |
+#          if [ "{{ .compress }}" = "gzip" ]; then
+#            tar -czf "{{ .output_tar }}" {{ .files }} && echo "Created {{ .output_tar }}"
+#          elif [ "{{ .compress }}" = "bzip2" ]; then
+#            tar -cjf "{{ .output_tar }}" {{ .files }} && echo "Created {{ .output_tar }}"
+#          elif [ "{{ .compress }}" = "none" ]; then
+#            tar -cf "{{ .output_tar }}" {{ .files }} && echo "Created {{ .output_tar }}"
+#          else
+#            echo "Error: Unknown compression type: {{ .compress }}"
+#            exit 1
+#          fi
+#
+#  - id: "extract_tar"
+#    inputs:
+#      - id: "tar_file"
+#      - id: "output_dir"
+#        default: "."
+#    operations:
+#      - command: |
+#          mkdir -p "{{ .output_dir }}" && \
+#          tar -xf "{{ .tar_file }}" -C "{{ .output_dir }}" && \
+#          echo "Extracted to {{ .output_dir }}"
+#
+#  - id: "list_tar_contents"
+#    inputs:
+#      - id: "tar_file"
+#    operations:
+#      - command: tar -tf "{{ .tar_file }}"
