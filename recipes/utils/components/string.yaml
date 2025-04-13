@@ -81,6 +81,16 @@ components:
         cleanup:
           - "string"
 
+  - id: "string.capitalize"
+    inputs:
+      - id: "string"
+        required: true
+    operations:
+      - command: echo "{{ .string }}" | awk '{print toupper(substr($0,1,1)) substr($0,2)}'
+        output_format: "trim"
+        cleanup:
+          - "string"
+
   - id: "string.reverse"
     inputs:
       - id: "string"
@@ -110,3 +120,158 @@ components:
         output_format: "trim"
         cleanup:
           - "string"
+
+  - id: "string.count.substring"
+    inputs:
+      - id: "string"
+        required: true
+      - id: "substring"
+        required: true
+    operations:
+      - command: echo "{{ .string }}" | grep -o "{{ .substring }}" | wc -l
+        output_format: "trim"
+        cleanup:
+          - "string"
+          - "substring"
+
+  - id: "string.split"
+    inputs:
+      - id: "string"
+        required: true
+      - id: "delimiter"
+        default: "_"
+        description: "Use _ for space"
+    operations:
+      - command: echo "{{ .string }}" | awk -F "$(echo '{{ .delimiter }}' | tr '_' ' ')" '{for(i=1;i<=NF;i++) print $i}'
+        output_format: "trim"
+        cleanup:
+          - "string"
+          - "delimiter"
+
+  - id: "string.join"
+    inputs:
+      - id: "string"
+        required: true
+      - id: "delimiter"
+        default: ",_"
+        description: "Use _ for space"
+    operations:
+      - command: echo "{{ .string }}" | tr '\n' '#' | sed 's/#$//' | sed "s/#/$(echo '{{ .delimiter }}' | tr '_' ' ')/g"
+        output_format: "trim"
+        cleanup:
+          - "string"
+          - "delimiter"
+
+  - id: "string.replace"
+    inputs:
+      - id: "string"
+        required: true
+      - id: "find"
+        required: true
+      - id: "replace"
+        required: true
+        description: "Use _ for space"
+    operations:
+      - command: echo "{{ .string }}" | sed "s/{{ .find }}/$(echo '{{ .replace }}' | tr '_' ' ')/g"
+        output_format: "trim"
+        cleanup:
+          - "string"
+          - "find"
+          - "replace"
+
+  - id: "string.substring"
+    inputs:
+      - id: "string"
+        required: true
+      - id: "start"
+        required: true
+      - id: "length"
+        required: true
+    operations:
+      - command: echo "{{ .string }}" | cut -c "{{ .start }}-$(( {{ .start }} + {{ .length }} - 1 ))"
+        output_format: "trim"
+        cleanup:
+          - "string"
+          - "start"
+          - "length"
+
+  - id: "string.urlencode"
+    inputs:
+      - id: "string"
+        required: true
+    operations:
+      - command: echo "{{ .string }}" | python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip()))'
+        output_format: "trim"
+        cleanup:
+          - "string"
+
+  - id: "string.urldecode"
+    inputs:
+      - id: "string"
+        required: true
+    operations:
+      - command: echo "{{ .string }}" | python3 -c 'import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read().strip()))'
+        output_format: "trim"
+        cleanup:
+          - "string"
+
+  - id: "string.truncate"
+    inputs:
+      - id: "string"
+        required: true
+      - id: "length"
+        default: 25
+      - id: "suffix"
+        default: "..."
+    operations:
+      - command: echo "{{ .string }}" | awk -v len={{ .length }} -v suffix="{{ .suffix }}" 'length($0) > len {print substr($0, 1, len) suffix; next} {print}'
+        output_format: "trim"
+        cleanup:
+          - "string"
+          - "length"
+          - "suffix"
+
+  - id: "string.padleft"
+    inputs:
+      - id: "string"
+        required: true
+      - id: "length"
+        required: true
+      - id: "padding"
+        default: "_"
+        description: "Use _ for space"
+    operations:
+      - command: printf "%s" "{{ .string }}" | awk -v len={{ .length }} -v pad="$(printf "%s" "{{ .padding }}" | tr '_' ' ')" '{while (length($0) < len) {$0=pad $0}; printf "%s", $0}'
+        cleanup:
+          - "string"
+          - "length"
+          - "padding"
+
+  - id: "string.padright"
+    inputs:
+      - id: "string"
+        required: true
+      - id: "length"
+        required: true
+      - id: "padding"
+        default: "_"
+        description: "Use _ for space"
+    operations:
+      - command: printf "%s" "{{ .string }}" | awk -v len={{ .length }} -v pad="$(printf "%s" "{{ .padding }}" | tr '_' ' ')" '{while (length($0) < len) {$0=$0 pad}; printf "%s", $0}'
+        cleanup:
+          - "string"
+          - "length"
+          - "padding"
+
+  - id: "string.regex.match"
+    inputs:
+      - id: "string"
+        required: true
+      - id: "pattern"
+        required: true
+    operations:
+      - command: echo "{{ .string }}" | grep -o -E "{{ .pattern }}" || echo ""
+        output_format: "trim"
+        cleanup:
+          - "string"
+          - "pattern"
