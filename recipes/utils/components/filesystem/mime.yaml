@@ -1,0 +1,123 @@
+components:
+  - id: "mime._internal"
+    inputs:
+      - id: "path"
+      - id: "mime_type"
+      - id: "mime_subtype"
+    operations:
+      - uses: "dir.pwd"
+        id: "path"
+        condition: .path == "false"
+        silent: true
+
+      - command: echo ""
+        id: "mime_subtype"
+        output_format: "trim"
+        condition: .mime_subtype == "false"
+        silent: true
+
+      - command: |
+          find {{ .path }} -type f -exec file --mime-type {} \+ | grep "{{ .mime_type }}/{{ .mime_subtype }}" | cut -d: -f1
+        cleanup:
+          - "path"
+          - "mime_type"
+          - "mime_subtype"
+
+  - id: "mime.application"
+    inputs:
+      - id: "path"
+      - id: "subtype"
+    operations:
+      - uses: "mime._internal"
+        with:
+          path: "{{ .path }}"
+          mime_type: "application"
+          mime_subtype: "{{ .subtype }}"
+
+  - id: "mime.audio"
+    inputs:
+      - id: "path"
+      - id: "subtype"
+    operations:
+      - uses: "mime._internal"
+        with:
+          path: "{{ .path }}"
+          mime_type: "audio"
+          mime_subtype: "{{ .subtype }}"
+
+  - id: "mime.font"
+    inputs:
+      - id: "path"
+      - id: "subtype"
+    operations:
+      - uses: "mime._internal"
+        with:
+          path: "{{ .path }}"
+          mime_type: "font"
+          mime_subtype: "{{ .subtype }}"
+
+  - id: "mime.image"
+    inputs:
+      - id: "path"
+      - id: "subtype"
+    operations:
+      - uses: "mime._internal"
+        with:
+          path: "{{ .path }}"
+          mime_type: "image"
+          mime_subtype: "{{ .subtype }}"
+
+  - id: "mime.message"
+    inputs:
+      - id: "path"
+      - id: "subtype"
+    operations:
+      - uses: "mime._internal"
+        with:
+          path: "{{ .path }}"
+          mime_type: "message"
+          mime_subtype: "{{ .subtype }}"
+
+  - id: "mime.model"
+    inputs:
+      - id: "path"
+      - id: "subtype"
+    operations:
+      - uses: "mime._internal"
+        with:
+          path: "{{ .path }}"
+          mime_type: "model"
+          mime_subtype: "{{ .subtype }}"
+
+  - id: "mime.multipart"
+    inputs:
+      - id: "path"
+      - id: "subtype"
+    operations:
+      - uses: "mime._internal"
+        with:
+          path: "{{ .path }}"
+          mime_type: "multipart"
+          mime_subtype: "{{ .subtype }}"
+
+  - id: "mime.text"
+    inputs:
+      - id: "path"
+      - id: "subtype"
+    operations:
+      - uses: "mime._internal"
+        with:
+          path: "{{ .path }}"
+          mime_type: "text"
+          mime_subtype: "{{ .subtype }}"
+
+  - id: "mime.video"
+    inputs:
+      - id: "path"
+      - id: "subtype"
+    operations:
+      - uses: "mime._internal"
+        with:
+          path: "{{ .path }}"
+          mime_type: "video"
+          mime_subtype: "{{ .subtype }}"
