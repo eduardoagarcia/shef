@@ -1,0 +1,431 @@
+components:
+  - id: "list.make"
+    inputs:
+      - id: "list"
+        required: true
+    operations:
+      - command: |
+          list="{{ .list }}"
+
+          if [[ "$list" == *$'\n'* ]]; then
+            echo "$list"
+          elif [[ "$list" =~ ^\[.*\]$ ]]; then
+            list="${list#\[}"
+            list="${list%\]}"
+            echo "$list" | tr ',' '\n' | sed 's/^ *//' | sed 's/ *$//'
+          elif [[ "$list" =~ ^\".*\"$ ]] || [[ "$list" =~ ^\'.*\'$ ]]; then
+            list="${list#\"}"
+            list="${list%\"}"
+            list="${list#\'}"
+            list="${list%\'}"
+            echo "$list"
+          elif [[ "$list" =~ [[:space:]] ]]; then
+            for item in $list; do
+              echo "$item"
+            done
+          elif [[ "$list" == *","* ]]; then
+            echo "$list" | tr ',' '\n' | sed 's/^ *//' | sed 's/ *$//'
+          elif [[ "$list" == *";"* ]]; then
+            echo "$list" | tr ';' '\n' | sed 's/^ *//' | sed 's/ *$//'
+          elif [[ "$list" == *":"* ]]; then
+            echo "$list" | tr ':' '\n' | sed 's/^ *//' | sed 's/ *$//'
+          elif [[ -f "$list" ]]; then
+            cat "$list"
+          else
+            declare -n arr="$list" 2>/dev/null
+            if [[ $? -eq 0 ]]; then
+              printf "%s\n" "${arr[@]}"
+            else
+              echo "$list"
+            fi
+          fi
+        output_format: "lines"
+        cleanup:
+          - "list"
+
+  - id: "list.length"
+    inputs:
+      - id: "list"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | grep -v "^$" | wc -l
+        output_format: "trim"
+        cleanup:
+          - "list"
+
+  - id: "list.pluck"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "index"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | awk -v idx="$(( {{ .index }} +1))" 'NR==idx {print}'
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "index"
+
+  - id: "list.append"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "item"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: |
+          echo "{{ .list }}"
+          echo "{{ .item }}"
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "item"
+
+  - id: "list.prepend"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "item"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: |
+          echo "{{ .item }}"
+          echo "{{ .list }}"
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "item"
+
+  - id: "list.insert"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "item"
+        required: true
+      - id: "index"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: |
+          list="{{ .list }}"
+          item="{{ .item }}"
+          index="{{ .index }}"
+
+          awk -v x="${index}" -v i="${item}" '
+          BEGIN {line_count = 0}
+          {
+            if (line_count == x) {
+              print i
+            }
+            print $0
+            line_count++
+          }
+          END {
+            if (x >= line_count) {
+              print i
+            }
+          }' <<< "${list}"
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "item"
+          - "index"
+
+  - id: "list.remove"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "index"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: |
+          list="{{ .list }}"
+          index="{{ .index }}"
+
+          awk -v x="${index}" '
+          BEGIN {line_count = 0}
+          {
+            if (line_count != x) {
+            print $0
+          }
+            line_count++
+          }' <<< "${list}"
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "index"
+
+  - id: "list.remove.item"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "item"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | grep -v "^{{ .item }}$"
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "item"
+
+  - id: "list.item.index"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "item"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: |
+          list="{{ .list }}"
+          item="{{ .item }}"
+
+          awk -v i="${item}" '
+          BEGIN {found = 0}
+          {
+            if ($0 == i && found == 0) {
+              print NR - 1
+              found = 1
+              exit
+            }
+          }
+          END {
+            if (found == 0) {
+              print "-1"
+            }
+          }' <<< "${list}"
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "item"
+
+  - id: "list.contains"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "item"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: |
+          if echo "{{ .list }}" | grep -q "^{{ .item }}$"; then
+            echo "true"
+          else
+            echo "false"
+          fi
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "item"
+
+  - id: "list.join"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "delimiter"
+        default: ","
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - uses: "string.join"
+        id: "joined"
+        with:
+          string: "{{ .list }}"
+          delimiter: "{{ .delimiter }}"
+        silent: true
+
+      - command: echo "{{ .joined }}"
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "delimiter"
+          - "joined"
+
+  - id: "list.reverse"
+    inputs:
+      - id: "list"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: sed '1!G;h;$!d' <<< "{{ .list }}"
+        output_format: "trim"
+        cleanup:
+          - "list"
+
+  - id: "list.sort"
+    inputs:
+      - id: "list"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | sort
+        output_format: "trim"
+        cleanup:
+          - "list"
+
+  - id: "list.unique"
+    inputs:
+      - id: "list"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | sort | uniq
+        output_format: "trim"
+        cleanup:
+          - "list"
+
+  - id: "list.filter"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "filter"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | grep "{{ .filter }}"
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "filter"
+
+  - id: "list.slice"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "start"
+        required: true
+      - id: "end"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | sed -n "$(({{.start}}+1)),$(({{.end}}+1))p"
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "start"
+          - "end"
+
+  - id: "list.chunk"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "size"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | awk -v size="{{ .size }}" '{if (NR % size == 1) printf "\n"; printf "%s\n", $0}'
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "size"
+
+  - id: "list.overlap"
+    inputs:
+      - id: "list_a"
+        required: true
+      - id: "list_b"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list_a"
+        with:
+          list: "{{ .list_a }}"
+        silent: true
+
+      - uses: "list.make"
+        id: "list_b"
+        with:
+          list: "{{ .list_b }}"
+        silent: true
+
+      - transform: '{{ overlap .list_a .list_b }}'
+        output_format: "trim"
+        cleanup:
+          - "list_a"
+          - "list_b"
+          - "list"
