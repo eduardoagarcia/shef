@@ -55,6 +55,8 @@ components:
         output_format: "trim"
         cleanup:
           - "file"
+          - "type"
+          - "mime_type"
 
   - id: "mime.find.application"
     inputs:
