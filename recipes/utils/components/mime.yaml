@@ -1,5 +1,5 @@
 components:
-  - id: "mime._internal"
+  - id: "mime.find._internal"
     inputs:
       - id: "path"
       - id: "mime_type"
@@ -23,100 +23,133 @@ components:
           - "mime_type"
           - "mime_subtype"
 
-  - id: "mime.application"
+  - id: "mime.file"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - command: file --mime-type -b {{ .file }}
+        output_format: "trim"
+        cleanup:
+          - "file"
+
+  - id: "mime.file.check"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "type"
+        required: true
+    operations:
+      - uses: "mime.file"
+        id: "mime_type"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+      - command: |
+          if [[ "{{ .type }}" == */* ]]; then
+            [[ "{{ .mime_type }}" == "{{ .type }}" ]] && echo "true" || echo "false"
+          else
+            [[ "{{ .mime_type }}" == "{{ .type }}"/* ]] && echo "true" || echo "false"
+          fi
+        output_format: "trim"
+        cleanup:
+          - "file"
+
+  - id: "mime.find.application"
     inputs:
       - id: "path"
       - id: "subtype"
     operations:
-      - uses: "mime._internal"
+      - uses: "mime.find._internal"
         with:
           path: "{{ .path }}"
           mime_type: "application"
           mime_subtype: "{{ .subtype }}"
 
-  - id: "mime.audio"
+  - id: "mime.find.audio"
     inputs:
       - id: "path"
       - id: "subtype"
     operations:
-      - uses: "mime._internal"
+      - uses: "mime.find._internal"
         with:
           path: "{{ .path }}"
           mime_type: "audio"
           mime_subtype: "{{ .subtype }}"
 
-  - id: "mime.font"
+  - id: "mime.find.font"
     inputs:
       - id: "path"
       - id: "subtype"
     operations:
-      - uses: "mime._internal"
+      - uses: "mime.find._internal"
         with:
           path: "{{ .path }}"
           mime_type: "font"
           mime_subtype: "{{ .subtype }}"
 
-  - id: "mime.image"
+  - id: "mime.find.image"
     inputs:
       - id: "path"
       - id: "subtype"
     operations:
-      - uses: "mime._internal"
+      - uses: "mime.find._internal"
         with:
           path: "{{ .path }}"
           mime_type: "image"
           mime_subtype: "{{ .subtype }}"
 
-  - id: "mime.message"
+  - id: "mime.find.message"
     inputs:
       - id: "path"
       - id: "subtype"
     operations:
-      - uses: "mime._internal"
+      - uses: "mime.find._internal"
         with:
           path: "{{ .path }}"
           mime_type: "message"
           mime_subtype: "{{ .subtype }}"
 
-  - id: "mime.model"
+  - id: "mime.find.model"
     inputs:
       - id: "path"
       - id: "subtype"
     operations:
-      - uses: "mime._internal"
+      - uses: "mime.find._internal"
         with:
           path: "{{ .path }}"
           mime_type: "model"
           mime_subtype: "{{ .subtype }}"
 
-  - id: "mime.multipart"
+  - id: "mime.find.multipart"
     inputs:
       - id: "path"
       - id: "subtype"
     operations:
-      - uses: "mime._internal"
+      - uses: "mime.find._internal"
         with:
           path: "{{ .path }}"
           mime_type: "multipart"
           mime_subtype: "{{ .subtype }}"
 
-  - id: "mime.text"
+  - id: "mime.find.text"
     inputs:
       - id: "path"
       - id: "subtype"
     operations:
-      - uses: "mime._internal"
+      - uses: "mime.find._internal"
         with:
           path: "{{ .path }}"
           mime_type: "text"
           mime_subtype: "{{ .subtype }}"
 
-  - id: "mime.video"
+  - id: "mime.find.video"
     inputs:
       - id: "path"
       - id: "subtype"
     operations:
-      - uses: "mime._internal"
+      - uses: "mime.find._internal"
         with:
           path: "{{ .path }}"
           mime_type: "video"
