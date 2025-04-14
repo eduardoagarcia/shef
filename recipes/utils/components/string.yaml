@@ -68,9 +68,6 @@ components:
         with:
           string: '{{ .string }}'
 
-      - cleanup:
-          - "string"
-
   - id: "string.title"
     inputs:
       - id: "string"
