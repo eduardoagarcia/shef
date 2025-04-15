@@ -1,0 +1,50 @@
+recipes:
+  - name: "json"
+    description: "A json utility to easily validate and format json"
+    category: "utils"
+    vars:
+      filter: "."
+      options: "-C"
+    operations:
+      - id: "json_file"
+        command: echo "{{ .file }}"
+        silent: true
+
+      - id: "filter"
+        command: echo "{{ .input }}"
+        condition: .input != "false"
+        silent: true
+
+      - uses: "file.read"
+        id: "json_to_format"
+        with:
+          file: "{{ .json_file }}"
+        condition: .json_file != "false"
+        silent: true
+
+      - prompts:
+          - name: "JSON Input"
+            id: "json_to_format"
+            type: "editor"
+            message: "Enter JSON"
+        condition: .json_file == "false"
+
+      - uses: "json.validate"
+        id: "json_valid"
+        with:
+          json: "{{ .json_to_format }}"
+          verbose: true
+        silent: true
+
+      - uses: "json.jq"
+        with:
+          json: "{{ .json_to_format }}"
+          filter: "{{ .filter }}"
+          options: "{{ .options }}"
+        condition: .json_valid == "true"
+
+      - command: echo "{{ color "red" .json_valid }}"
+        condition: .json_valid != "true"
+
+      - command: echo "{{ color "red" .json_to_format }}"
+        condition: .json_valid != "true"

@@ -1,0 +1,44 @@
+components:
+  - id: "json.jq"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "filter"
+        required: true
+      - id: "options"
+        default: ""
+    operations:
+      - command: |
+          jq {{ .options }} '{{ .filter }}' << 'EOF'
+          {{ .json }}
+          EOF
+        output_format: "trim"
+        cleanup:
+          - "json"
+          - "filter"
+          - "options"
+
+  - id: "json.validate"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "verbose"
+        default: "false"
+    operations:
+      - command: |
+          if output=$(jq '.' << 'EOF' 2>&1
+          {{ .json }}
+          EOF
+          ); then
+            echo "true"
+          else
+            if [[ "{{ .verbose }}" == "true" ]]; then 
+              echo "$output"
+            else
+              echo "false"
+            fi
+          fi
+        output_format: "trim"
+        cleanup:
+          - "json"
+          - "verbose"

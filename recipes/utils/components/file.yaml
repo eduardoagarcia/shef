@@ -4,6 +4,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: '[ -f {{ .file }} ] && echo "true" || echo "false"'
         output_format: "trim"
         cleanup:
@@ -14,6 +20,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: cat "{{ .file }}"
         output_format: "trim"
         cleanup:
@@ -26,6 +38,12 @@ components:
       - id: "contents"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: |
           cat > {{ .file }} << 'EOF'
           {{ .contents }}
@@ -39,6 +57,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: touch {{ .file }}
         cleanup:
           - "file"
@@ -48,6 +72,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: rm "{{ .file }}"
         cleanup:
           - "file"
@@ -57,6 +87,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: "> {{ .file }}"
         cleanup:
           - "file"
@@ -68,6 +104,17 @@ components:
       - id: "copy"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "user.expand.path"
+        id: "copy"
+        with:
+          path: "{{ .copy }}"
+
       - command: cp {{ .file }} {{ .copy }}
         cleanup:
           - "file"
@@ -80,6 +127,18 @@ components:
       - id: "new"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "old"
+        with:
+          path: "{{ .old }}"
+        silent: true
+
+      - uses: "user.expand.path"
+        id: "new"
+        with:
+          path: "{{ .new }}"
+        silent: true
+
       - command: mv {{ .old }} {{ .new }}
         cleanup:
           - "old"
@@ -90,6 +149,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - uses: "file.parts"
         with:
           file: "{{ .file }}"
@@ -117,6 +182,12 @@ components:
       - id: "iterations"
         default: 10000
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: openssl enc -aes-256-cbc -a -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" -in {{ .file }} -out {{ .file }}.enc
 
       - uses: "file.rename"
@@ -138,6 +209,12 @@ components:
       - id: "iterations"
         default: 10000
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: openssl enc -aes-256-cbc -a -d -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" -in {{ .file }} -out {{ .file }}.dec
 
       - uses: "file.rename"
@@ -155,6 +232,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: readlink -f {{ .file }}
         output_format: "trim"
         cleanup:
@@ -165,6 +248,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - uses: "file.parts"
         with:
           file: "{{ .file }}"
@@ -184,11 +273,17 @@ components:
           - "file_parts_filename"
           - "file_parts_extension"
 
-  - id: "file.lower.name"
+  - id: "file.lower.filename"
     inputs:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - uses: "file.parts"
         with:
           file: "{{ .file }}"
@@ -213,6 +308,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - uses: "file.parts"
         with:
           file: "{{ .file }}"
@@ -237,6 +338,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - uses: "file.parts"
         with:
           file: "{{ .file }}"
@@ -256,11 +363,17 @@ components:
           - "file_parts_filename"
           - "file_parts_extension"
 
-  - id: "file.upper.name"
+  - id: "file.upper.filename"
     inputs:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - uses: "file.parts"
         with:
           file: "{{ .file }}"
@@ -285,6 +398,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - uses: "file.parts"
         with:
           file: "{{ .file }}"
@@ -309,6 +428,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - uses: "file.filename"
         id: "file_parts_filename"
         with:
@@ -332,6 +457,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: echo "$(basename {{ .file }} | sed 's/\.[^.]*$//')"
         output_format: "trim"
 
@@ -340,6 +471,12 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: |
           filepath="{{ .file }}"
           echo "${filepath##*.}"
@@ -350,5 +487,11 @@ components:
       - id: "file"
         required: true
     operations:
+      - uses: "user.expand.path"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
       - command: echo $(dirname "{{ .file }}")
         output_format: "trim"

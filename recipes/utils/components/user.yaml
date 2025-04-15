@@ -1,4 +1,19 @@
 components:
+  - id: "user.expand.path"
+    inputs:
+      - id: "path"
+        required: true
+    operations:
+      - command: |
+          path="{{ .path }}"
+          if [[ "$path" == "~"* ]]; then
+            echo "${path/#~/$HOME}"
+          else
+            echo "$path"
+          fi
+        cleanup:
+          - "path"
+
   - id: "user.home"
     operations:
       - command: echo $HOME
