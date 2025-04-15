@@ -2,14 +2,17 @@ components:
   - id: "docker.container.list"
     inputs:
       - id: "filter"
-        description: "Filter the container results. Must be a string list: '[container-1 container-2 container-3]'"
+        description: "Filter the container results. Must be a string list: 'container-1,container-2,container-3'"
     operations:
       - id: "docker_list_containers"
         command: docker ps --format "{{ `{{ .Names }}` }}"
         silent: true
 
-      - id: "docker_list_containers"
-        transform: '{{ overlap .docker_list_containers .filter }}'
+      - uses: "list.overlap"
+        id: "docker_list_containers"
+        with:
+          "list_a": "{{ .docker_list_containers }}"
+          "list_b": "{{ .filter }}"
         condition: .filter != "false" && .filter != "[]" && .filter != ""
         silent: true
         cleanup:
