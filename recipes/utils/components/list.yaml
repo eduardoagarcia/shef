@@ -8,11 +8,19 @@ components:
           list="{{ .list }}"
 
           if [[ "$list" == *$'\n'* ]]; then
-            echo "$list"
-          elif [[ "$list" =~ ^\[.*\]$ ]]; then
+            if [[ "$list" =~ ^\[.*\]$ ]] || [[ "$list" =~ ^\"\[.*\]\"$ ]]; then
+              list="${list#\"}"
+              list="${list%\"}"
+              echo "$list" | grep -v '^\s*$' | grep -v '^\s*\[\s*$' | grep -v '^\s*\]\s*$' | sed 's/^\s*"\(.*\)",\?\s*$/\1/' | sed 's/^\s*\(.*\),\s*$/\1/'
+            else
+              echo "$list"
+            fi
+          elif [[ "$list" =~ ^\[.*\]$ ]] || [[ "$list" =~ ^\"\[.*\]\"$ ]]; then
+            list="${list#\"}"
+            list="${list%\"}"
             list="${list#\[}"
             list="${list%\]}"
-            echo "$list" | tr ',' '\n' | sed 's/^ *//' | sed 's/ *$//'
+            echo "$list" | tr ',' '\n' | sed 's/^ *//' | sed 's/ *$//' | sed 's/^"\(.*\)"$/\1/'
           elif [[ "$list" =~ ^\".*\"$ ]] || [[ "$list" =~ ^\'.*\'$ ]]; then
             list="${list#\"}"
             list="${list%\"}"
