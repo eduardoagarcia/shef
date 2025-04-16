@@ -10,9 +10,13 @@ recipes:
         command: echo "{{ .file }}"
         silent: true
 
-      - id: "filter"
-        command: echo "{{ .input }}"
-        condition: .input != "false"
+      - id: "jq_filter"
+        command: |
+          if [[ "{{ .input }}" != "false" ]]; then
+            echo "{{ .input }}"
+          else
+            echo "{{ .filter }}"
+          fi
         silent: true
 
       - uses: "file.read"
@@ -33,13 +37,12 @@ recipes:
         id: "json_valid"
         with:
           json: "{{ .json_to_format }}"
-          verbose: true
         silent: true
 
       - uses: "json.jq"
         with:
           json: "{{ .json_to_format }}"
-          filter: "{{ .filter }}"
+          filter: "{{ .jq_filter }}"
           options: "{{ .options }}"
         condition: .json_valid == "true"
 

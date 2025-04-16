@@ -1,4 +1,47 @@
 components:
+  - id: "json.validate._internal"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "filter"
+        required: true
+      - id: "verbose"
+        default: "false"
+    operations:
+      - command: |
+          if output=$(jq '{{ .filter }}' << 'EOF' 2>&1
+          {{ .json }}
+          EOF
+          ); then
+            echo "true"
+          else
+            if [[ "{{ .verbose }}" == "true" ]]; then
+              echo "$output"
+            else
+              echo "false"
+            fi
+          fi
+        output_format: "trim"
+        cleanup:
+          - "json"
+          - "filter"
+          - "verbose"
+
+  - id: "json.validate._internal.type"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "type"
+        required: true
+      - id: "verbose"
+        default: "false"
+    operations:
+      - uses: "json.validate._internal"
+        with:
+          json: "{{ .json }}"
+          filter: 'if type != "{{ .type }}" then error("Not a valid JSON {{ .type }}") else . end'
+          verbose: "{{ .verbose }}"
+
   - id: "json.jq"
     inputs:
       - id: "json"
@@ -25,20 +68,86 @@ components:
       - id: "verbose"
         default: "false"
     operations:
-      - command: |
-          if output=$(jq '.' << 'EOF' 2>&1
-          {{ .json }}
-          EOF
-          ); then
-            echo "true"
-          else
-            if [[ "{{ .verbose }}" == "true" ]]; then 
-              echo "$output"
-            else
-              echo "false"
-            fi
-          fi
-        output_format: "trim"
-        cleanup:
-          - "json"
-          - "verbose"
+      - uses: "json.validate._internal"
+        with:
+          json: "{{ .json }}"
+          filter: "."
+          verbose: "{{ .verbose }}"
+
+  - id: "json.validate.array"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "verbose"
+        default: "false"
+    operations:
+      - uses: "json.validate._internal.type"
+        with:
+          json: "{{ .json }}"
+          type: "array"
+          verbose: "{{ .verbose }}"
+
+  - id: "json.validate.object"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "verbose"
+        default: "false"
+    operations:
+      - uses: "json.validate._internal.type"
+        with:
+          json: "{{ .json }}"
+          type: "object"
+          verbose: "{{ .verbose }}"
+
+  - id: "json.validate.string"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "verbose"
+        default: "false"
+    operations:
+      - uses: "json.validate._internal.type"
+        with:
+          json: "{{ .json }}"
+          type: "string"
+          verbose: "{{ .verbose }}"
+
+  - id: "json.validate.number"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "verbose"
+        default: "false"
+    operations:
+      - uses: "json.validate._internal.type"
+        with:
+          json: "{{ .json }}"
+          type: "number"
+          verbose: "{{ .verbose }}"
+
+  - id: "json.validate.boolean"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "verbose"
+        default: "false"
+    operations:
+      - uses: "json.validate._internal.type"
+        with:
+          json: "{{ .json }}"
+          type: "boolean"
+          verbose: "{{ .verbose }}"
+
+  - id: "json.validate.null"
+    inputs:
+      - id: "json"
+        required: true
+      - id: "verbose"
+        default: "false"
+    operations:
+      - uses: "json.validate._internal.type"
+        with:
+          json: "{{ .json }}"
+          type: "null"
+          verbose: "{{ .verbose }}"
