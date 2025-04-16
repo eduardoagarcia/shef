@@ -20,12 +20,18 @@ func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 		vars[k] = v
 	}
 
+	ctx.OperationMutex.RLock()
 	for opID, output := range ctx.OperationOutputs {
 		vars[opID] = output
 	}
+	operationOutputsCopy := make(map[string]string)
+	for k, v := range ctx.OperationOutputs {
+		operationOutputsCopy[k] = v
+	}
+	ctx.OperationMutex.RUnlock()
 
 	vars["context"] = ctx
-	vars["operationOutputs"] = ctx.OperationOutputs
+	vars["operationOutputs"] = operationOutputsCopy
 	vars["operationResults"] = ctx.OperationResults
 
 	vars["allTasksComplete"] = ctx.allTasksComplete()

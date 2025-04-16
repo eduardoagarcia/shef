@@ -264,7 +264,9 @@ func processPrompts(op Operation, ctx *ExecutionContext) error {
 			varName = prompt.ID
 		}
 		ctx.Vars[varName] = value
+		ctx.OperationMutex.Lock()
 		ctx.OperationOutputs[varName] = fmt.Sprintf("%v", value)
+		ctx.OperationMutex.Unlock()
 	}
 
 	return nil
@@ -362,19 +364,30 @@ func handleComponentOutputCollector(op Operation, ctx *ExecutionContext) (bool, 
 	if len(executedOps) > 0 {
 		lastOpID := executedOps[len(executedOps)-1]
 
-		if lastOutput, exists := ctx.OperationOutputs[lastOpID]; exists {
+		ctx.OperationMutex.RLock()
+		lastOutput, exists := ctx.OperationOutputs[lastOpID]
+		ctx.OperationMutex.RUnlock()
+
+		ctx.OperationMutex.Lock()
+		if exists {
 			ctx.OperationOutputs[op.ID] = lastOutput
 			Log(CategoryComponent, fmt.Sprintf("Set component output from %s to %s", lastOpID, op.ID))
 		} else {
 			ctx.OperationOutputs[op.ID] = ""
 			Log(CategoryComponent, fmt.Sprintf("Operation %s executed but didn't produce output", lastOpID))
 		}
+		ctx.OperationMutex.Unlock()
 	} else {
-		if inputVal, exists := ctx.OperationOutputs[op.ID]; exists && inputVal != "" {
+		ctx.OperationMutex.RLock()
+		inputVal, exists := ctx.OperationOutputs[op.ID]
+		ctx.OperationMutex.RUnlock()
+		if exists && inputVal != "" {
 			Log(CategoryComponent, fmt.Sprintf("No operations executed in component %s, preserving existing variable %s",
 				op.ComponentInstanceID, op.ID))
 		} else {
+			ctx.OperationMutex.Lock()
 			ctx.OperationOutputs[op.ID] = ""
+			ctx.OperationMutex.Unlock()
 			Log(CategoryComponent, fmt.Sprintf("No operations executed in component %s", op.ComponentInstanceID))
 		}
 	}
@@ -435,7 +448,9 @@ func handleCleanup(op Operation, ctx *ExecutionContext) {
 
 		Log(CategoryOperation, fmt.Sprintf("Cleaning variable: %s", cleanupVarName))
 		delete(ctx.Vars, cleanupVarName)
+		ctx.OperationMutex.Lock()
 		delete(ctx.OperationOutputs, cleanupVarName)
+		ctx.OperationMutex.Unlock()
 		delete(ctx.OperationResults, cleanupVarName)
 	}
 }
@@ -461,7 +476,9 @@ func processCommandOutput(op Operation, output string, ctx *ExecutionContext, op
 	ctx.Data = output
 
 	if op.ID != "" {
+		ctx.OperationMutex.Lock()
 		ctx.OperationOutputs[op.ID] = strings.TrimSpace(output)
+		ctx.OperationMutex.Unlock()
 		if op.ComponentInstanceID != "" {
 			ctx.ExecutedOperationsByComponent[op.ComponentInstanceID] =
 				append(ctx.ExecutedOperationsByComponent[op.ComponentInstanceID], op.ID)

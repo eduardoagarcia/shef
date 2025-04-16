@@ -112,6 +112,7 @@ type ExecutionContext struct {
 	BackgroundTasks               map[string]*BackgroundTask
 	BackgroundMutex               sync.RWMutex
 	BackgroundWg                  sync.WaitGroup
+	OperationMutex                sync.RWMutex
 	LoopStack                     []*LoopContext
 	CurrentLoopIdx                int
 	ExecutedOperationsByComponent map[string][]string
