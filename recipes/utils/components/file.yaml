@@ -173,6 +173,19 @@ components:
           - "file_parts_filename"
           - "file_parts_extension"
 
+  - id: "file.temp"
+    inputs:
+      - id: "contents"
+        required: true
+    operations:
+      - command: |
+          tempfile=$(mktemp) && cat << 'EOF' > "$tempfile" && echo "$tempfile"
+          {{ .contents }}
+          EOF
+        output_format: "trim"
+        cleanup:
+          - "contents"
+
   - id: "file.encrypt"
     inputs:
       - id: "file"
