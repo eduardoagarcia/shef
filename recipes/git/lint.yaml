@@ -1,0 +1,28 @@
+recipes:
+  - name: "lint"
+    description: "Run basic lint for all staged and unstaged files"
+    category: "git"
+    operations:
+      - uses: "git.unstaged"
+        id: "unstaged"
+        silent: true
+
+      - uses: "git.staged"
+        id: "staged"
+        silent: true
+
+      - uses: "list.combine"
+        id: "files"
+        with:
+          list_a: "{{ .unstaged }}"
+          list_b: "{{ .staged }}"
+        # silent: true
+
+      - command: 'echo "files: [{{ .files }}]"'
+
+      - control_flow:
+          type: "foreach"
+          collection: "{{ .files }}"
+          as: "file"
+          operations:
+            - command: echo "Processing {{ .file }}"

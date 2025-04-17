@@ -109,10 +109,6 @@ components:
           file: "{{ .file_to_convert }}"
           contents: "{{ .converted }}"
 
-      - uses: "lint.eof"
-        with:
-          file: "{{ .file_to_convert }}"
-
       - cleanup:
           - "file_to_convert"
           - "content"

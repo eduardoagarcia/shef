@@ -37,8 +37,6 @@ components:
             echo "$list" | tr ';' '\n' | sed 's/^ *//' | sed 's/ *$//'
           elif [[ "$list" == *":"* ]]; then
             echo "$list" | tr ':' '\n' | sed 's/^ *//' | sed 's/ *$//'
-          elif [[ -f "$list" ]]; then
-            cat "$list"
           else
             declare -n arr="$list" 2>/dev/null
             if [[ $? -eq 0 ]]; then
@@ -462,6 +460,45 @@ components:
           - "list"
           - "size"
 
+  - id: "list.combine"
+    inputs:
+      - id: "list_a"
+        required: true
+      - id: "list_b"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list_a"
+        with:
+          list: "{{ .list_a }}"
+        silent: true
+
+      - uses: "list.make"
+        id: "list_b"
+        with:
+          list: "{{ .list_b }}"
+        silent: true
+
+      - id: "combined"
+        command: |
+          echo "{{ .list_a }}"
+          echo "{{ .list_b }}"
+        silent: true
+
+      - uses: "list.unique"
+        id: "unique"
+        with:
+          list: "{{ .combined }}"
+        silent: true
+
+      - command: echo "{{ .unique }}"
+        output_format: "trim"
+        cleanup:
+          - "list_a"
+          - "list_b"
+          - "combined"
+          - "unique"
+
   - id: "list.shift"
     inputs:
       - id: "list"
@@ -534,4 +571,3 @@ components:
         cleanup:
           - "list_a"
           - "list_b"
-          - "list"
