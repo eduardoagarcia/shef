@@ -97,9 +97,19 @@ components:
           namespace: "{{ .namespace }}"
         silent: true
 
-      - command: python3 -c "import uuid; print(uuid.uuid5(uuid.UUID('{{ .namespace_uuid }}'), '{{ .name }}'))"
+      - uses: "python"
+        id: "uuid5"
+        with:
+          code: |
+            import uuid
+
+            print(uuid.uuid5(uuid.UUID('{{ .namespace_uuid }}'), '{{ .name }}'))
+        silent: true
+
+      - command: echo "{{ .uuid5 }}"
         output_format: "trim"
         cleanup:
+          - "uuid5"
           - "namespace"
           - "name"
 

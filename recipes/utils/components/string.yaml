@@ -197,7 +197,17 @@ components:
       - id: "string"
         required: true
     operations:
-      - command: echo "{{ .string }}" | python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip()))'
+      - uses: "python"
+        id: "string"
+        with:
+          code: |
+            import sys
+            import urllib.parse
+
+            print(urllib.parse.quote("{{ .string }}".strip()))
+        silent: true
+
+      - command: echo "{{ .string }}"
         output_format: "trim"
         cleanup:
           - "string"
@@ -207,7 +217,17 @@ components:
       - id: "string"
         required: true
     operations:
-      - command: echo "{{ .string }}" | python3 -c 'import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read().strip()))'
+      - uses: "python"
+        id: "string"
+        with:
+          code: |
+            import sys
+            import urllib.parse
+
+            print(urllib.parse.unquote("{{ .string }}".strip()))
+        silent: true
+
+      - command: echo "{{ .string }}"
         output_format: "trim"
         cleanup:
           - "string"
