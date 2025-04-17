@@ -277,6 +277,33 @@ components:
           - "list"
           - "item"
 
+  - id: "list.not.contains"
+    inputs:
+      - id: "list"
+        required: true
+      - id: "item"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - uses: "list.contains"
+        id: "contains"
+        with:
+          list: "{{ .list }}"
+          item: "{{ .item }}"
+        silent: true
+
+      - command: echo $([ "{{ .contains }}" = "true" ] && echo "false" || echo "true")
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "item"
+          - "contains"
+
   - id: "list.join"
     inputs:
       - id: "list"
@@ -411,6 +438,54 @@ components:
         cleanup:
           - "list"
           - "size"
+
+  - id: "list.shift"
+    inputs:
+      - id: "list"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | head -n 1
+        id: "item"
+        silent: true
+
+      - command: echo "{{ .list }}" | tail -n +2
+        id: "list"
+        silent: true
+
+      - command: echo "{{ .item }}"
+        output_format: "trim"
+        cleanup:
+          - "item"
+
+  - id: "list.pop"
+    inputs:
+      - id: "list"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo "{{ .list }}" | tail -n 1
+        id: "item"
+        silent: true
+
+      - command: echo "{{ .list }}" | sed '$d'
+        id: "list"
+        silent: true
+
+      - command: echo "{{ .item }}"
+        output_format: "trim"
+        cleanup:
+          - "item"
 
   - id: "list.overlap"
     inputs:
