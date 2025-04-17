@@ -22,10 +22,10 @@ recipes:
           type: "foreach"
           collection: "{{ .files }}"
           as: "file_to_lint"
-          # progress_mode: true
+          progress_mode: true
         operations:
-          - command: echo "Linting {{ style "dim" .file_to_lint }}"
+          - command: 'echo "Linting: {{ style "dim" .file_to_lint }}"'
 
-#          - uses: "lint.trailing"
-#            with:
-#              file: "{{ .file_to_lint }}"
+          - uses: "lint.trailing"
+            with:
+              file: "{{ .file_to_lint }}"
