@@ -237,6 +237,10 @@ func applyOperationProperties(target *Operation, source Operation) {
 		target.Workdir = source.Workdir
 	}
 
+	if source.OutputFormat != "" && target.OutputFormat == "" {
+		target.OutputFormat = source.OutputFormat
+	}
+
 	target.Silent = target.Silent || source.Silent
 	target.Break = target.Break || source.Break
 	target.Exit = target.Exit || source.Exit
