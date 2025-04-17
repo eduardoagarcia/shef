@@ -67,6 +67,29 @@ components:
         cleanup:
           - "list"
 
+  - id: "list.empty"
+    inputs:
+      - id: "list"
+        required: true
+    operations:
+      - uses: "list.make"
+        id: "list"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - uses: "list.length"
+        id: "length"
+        with:
+          list: "{{ .list }}"
+        silent: true
+
+      - command: echo $([ "{{ .length }}" = "0" ] && echo "true" || echo "false")
+        output_format: "trim"
+        cleanup:
+          - "list"
+          - "length"
+
   - id: "list.pluck"
     inputs:
       - id: "list"

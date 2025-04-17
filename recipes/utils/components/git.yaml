@@ -1,0 +1,81 @@
+components:
+  - id: "git.repo.exists"
+    inputs:
+      - id: "dir"
+    operations:
+      - uses: "dir.pwd"
+        id: "dir"
+        condition: .dir == "false"
+        silent: true
+
+      - uses: "user.expand.path"
+        id: "dir_to_check"
+        with:
+          path: "{{ .dir }}"
+        silent: true
+
+      - uses: "dir.exists"
+        id: "exists"
+        with:
+          dir: "{{ .dir_to_check }}"
+        silent: true
+
+      - command: |
+          cd {{ .dir_to_check }}
+          git rev-parse --is-inside-work-tree 2>/dev/null || echo "false"
+        condition: .exists == "true"
+        output_format: "trim"
+
+      - command: echo "false"
+        condition: .exists == "false"
+        output_format: "trim"
+        cleanup:
+          - "dir"
+          - "dir_to_check"
+          - "exists"
+
+  - id: "git.staged"
+    operations:
+      - command: git diff --name-only --staged -z | xargs -0 -I{} readlink -f {}
+        output_format: "trim"
+
+  - id: "git.unstaged"
+    operations:
+      - command: git ls-files --others --modified --exclude-standard -z | xargs -0 -I{} readlink -f {}
+        output_format: "trim"
+
+  - id: "git.count.staged"
+    operations:
+      - uses: "git.staged"
+        id: "files"
+        silent: true
+
+      - uses: "list.length"
+        id: "count"
+        with:
+          list: "{{ .files }}"
+        silent: true
+
+      - command: echo "{{ .count }}"
+        output_format: "trim"
+        cleanup:
+          - "files"
+          - "count"
+
+  - id: "git.count.unstaged"
+    operations:
+      - uses: "git.unstaged"
+        id: "files"
+        silent: true
+
+      - uses: "list.length"
+        id: "count"
+        with:
+          list: "{{ .files }}"
+        silent: true
+
+      - command: echo "{{ .count }}"
+        output_format: "trim"
+        cleanup:
+          - "files"
+          - "count"
