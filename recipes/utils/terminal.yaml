@@ -1,22 +1,20 @@
 recipes:
-  - name: "history"
-    description: "Get your ranked terminal command history"
+  - name: "usage"
+    description: "Get your ranked terminal command history usage"
     category: "terminal"
     operations:
       - uses: "user.history.usage"
-        id: "history"
+        id: "usage_history"
         silent: true
 
-      - name: "Format 25 Top Commands"
+      - command: echo "{{ .usage_history }}" | head -n 25 | awk '{print ""$1","$2""}'
         id: "top_25_commands"
-        command: echo '{{ .history }}' | head -n 25 | awk '{print ""$1","$2""}'
-        transform: '{{ (replace .output "\n" "\n,") }}'
         silent: true
 
       - name: "table"
         command: |
           echo '{{ table
-            (list (style "bold" "Usage") (style "bold" "Command"))
+            (list "Usage" "Command")
             .top_25_commands
             "rounded"
             (list "right" "left")

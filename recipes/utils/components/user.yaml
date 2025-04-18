@@ -1,4 +1,9 @@
 components:
+  - id: "user.home"
+    operations:
+      - command: echo $HOME
+        output_format: "trim"
+
   - id: "user.expand.path"
     inputs:
       - id: "path"
@@ -14,38 +19,62 @@ components:
         cleanup:
           - "path"
 
-  - id: "user.home"
+  - id: "user.shell"
     operations:
-      - command: echo $HOME
+      - command: basename "$SHELL"
         output_format: "trim"
 
-  - id: "user.history"
+  - id: "user.history.command.bash"
     operations:
       - command: |
-          case $SHELL in
-            */bash)
-              history_data=$(cat ~/.bash_history)
-              ;;
-            */zsh)
-              history_data=$(cat ~/.zsh_history | awk -F ': [ 0-9 ]*:[0-9]*;' '{print $2}')
-              ;;
-            */fish)
-              history_data=$(cat ~/.local/share/fish/fish_history | grep -o '"cmd": *"[ ^" ]*"' | sed 's/"cmd": *"//;s/"$//')
-              ;;
-            *)
-              history_data="Unknown shell, can't determine history file"
-              ;;
-          esac
-          echo "$history_data" | awk '{print $1}'
-        raw_command: true
-        user_shell: true
+          echo "cat ~/.bash_history"
+        output_format: "trim"
+
+  - id: "user.history.command.zsh"
+    operations:
+      - command: |
+          echo "sed -n 's/^: [ 0-9 ]*:[0-9]*;//p' ~/.zsh_history"
+        output_format: "trim"
+
+  - id: "user.history.command.fish"
+    operations:
+      - command: |
+          echo "cat ~/.local/share/fish/fish_history | grep -o '\"cmd\": *\"[ ^\" ]*\"' | sed 's/\"cmd\": *\"//;s/\"$//'"
+        output_format: "trim"
+
+  - id: "user.history.command"
+    operations:
+      - uses: "user.shell"
+        id: "shell"
         silent: true
+
+      - uses: "user.history.command.bash"
+        id: "command"
+        condition: .shell == "bash"
+        silent: true
+
+      - uses: "user.history.command.zsh"
+        id: "command"
+        condition: .shell == "zsh"
+        silent: true
+
+      - uses: "user.history.command.fish"
+        id: "command"
+        condition: .shell == "fish"
+        silent: true
+
+      - command: echo "{{ .command }}"
+        output_format: "trim"
+        cleanup:
+          - "shell"
+          - "command"
 
   - id: "user.history.usage"
     operations:
-      - uses: "user.history"
-        id: "user_history"
+      - uses: "user.history.command"
+        id: "command"
         silent: true
 
-      - command: echo '{{ .user_history }}' | sort | uniq -c | sort -nr | awk '{print $1" "$2}'
-        silent: true
+      - command: eval "{{ .command }}" | awk '{print $1}' | sort | uniq -c | sort -nr | awk '{print $1" "$2}'
+        cleanup:
+          - "command"
