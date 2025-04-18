@@ -29,3 +29,7 @@ recipes:
           - uses: "lint.trailing"
             with:
               file: "{{ .file_to_lint }}"
+
+          - uses: "lint.eof"
+            with:
+              file: "{{ .file_to_lint }}"

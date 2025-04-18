@@ -114,6 +114,27 @@ components:
           - "content"
           - "converted"
 
+  - id: "lint.has.eof.newline"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.expand.path"
+        id: "file_to_check"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: |
+          if [ "$(tail -c1 "{{ .file_to_check }}" 2>/dev/null | hexdump -v -e '1/1 "%02x"')" != "0a" ]; then
+            echo "false"
+          else
+            echo "true"
+          fi
+        output_format: "trim"
+        cleanup:
+          - "file_to_check"
+
   - id: "lint.eof"
     inputs:
       - id: "file"
@@ -125,14 +146,15 @@ components:
           path: "{{ .file }}"
         silent: true
 
-      - command: |
-          if [ "$(tail -c1 "{{ .file_to_convert }}" 2>/dev/null | hexdump -v -e '1/1 "%02x"')" != "0a" ]; then
-            printf "\n\n" >> "{{ .file_to_convert }}"
-          elif [ "$(tail -c2 "{{ .file_to_convert }}" 2>/dev/null | hexdump -v -e '1/1 "%02x"')" != "0a0a" ]; then
-            printf "\n" >> "{{ .file_to_convert }}"
-          fi
-        id: "converted_file"
+      - uses: "lint.has.eof.newline"
+        id: "has_eof_newline"
+        with:
+          file: "{{ .file_to_convert }}"
+        silent: true
+
+      - command: printf "\n" >> "{{ .file_to_convert }}"
+        condition: .has_eof_newline == "false"
         silent: true
         cleanup:
           - "file_to_convert"
-          - "converted_file"
+          - "has_eof_newline"
