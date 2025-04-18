@@ -39,11 +39,11 @@ recipes:
       - prompts:
         - type: "confirm"
           id: "confirm"
-          message: "Sterilize your bash history?"
+          message: "Sterilize your history?"
           default: "true"
-          help_text: "This will permanently remove all the credential exposures from your bash history file"
+          help_text: "This will permanently remove all the credential exposures from your history file"
 
-      - command: echo "{{ color "yellow" "History sterilization aborted!" }}"
+      - command: echo "{{ color "yellow" "Aborted!" }}"
         condition: .confirm == "false"
         exit: true
 
