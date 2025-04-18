@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -348,4 +349,54 @@ func formatResult(result []string, originalInput interface{}) interface{} {
 	default:
 		return strings.Join(result, "\n")
 	}
+}
+
+// encodeEscapes prevents literal interpretation
+func encodeEscapes(input interface{}) string {
+	text := fmt.Sprintf("%v", input)
+
+	escapeMap := map[string]string{
+		`\\n`:  "<escape-n>",
+		`\\t`:  "<escape-t>",
+		`\\r`:  "<escape-r>",
+		`\\a`:  "<escape-a>",
+		`\\b`:  "<escape-b>",
+		`\\f`:  "<escape-f>",
+		`\\v`:  "<escape-v>",
+		`\\\\`: "<escape-backslash>",
+		`\\'`:  "<escape-quote>",
+		`\\"`:  "<escape-dquote>",
+	}
+
+	result := text
+	for escape, replacement := range escapeMap {
+		re := regexp.MustCompile(escape)
+		result = re.ReplaceAllString(result, replacement)
+	}
+
+	return result
+}
+
+// decodeEscapes converts back to original backslash+character sequences
+func decodeEscapes(input string) string {
+	escapeMap := map[string]string{
+		"<escape-n>":         `\\n`,
+		"<escape-t>":         `\\t`,
+		"<escape-r>":         `\\r`,
+		"<escape-a>":         `\\a`,
+		"<escape-b>":         `\\b`,
+		"<escape-f>":         `\\f`,
+		"<escape-v>":         `\\v`,
+		"<escape-backslash>": `\\\\`,
+		"<escape-quote>":     `\\'`,
+		"<escape-dquote>":    `\\"`,
+	}
+
+	result := input
+	for replacement, escape := range escapeMap {
+		re := regexp.MustCompile(replacement)
+		result = re.ReplaceAllString(result, escape)
+	}
+
+	return result
 }

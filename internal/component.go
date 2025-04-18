@@ -136,7 +136,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 					inputOp := Operation{
 						Name:    fmt.Sprintf("Set component input: %s", name),
 						ID:      inputVar,
-						Command: fmt.Sprintf("echo '%v'", value),
+						Command: fmt.Sprintf("echo '%s'", encodeEscapes(value)),
 						Silent:  true,
 					}
 					inputOps = append(inputOps, inputOp)
@@ -157,7 +157,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 						defaultOp := Operation{
 							Name:    fmt.Sprintf("Set default input: %s", input.Name),
 							ID:      input.ID,
-							Command: fmt.Sprintf("echo '%v'", input.Default),
+							Command: fmt.Sprintf("echo '%s'", encodeEscapes(input.Default)),
 							Silent:  true,
 						}
 						inputOps = append(inputOps, defaultOp)

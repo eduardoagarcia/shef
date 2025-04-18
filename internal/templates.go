@@ -450,6 +450,7 @@ func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error)
 	result := buf.String()
 	result = handleDefaultEmpty(result)
 	result = escapeEchoInput(result)
+	result = decodeEscapes(result)
 
 	return result, nil
 }
