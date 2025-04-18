@@ -94,3 +94,21 @@ components:
         cleanup:
           - "files"
           - "count"
+
+  - id: "git.count.staged+unstaged"
+    operations:
+      - uses: "git.staged+unstaged"
+        id: "files"
+        silent: true
+
+      - uses: "list.length"
+        id: "count"
+        with:
+          list: "{{ .files }}"
+        silent: true
+
+      - command: echo "{{ .count }}"
+        output_format: "trim"
+        cleanup:
+          - "files"
+          - "count"
