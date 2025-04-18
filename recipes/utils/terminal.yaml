@@ -18,3 +18,37 @@ recipes:
             "rounded"
             (list "right" "left")
           }}'
+
+  - name: "checkup"
+    description: "Run a terminal history health checkup"
+    category: "terminal"
+    operations:
+      - uses: "user.history.checkup"
+
+  - name: "sterilize"
+    description: "Sterilize terminal history"
+    category: "terminal"
+    operations:
+      - uses: "user.history.checkup"
+
+      - condition: .sensitive_commands == "false"
+        exit: true
+        cleanup:
+          - "sensitive_commands"
+
+      - prompts:
+        - type: "confirm"
+          id: "confirm"
+          message: "Sterilize your bash history?"
+          default: "true"
+          help_text: "This will permanently remove all the credential exposures from your bash history file"
+
+      - command: echo "{{ color "yellow" "History sterilization aborted!" }}"
+        condition: .confirm == "false"
+        exit: true
+
+      - uses: "user.history.sterilize"
+        condition: .confirm == "true"
+        silent: true
+
+      - uses: "user.history.checkup"

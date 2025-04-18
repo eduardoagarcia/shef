@@ -83,12 +83,56 @@ components:
         cleanup:
           - "command"
 
-  - id: "user.history.usage"
+  - id: "user.history.sensitive_commands"
     operations:
       - uses: "user.history.command"
         id: "command"
         silent: true
 
-      - command: eval "{{ .command }}" | awk '{print $1}' | sort | uniq -c | sort -nr | awk '{print $1" "$2}'
+      - command: eval "{{ .command }}" | egrep -i "curl\b.*(-E|--cert)\b.*|curl\b.*--pass\b.*|curl\b.*(-U|--proxy-user).*:.*|curl\b.*(-u|--user).*:.*|.*(-H|--header).*(token|auth.*)|wget\b.*--.*password\b.*|http.?://.+:.+@.*"
+        id: "sensitive_commands"
+        silent: true
+        on_failure: ":"
         cleanup:
           - "command"
+
+      - command: echo "{{ .sensitive_commands }}"
+        condition: .sensitive_commands != "" && .sensitive_commands != "false"
+
+      - command: echo "false"
+        condition: .sensitive_commands == "" || .sensitive_commands == "false"
+        cleanup:
+          - "sensitive_commands"
+
+  - id: "user.history.checkup"
+    operations:
+      - uses: "user.history.sensitive_commands"
+        id: "sensitive_commands"
+        silent: true
+
+      - command: |
+          echo '{{ table
+            (list (color "red" (style "bold" "Potential Exposures")))
+            .sensitive_commands
+            "rounded"
+          }}'
+        condition: .sensitive_commands != "false"
+
+      - command: |
+          echo '{{ table
+            (list (color "green" (style "bold" "Potential Exposures")))
+            "None found!"
+            "rounded"
+          }}'
+        condition: .sensitive_commands == "false"
+
+  - id: "user.history.sterilize"
+    operations:
+      - uses: "user.history.file"
+        id: "history_file"
+        silent: true
+
+      - command: grep -v -E "curl\b.*(-E|--cert)\b.*|curl\b.*--pass\b.*|curl\b.*(-U|--proxy-user).*:.*|curl\b.*(-u|--user).*:.*|curl\b.*(-H|--header).*[Aa]uth.*|curl\b.*(-H|--header).*[Tt]oken.*|wget\b.*--.*password\b.*|http.?://.+:.+@.*" {{ .history_file }} > ~/.sterilized_history.tmp && mv ~/.sterilized_history.tmp {{ .history_file }}
+        silent: true
+        cleanup:
+          - "history_file"
