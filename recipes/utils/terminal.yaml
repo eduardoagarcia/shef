@@ -11,8 +11,7 @@ recipes:
         id: "top_25_commands"
         silent: true
 
-      - name: "table"
-        command: |
+      - command: |
           echo '{{ table
             (list "Usage" "Command")
             .top_25_commands
