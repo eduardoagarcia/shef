@@ -44,6 +44,21 @@ components:
       - command: git ls-files --others --modified --exclude-standard -z | xargs -0 -I{} readlink -f {}
         output_format: "trim"
 
+  - id: "git.staged+unstaged"
+    operations:
+      - uses: "git.staged"
+        id: "staged"
+        silent: true
+
+      - uses: "git.unstaged"
+        id: "unstaged"
+        silent: true
+
+      - uses: "list.combine"
+        with:
+          list_a: "{{ .staged }}"
+          list_b: "{{ .unstaged }}"
+
   - id: "git.count.staged"
     operations:
       - uses: "git.staged"

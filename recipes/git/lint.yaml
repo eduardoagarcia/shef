@@ -3,19 +3,8 @@ recipes:
     description: "Run basic lint for all staged and unstaged files"
     category: "git"
     operations:
-      - uses: "git.staged"
-        id: "staged"
-        silent: true
-
-      - uses: "git.unstaged"
-        id: "unstaged"
-        silent: true
-
-      - uses: "list.combine"
+      - uses: "git.staged+unstaged"
         id: "files"
-        with:
-          list_a: "{{ .staged }}"
-          list_b: "{{ .unstaged }}"
         silent: true
 
       - condition: .files == ""
@@ -36,3 +25,5 @@ recipes:
           - uses: "lint.eof"
             with:
               file: "{{ .file_to_lint }}"
+
+      - command: echo "{{ color "green" "Complete!" }}"
