@@ -7,7 +7,8 @@ recipes:
         id: "files"
         silent: true
 
-      - condition: .files == ""
+      - command: echo "{{ color "yellow" "No files to lint" }}"
+        condition: .files == ""
         exit: true
 
       - control_flow:
