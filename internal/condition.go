@@ -288,7 +288,12 @@ func resolveVariableValue(varRef string, ctx *ExecutionContext) string {
 	if value, ok := ctx.Vars[varName]; ok {
 		return fmt.Sprintf("%v", value)
 	}
-	if value, ok := ctx.OperationOutputs[varName]; ok {
+
+	ctx.OperationMutex.RLock()
+	value, ok := ctx.OperationOutputs[varName]
+	ctx.OperationMutex.RUnlock()
+
+	if ok {
 		return value
 	}
 	return "false"

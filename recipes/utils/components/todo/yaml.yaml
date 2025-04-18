@@ -1,0 +1,27 @@
+components:
+  # YAML Processing
+  # Command: yq . file.yaml                                        # Format/pretty-print YAML
+  # Command: yq '.key' file.yaml                                   # Extract value by key
+  # Command: yq '.array[0]' file.yaml                              # Extract array element
+  # Command: yq '.nested.key' file.yaml                            # Extract nested value
+  # Command: yq '.items[] | select(.name=="example")' file.yaml    # Filter by condition
+  # Command: yq '.items | length' file.yaml                        # Count array items
+  # Command: yq 'has("key")' file.yaml                             # Check if key exists
+  # Command: yq '.key = "new_value"' file.yaml                     # Set/update value
+  # Command: yq '.new_key = "value"' file.yaml                     # Add new key-value
+  # Command: yq 'del(.key)' file.yaml                              # Delete a key
+  # Command: yq '.array += ["new_item"]' file.yaml                 # Append to array
+  # Command: yq '.array = .array + ["new_item"]' file.yaml         # Alternative append
+  # Command: yq 'del(.array[0])' file.yaml                         # Delete array element
+  # Command: yq '.items[].price |= . * 1.1' file.yaml              # Update all prices
+  # Command: yq -y '.key' file.yaml                                # Output as YAML
+  # Command: yq -j '.key' file.yaml                                # Output as JSON
+  # Command: yq '.' file.yaml > new.yaml                           # Save to new file
+  # Command: yq -y '. + {"new_key": "value"}' file.yaml            # Merge new content
+  # Command: yq -y 'with(.array[]; .price = (.price // 0) * 1.1)' file.yaml # Update with defaults
+  # Command: yq -y '.items | sort_by(.price)' file.yaml            # Sort items by price
+  # Command: yq -y '.items | map({id: .id, price: .price})' file.yaml # Extract specific fields
+  # Command: yq -y 'with(.items[]; . += {"total": .price * .quantity})' file.yaml # Compute new fields
+  # Command: echo 'key: value' | yq '.'                            # Parse YAML from stdin
+  # Command: yq -y '.items = (.items // [])' file.yaml             # Set default for missing key
+  # Command: yq merge file1.yaml file2.yaml                        # Merge two YAML files

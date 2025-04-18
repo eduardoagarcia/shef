@@ -1,0 +1,160 @@
+components:
+  - id: "lint.tabs->spaces"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "spaces"
+        default: 4
+    operations:
+      - uses: "user.path.expand"
+        id: "file_to_convert"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: expand -t {{ .spaces }} {{ .file_to_convert }}
+        id: "converted_file"
+        silent: true
+
+      - uses: "file.write"
+        with:
+          file: "{{ .file_to_convert }}"
+          contents: "{{ .converted_file }}"
+        cleanup:
+          - "file_to_convert"
+          - "converted_file"
+          - "spaces"
+
+  - id: "lint.spaces->tabs"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "spaces"
+        default: 4
+    operations:
+      - uses: "user.path.expand"
+        id: "file_to_convert"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: unexpand -a -t {{ .spaces }} {{ .file_to_convert }}
+        id: "converted_file"
+        silent: true
+
+      - uses: "file.write"
+        with:
+          file: "{{ .file_to_convert }}"
+          contents: "{{ .converted_file }}"
+        cleanup:
+          - "file_to_convert"
+          - "converted_file"
+          - "spaces"
+
+  - id: "lint.spaces->spaces"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "from"
+        default: 2
+      - id: "to"
+        default: 4
+    operations:
+      - uses: "user.path.expand"
+        id: "file_to_convert"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: unexpand -t {{ .from }} {{ .file_to_convert }} | expand -t {{ .to }}
+        id: "converted_file"
+        silent: true
+
+      - uses: "file.write"
+        with:
+          file: "{{ .file_to_convert }}"
+          contents: "{{ .converted_file }}"
+        cleanup:
+          - "file_to_convert"
+          - "converted_file"
+          - "from"
+          - "to"
+
+  - id: "lint.trailing"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file_to_convert"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "file.read"
+        id: "content"
+        with:
+          file: "{{ .file_to_convert }}"
+        silent: true
+
+      - id: "converted"
+        command: |
+          cat << 'EOF' | sed 's/[[:space:]]*$//'
+          {{ .content }}
+          EOF
+        silent: true
+
+      - uses: "file.write"
+        with:
+          file: "{{ .file_to_convert }}"
+          contents: "{{ raw .converted }}"
+
+      - cleanup:
+          - "file_to_convert"
+          - "content"
+          - "converted"
+
+  - id: "lint.has.eof.newline"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file_to_check"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: |
+          if [ "$(tail -c1 "{{ .file_to_check }}" 2>/dev/null | hexdump -v -e '1/1 "%02x"')" != "0a" ]; then
+            echo "false"
+          else
+            echo "true"
+          fi
+        output_format: "trim"
+        cleanup:
+          - "file_to_check"
+
+  - id: "lint.eof"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file_to_convert"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "lint.has.eof.newline"
+        id: "has_eof_newline"
+        with:
+          file: "{{ .file_to_convert }}"
+        silent: true
+
+      - command: printf "\n" >> "{{ .file_to_convert }}"
+        condition: .has_eof_newline == "false"
+        silent: true
+        cleanup:
+          - "file_to_convert"
+          - "has_eof_newline"

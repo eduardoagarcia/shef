@@ -1,0 +1,27 @@
+components:
+  # Useful Bash One-Liners
+  # Command: find . -type f -name "*.log" -mtime -7 | xargs grep "ERROR" # Find errors in last week's logs
+  # Command: find . -name "*.jpg" -o -name "*.png" | sort -R | head -n 1 # Pick random image
+  # Command: find . -name "*.md" -exec sh -c 'echo "## $(basename {})" && cat {}' \; > combined.md # Combine markdown files
+  # Command: for i in {1..5}; do echo $i; done                      # Simple for loop output
+  # Command: for i in $(seq 1 5); do echo $i; done                  # Alternative for loop
+  # Command: for file in *.txt; do mv "$file" "${file%.txt}.md"; done # Rename all txt to md
+  # Command: for file in *; do mv "$file" "$(echo $file | tr '[:upper:]' '[:lower:]')"; done # Lowercase all filenames
+  # Command: while read line; do echo "$line"; done < file.txt      # Process file line by line
+  # Command: grep -r "TODO" --include="*.js" .                      # Find TODOs in js files
+  # Command: ls -la | awk '{print $9 ": " $5 " bytes"}'             # List files with sizes
+  # Command: ls -la | sort -k5 -n | tail                            # List largest files at end
+  # Command: du -sh * | sort -hr                                    # Directory sizes sorted
+  # Command: find . -type f -exec du -sh {} \; | sort -hr | head -10 # 10 largest files
+  # Command: find . -type d -empty -delete                          # Delete empty directories
+  # Command: find . -type f -empty -delete                          # Delete empty files
+  # Command: find . -type f -size +100M                             # Find files over 100MB
+  # Command: grep -r "string" . --include="*.txt" | wc -l           # Count matches in txt files
+  # Command: awk '!seen[$0]++' file.txt                             # Remove duplicate lines
+  # Command: sed -i 's/old/new/g' $(find . -name "*.txt")           # Replace text in all txt files
+  # Command: tar -cf - directory | ssh user@host "tar -xf - -C /destination" # Copy dir to remote
+  # Command: cat access.log | cut -d '"' -f2 | sort | uniq -c | sort -rn | head # Top HTTP requests
+  # Command: curl -s http://example.com | grep -o '<a .*href=.*>' | sed -e 's/<a /\n<a /g' | grep http # Extract links
+  # Command: ps aux | grep '[h]ttpd'                                # Find httpd without grep in results
+  # Command: diff <(ls -la dir1) <(ls -la dir2)                     # Compare directory contents
+  # Command: find . -type f -exec file {} \; | grep text | cut -d':' -f1 | xargs grep "example" # Find in text files

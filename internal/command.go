@@ -215,7 +215,9 @@ func initializeBackgroundTask(taskID, cmd string, ctx *ExecutionContext) {
 	}
 
 	ctx.BackgroundTasks[taskID] = task
+	ctx.OperationMutex.Lock()
 	ctx.OperationOutputs[taskID] = string(TaskPending)
+	ctx.OperationMutex.Unlock()
 	ctx.OperationResults[taskID] = false
 }
 
@@ -244,7 +246,9 @@ func handleBackgroundTaskFailure(op Operation, task *BackgroundTask, ctx *Execut
 	task.Error = err.Error()
 	ctx.OperationResults[op.ID] = false
 	ctx.Vars["error"] = err.Error()
+	ctx.OperationMutex.Lock()
 	ctx.OperationOutputs[op.ID] = fmt.Sprintf("Error: %s", err.Error())
+	ctx.OperationMutex.Unlock()
 
 	if op.ComponentInstanceID != "" {
 		ctx.ExecutedOperationsByComponent[op.ComponentInstanceID] =
@@ -271,7 +275,9 @@ func handleBackgroundTaskSuccess(op Operation, task *BackgroundTask, ctx *Execut
 
 	task.Status = TaskComplete
 	task.Output = output
+	ctx.OperationMutex.Lock()
 	ctx.OperationOutputs[op.ID] = strings.TrimSpace(output)
+	ctx.OperationMutex.Unlock()
 	ctx.OperationResults[op.ID] = true
 
 	if op.ComponentInstanceID != "" {

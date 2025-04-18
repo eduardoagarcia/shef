@@ -40,7 +40,7 @@ recipes:
       "filter_lines": 5
       "since": ""
     operations:
-      - uses: "docker_container_select"
+      - uses: "docker.container.select"
         id: "container"
         silent: true
 

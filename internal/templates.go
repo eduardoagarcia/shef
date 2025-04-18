@@ -20,12 +20,18 @@ func (ctx *ExecutionContext) templateVars() map[string]interface{} {
 		vars[k] = v
 	}
 
+	ctx.OperationMutex.RLock()
 	for opID, output := range ctx.OperationOutputs {
 		vars[opID] = output
 	}
+	operationOutputsCopy := make(map[string]string)
+	for k, v := range ctx.OperationOutputs {
+		operationOutputsCopy[k] = v
+	}
+	ctx.OperationMutex.RUnlock()
 
 	vars["context"] = ctx
-	vars["operationOutputs"] = ctx.OperationOutputs
+	vars["operationOutputs"] = operationOutputsCopy
 	vars["operationResults"] = ctx.OperationResults
 
 	vars["allTasksComplete"] = ctx.allTasksComplete()
@@ -80,6 +86,7 @@ func stringFunctions(funcs template.FuncMap) {
 	funcs["exec"] = execCommand
 	funcs["count"] = count
 	funcs["list"] = createList
+	funcs["raw"] = encodeEscapes
 }
 
 // mathFunctions adds mathematical functions to the template function map
@@ -443,6 +450,8 @@ func renderTemplate(tmplStr string, vars map[string]interface{}) (string, error)
 
 	result := buf.String()
 	result = handleDefaultEmpty(result)
+	result = escapeEchoInput(result)
+	result = decodeEscapes(result)
 
 	return result, nil
 }
@@ -454,4 +463,12 @@ func transformOutput(output, transform string, ctx *ExecutionContext) (string, e
 	vars["output"] = output
 
 	return renderTemplate(transform, vars)
+}
+
+// escapeEchoInput handles special characters within an echo string
+func escapeEchoInput(input string) string {
+	if len(input) > 6 && strings.HasPrefix(input, "echo '") && strings.HasSuffix(input, "'") {
+		return fmt.Sprintf("echo '%s'", strings.ReplaceAll(input[6:len(input)-1], "'", "'\\''"))
+	}
+	return input
 }

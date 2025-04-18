@@ -1,0 +1,27 @@
+components:
+  # Security Operations
+  # Command: openssl rand -base64 32                               # Generate random string
+  # Command: openssl rand -hex 16                                  # Generate random hex
+  # Command: pwgen -s 20 1                                         # Generate secure password
+  # Command: openssl genrsa -out private.pem 2048                  # Generate RSA private key
+  # Command: openssl rsa -in private.pem -pubout > public.pem      # Extract public key
+  # Command: openssl dgst -sha256 -sign private.pem -out sig file  # Sign file
+  # Command: openssl dgst -sha256 -verify public.pem -signature sig file # Verify signature
+  # Command: openssl enc -aes-256-cbc -salt -in file -out file.enc # Encrypt file
+  # Command: openssl enc -d -aes-256-cbc -in file.enc -out file    # Decrypt file
+  # Command: gpg --gen-key                                         # Generate GPG key pair
+  # Command: gpg -e -r "User Name" file                            # GPG encrypt file
+  # Command: gpg -d file.gpg                                       # GPG decrypt file
+  # Command: gpg --armor --export user@example.com                 # Export public key
+  # Command: gpg --armor --export-secret-key user@example.com      # Export private key
+  # Command: gpg --import key.asc                                  # Import key
+  # Command: ssh-keygen -t rsa -b 4096                             # Generate SSH key
+  # Command: ssh-keygen -lf public_key.pub                         # Get SSH key fingerprint
+  # Command: chmod 600 private_key                                 # Set secure permissions
+  # Command: ssh-copy-id -i ~/.ssh/id_rsa.pub user@host            # Copy SSH key to server
+  # Command: htpasswd -nb user password                            # Generate HTTP Basic Auth
+  # Command: openssl s_client -connect example.com:443             # Test SSL connection
+  # Command: openssl x509 -in cert.pem -text -noout               # Inspect certificate
+  # Command: openssl x509 -enddate -noout -in cert.pem             # Check cert expiry
+  # Command: dig +short -t TXT _dmarc.example.com                  # Check DMARC record
+  # Command: dig +short -t TXT example.com                         # Check SPF record

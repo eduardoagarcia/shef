@@ -1,0 +1,272 @@
+components:
+  - id: "math._internal"
+    inputs:
+      - id: "equation"
+        required: true
+      - id: "decimals"
+        default: 4
+    operations:
+      - command: |
+          echo "{{ .equation }}" | bc -l | awk '{
+            if ($1 == int($1)) {
+              printf "%.0f\n", $1
+            } else {
+              printf "%.{{ .decimals }}f\n", $1
+            }
+          }'
+        output_format: "trim"
+        cleanup:
+          - "equation"
+          - "decimals"
+
+  - id: "math.equation"
+    inputs:
+      - id: "equation"
+        required: true
+      - id: "decimals"
+        default: 2
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "{{ .equation }}"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.pi"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "4*a(1)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.golden_ratio"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "(1 + sqrt(5))/2"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.sqrt2"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "sqrt(2)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.sqrt3"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "sqrt(3)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.sqrt5"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "sqrt(5)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.ln2"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "l(2)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.ln10"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "l(10)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.log10_2"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "l(2)/l(10)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.log10_e"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "1/l(10)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.log2_e"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "1/l(2)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.log2_10"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "l(10)/l(2)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.pi_half"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "4*a(1)/2"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.pi_quarter"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "a(1)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.tau"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "2*4*a(1)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.reciprocal_pi"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "1/(4*a(1))"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.two_over_pi"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "2/(4*a(1))"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.two_over_sqrt_pi"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "2/sqrt(4*a(1))"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.euler"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "e(1)"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.euler_mascheroni"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "0.57721566490153286060651209008240243104215933593992"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.catalan"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "0.91596559417721901505460351493238411077414937428167"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.apery"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "1.20205690315959428539973816151144999076498629234049"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.glaisher"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "1.28242712910062263687534256886979172776768892732500"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.conway"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "1.30357726903429639125709911215255189073070250465940"
+          decimals: "{{ .decimals }}"
+
+  - id: "math.const.khinchin"
+    inputs:
+      - id: "decimals"
+        default: 4
+    operations:
+      - uses: "math._internal"
+        with:
+          equation: "2.68545200106530644530971483548179569382038229399446"
+          decimals: "{{ .decimals }}"

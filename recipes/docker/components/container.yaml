@@ -1,29 +1,34 @@
 components:
-  - id: "docker_container_list"
-    description: "Gets all Docker containers and filter results, if desired"
+  - id: "docker.container.list"
     inputs:
-      - id: "list_filter"
-        description: "Filter the container results. Must be a string list: '[container-1 container-2 container-3]'"
+      - id: "filter"
+        description: "Filter the container results. Must be a string list: 'container-1,container-2,container-3'"
     operations:
       - id: "docker_list_containers"
         command: docker ps --format "{{ `{{ .Names }}` }}"
         silent: true
 
-      - id: "docker_list_containers"
-        transform: '{{ overlap .docker_list_containers .list_filter }}'
-        condition: .list_filter != "false" && .list_filter != "[]"
+      - uses: "list.overlap"
+        id: "docker_list_containers"
+        with:
+          "list_a": "{{ .docker_list_containers }}"
+          "list_b": "{{ .filter }}"
+        condition: .filter != "false" && .filter != "[]" && .filter != ""
         silent: true
+        cleanup:
+          - "filter"
 
-  - id: "docker_container_select"
-    description: "Gets all Docker containers and prompts the user to select one"
+  - id: "docker.container.select"
     inputs:
-      - id: "select_filter"
+      - id: "filter"
     operations:
-      - uses: "docker_container_list"
+      - uses: "docker.container.list"
         id: "containers"
         with:
-          list_filter: "{{ .select_filter }}"
+          filter: "{{ .filter }}"
         silent: true
+
+      - command: 'echo "containers: {{ .containers }}"'
 
       - id: "docker_selected_container"
         command: echo "{{ .docker_container }}"
@@ -34,15 +39,14 @@ components:
             message: "Select a container"
             source_operation: "containers"
 
-  - id: "docker_container_multiselect"
-    description: "Gets all Docker containers and prompts the user to select one or more containers"
+  - id: "docker.container.multiselect"
     inputs:
-      - id: "multiselect_filter"
+      - id: "filter"
     operations:
-      - uses: "docker_container_list"
+      - uses: "docker.container.list"
         id: "containers"
         with:
-          list_filter: "{{ .multiselect_filter }}"
+          filter: "{{ .filter }}"
         silent: true
 
       - id: "docker_multiselect_containers"
@@ -54,33 +58,33 @@ components:
             message: "Select one or more containers"
             source_operation: "containers"
 
-  - id: "which_docker_container_shell"
-    description: "Determines which shell a container uses"
+  - id: "docker.which.shell"
     inputs:
-      - id: "docker_shell_container"
+      - id: "container"
     operations:
-      - id: "docker_shell"
-        command: |
-          if docker exec {{ .docker_shell_container }} which bash >/dev/null 2>&1; then
+      - command: |
+          if docker exec {{ .container }} which bash >/dev/null 2>&1; then
             echo "bash"
-          elif docker exec {{ .docker_shell_container }} which zsh >/dev/null 2>&1; then
+          elif docker exec {{ .container }} which zsh >/dev/null 2>&1; then
             echo "zsh"
-          elif docker exec {{ .docker_shell_container }} which dash >/dev/null 2>&1; then
+          elif docker exec {{ .container }} which dash >/dev/null 2>&1; then
             echo "dash"
-          elif docker exec {{ .docker_shell_container }} which ksh >/dev/null 2>&1; then
+          elif docker exec {{ .container }} which ksh >/dev/null 2>&1; then
             echo "ksh"
-          elif docker exec {{ .docker_shell_container }} which tcsh >/dev/null 2>&1; then
+          elif docker exec {{ .container }} which tcsh >/dev/null 2>&1; then
             echo "tcsh"
-          elif docker exec {{ .docker_shell_container }} which fish >/dev/null 2>&1; then
+          elif docker exec {{ .container }} which fish >/dev/null 2>&1; then
             echo "fish"
-          elif docker exec {{ .docker_shell_container }} which ash >/dev/null 2>&1; then
+          elif docker exec {{ .container }} which ash >/dev/null 2>&1; then
             echo "ash"
-          elif docker exec {{ .docker_shell_container }} which sh >/dev/null 2>&1; then
+          elif docker exec {{ .container }} which sh >/dev/null 2>&1; then
             echo "sh"
           else
             exit 1
           fi
         on_failure: "handle_shell_error"
+        cleanup:
+          - "container"
 
       - id: "handle_shell_error"
         command: echo {{ color "red" "No common shell found in container." }}

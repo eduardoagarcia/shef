@@ -3,15 +3,15 @@ recipes:
     description: "Open an application"
     category: "os"
     operations:
-      - uses: "app_select"
+      - uses: "os.app.select"
         with:
-          app_filter: "{{ .input }}"
+          filter: "{{ .input }}"
         id: "app"
 
       - command: echo {{ color "red" "No applications found" }}
         condition: .app == "false"
 
-      - uses: "open_app"
+      - uses: "os.app.open"
         with:
           app: "{{ .app }}"
         condition: .app != "false"

@@ -89,6 +89,12 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		IncreaseIndent()
 		defer DecreaseIndent()
 
+		if op.Cleanup != "" {
+			defer func(operation Operation, context *ExecutionContext) {
+				handleCleanup(operation, context)
+			}(op, ctx)
+		}
+
 		renderedID := op.ID
 		if op.ID != "" {
 			var err error
@@ -143,7 +149,19 @@ func evaluateRecipe(recipe Recipe, input string, vars map[string]interface{}) er
 		LogCommand(cmd, nil)
 		ctx.Vars["error"] = ""
 		workdir := ""
-		if workdirVal, exists := ctx.Vars["workdir"]; exists {
+		if op.Workdir != "" {
+			renderedWorkdir, err := renderTemplate(op.Workdir, ctx.templateVars())
+			if err != nil {
+				LogError("Failed to render workdir template", err, map[string]interface{}{"workdir": op.Workdir})
+				return false, fmt.Errorf("failed to render workdir template: %w", err)
+			}
+			workdir = renderedWorkdir
+			Log(CategoryFileSystem, fmt.Sprintf("Using operation-level working directory: %s", workdir))
+			if err := ensureWorkingDirectory(workdir); err != nil {
+				LogError("Failed to create operation working directory", err, map[string]interface{}{"workdir": workdir})
+				return false, err
+			}
+		} else if workdirVal, exists := ctx.Vars["workdir"]; exists {
 			workdir = fmt.Sprintf("%v", workdirVal)
 		}
 
@@ -246,7 +264,9 @@ func processPrompts(op Operation, ctx *ExecutionContext) error {
 			varName = prompt.ID
 		}
 		ctx.Vars[varName] = value
+		ctx.OperationMutex.Lock()
 		ctx.OperationOutputs[varName] = fmt.Sprintf("%v", value)
+		ctx.OperationMutex.Unlock()
 	}
 
 	return nil
@@ -301,6 +321,11 @@ func handleCommandError(op Operation, ctx *ExecutionContext, opMap map[string]Op
 	})
 
 	if op.OnFailure != "" {
+		if op.OnFailure == ":" {
+			Log(CategoryOperation, "No-op failure handler - ignoring error and continuing")
+			return op.Exit, nil
+		}
+
 		Log(CategoryOperation, fmt.Sprintf("Executing on_failure handler: %s", op.OnFailure))
 
 		nextOp, exists := opMap[op.OnFailure]
@@ -339,19 +364,95 @@ func handleComponentOutputCollector(op Operation, ctx *ExecutionContext) (bool, 
 	if len(executedOps) > 0 {
 		lastOpID := executedOps[len(executedOps)-1]
 
-		if lastOutput, exists := ctx.OperationOutputs[lastOpID]; exists {
+		ctx.OperationMutex.RLock()
+		lastOutput, exists := ctx.OperationOutputs[lastOpID]
+		ctx.OperationMutex.RUnlock()
+
+		ctx.OperationMutex.Lock()
+		if exists {
 			ctx.OperationOutputs[op.ID] = lastOutput
 			Log(CategoryComponent, fmt.Sprintf("Set component output from %s to %s", lastOpID, op.ID))
 		} else {
 			ctx.OperationOutputs[op.ID] = ""
 			Log(CategoryComponent, fmt.Sprintf("Operation %s executed but didn't produce output", lastOpID))
 		}
+		ctx.OperationMutex.Unlock()
 	} else {
-		ctx.OperationOutputs[op.ID] = ""
-		Log(CategoryComponent, fmt.Sprintf("No operations executed in component %s", op.ComponentInstanceID))
+		ctx.OperationMutex.RLock()
+		inputVal, exists := ctx.OperationOutputs[op.ID]
+		ctx.OperationMutex.RUnlock()
+		if exists && inputVal != "" {
+			Log(CategoryComponent, fmt.Sprintf("No operations executed in component %s, preserving existing variable %s",
+				op.ComponentInstanceID, op.ID))
+		} else {
+			ctx.OperationMutex.Lock()
+			ctx.OperationOutputs[op.ID] = ""
+			ctx.OperationMutex.Unlock()
+			Log(CategoryComponent, fmt.Sprintf("No operations executed in component %s", op.ComponentInstanceID))
+		}
 	}
 
 	return op.Exit, nil
+}
+
+// handleCleanup processes the cleanup operation which removes variables from the context
+func handleCleanup(op Operation, ctx *ExecutionContext) {
+	if op.Cleanup == nil {
+		return
+	}
+
+	var varsToCleanup []string
+
+	switch cleanup := op.Cleanup.(type) {
+	case string:
+		if cleanup == "" {
+			return
+		}
+		varsToCleanup = []string{cleanup}
+	case []interface{}:
+		for _, v := range cleanup {
+			if strVal, ok := v.(string); ok && strVal != "" {
+				varsToCleanup = append(varsToCleanup, strVal)
+			}
+		}
+	case []string:
+		for _, v := range cleanup {
+			if v != "" {
+				varsToCleanup = append(varsToCleanup, v)
+			}
+		}
+	default:
+		if strVal, ok := op.Cleanup.(string); ok && strVal != "" {
+			varsToCleanup = []string{strVal}
+		} else {
+			Log(CategoryOperation, "Invalid cleanup value type")
+			return
+		}
+	}
+
+	if len(varsToCleanup) == 0 {
+		return
+	}
+
+	for _, varName := range varsToCleanup {
+		cleanupVarName := varName
+		if strings.Contains(cleanupVarName, "{") {
+			processedName, err := renderTemplate(cleanupVarName, ctx.templateVars())
+			if err == nil {
+				cleanupVarName = processedName
+			} else {
+				LogError("Failed to render cleanup template", err, map[string]interface{}{"template": cleanupVarName})
+				continue
+			}
+		}
+
+		Log(CategoryOperation, fmt.Sprintf("Cleaning variable: %s", cleanupVarName))
+		delete(ctx.Vars, cleanupVarName)
+		ctx.OperationMutex.Lock()
+		delete(ctx.OperationOutputs, cleanupVarName)
+		ctx.OperationMutex.Unlock()
+		delete(ctx.OperationResults, cleanupVarName)
+	}
 }
 
 // processCommandOutput handles successful command output
@@ -375,7 +476,9 @@ func processCommandOutput(op Operation, output string, ctx *ExecutionContext, op
 	ctx.Data = output
 
 	if op.ID != "" {
+		ctx.OperationMutex.Lock()
 		ctx.OperationOutputs[op.ID] = strings.TrimSpace(output)
+		ctx.OperationMutex.Unlock()
 		if op.ComponentInstanceID != "" {
 			ctx.ExecutedOperationsByComponent[op.ComponentInstanceID] =
 				append(ctx.ExecutedOperationsByComponent[op.ComponentInstanceID], op.ID)

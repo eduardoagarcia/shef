@@ -1,0 +1,27 @@
+components:
+  # System Monitoring and Alerting
+  # Command: watch -n 1 'ps aux | sort -nrk 3 | head -5'            # Watch top 5 CPU-consuming processes
+  # Command: watch -n 1 'ps aux | sort -nrk 4 | head -5'            # Watch top 5 memory-consuming processes
+  # Command: watch -n 1 'df -h'                                     # Watch disk usage
+  # Command: watch -n 1 'free -m'                                   # Watch memory usage
+  # Command: watch -n 1 'netstat -an | grep :80 | wc -l'            # Watch connections to port 80
+  # Command: watch -n 1 'cat /proc/loadavg'                         # Watch system load
+  # Command: watch -n 1 'cat /proc/meminfo | grep MemFree'          # Watch free memory
+  # Command: watch -n 1 'cat /proc/net/dev'                         # Watch network device stats
+  # Command: watch -n 1 'ifconfig eth0 | grep bytes'                # Watch network traffic on eth0
+  # Command: watch -n 1 'sar -u 1 1'                                # Watch CPU usage
+  # Command: watch -n 1 'sar -n DEV 1 1'                            # Watch network usage
+  # Command: watch -n 1 'netstat -ant | awk '{print $6}' | sort | uniq -c' # Count TCP states
+  # Command: watch -n 1 'ps aux | grep httpd | wc -l'               # Watch Apache processes
+  # Command: watch -n 1 'grep "type" /var/log/auth.log | wc -l'     # Watch auth log entries
+  # Command: watch -n 1 'ls -la | wc -l'                            # Watch directory file count
+  # Command: find /var/log -name "*.log" -mmin -5 -exec tail -n 5 {} \; # Tail logs modified in last 5 min
+  # Command: tail -f /var/log/auth.log | grep --line-buffered "Failed password" # Monitor auth failures
+  # Command: tail -f /var/log/apache2/access.log | awk '{print $1}' | sort | uniq -c # Monitor unique IPs
+  # Command: tail -f /var/log/syslog | grep --color=auto -E 'error|Error|ERROR' # Monitor logs for errors
+  # Command: tail -f /var/log/*.log | grep --line-buffered -i error # Monitor all logs for errors
+  # Command: journalctl -f | grep error                             # Monitor journal for errors
+  # Command: while true; do netstat -ant | grep :80 | wc -l > conn_count.log; sleep 5; done # Log connection count
+  # Command: [ $(df -h / | tail -1 | awk '{print $5}' | tr -d '%') -gt 90 ] && echo "Disk full" | mail -s "Disk Alert" admin@example.com # Email if disk > 90%
+  # Command: [ $(free | grep Mem | awk '{print $3/$2 * 100.0}') -gt 90 ] && echo "Memory full" | mail -s "Memory Alert" admin@example.com # Alert on high memory
+  # Command: for i in {1..10}; do uptime >> load.log; sleep 60; done # Record load average for 10 minutes

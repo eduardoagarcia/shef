@@ -1,0 +1,43 @@
+components:
+  - id: "python.3.installed"
+    operations:
+      - command: python --version 2>&1 | grep -q "Python 3" && echo "true" || echo "false"
+        output_format: "trim"
+
+  - id: "python.2.installed"
+    operations:
+      - command: python --version 2>&1 | grep -q "Python 2" && echo "true" || echo "false"
+        output_format: "trim"
+
+  - id: "python.installed"
+    inputs:
+      - id: "version"
+        default: 3
+    operations:
+      - uses: "python.3.installed"
+        condition: .version == 3
+        cleanup:
+          - "version"
+
+      - uses: "python.2.installed"
+        condition: .version == 2
+        cleanup:
+          - "version"
+
+  - id: "python"
+    inputs:
+      - id: "code"
+        required: true
+    operations:
+      - uses: "python.installed"
+        id: "installed"
+        silent: true
+
+      - command: |
+          python <<'EOF'
+          {{ .code }}
+          EOF
+        condition: .installed == "true"
+        cleanup:
+          - "code"
+          - "installed"

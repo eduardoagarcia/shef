@@ -1,0 +1,28 @@
+components:
+  # System Analysis and Hardening
+  # Command: grep -r "password" --include="*.config" /etc           # Find password strings in config files
+  # Command: find /var/log -type f -mtime -1 -exec ls -la {} \;     # Log files modified in last day
+  # Command: find / -nouser -o -nogroup 2>/dev/null                 # Files without user/group
+  # Command: find / -writable -type d 2>/dev/null                   # World-writable directories
+  # Command: find /etc -maxdepth 1 -type f -perm -o+r | xargs ls -la # World-readable config files
+  # Command: grep "^PermitRootLogin " /etc/ssh/sshd_config          # Check SSH root login setting
+  # Command: grep "^PasswordAuthentication " /etc/ssh/sshd_config   # Check SSH password auth
+  # Command: grep "^AllowUsers " /etc/ssh/sshd_config               # Check allowed SSH users
+  # Command: sestatus                                               # SELinux status
+  # Command: getenforce                                             # SELinux enforcement status
+  # Command: ls -la /tmp                                            # Check tmp directory permissions
+  # Command: cat /etc/passwd | grep -E "0:[0-9]"                    # Find users with UID 0
+  # Command: cat /etc/passwd | cut -d: -f1                          # List all users
+  # Command: cat /etc/passwd | awk -F: '$3==0 {print $1}'           # Users with UID 0
+  # Command: cat /etc/group | grep sudo                             # List sudo users
+  # Command: grep -v -E "^#" /etc/passwd | awk -F: '$3 == 0 { print $1 }' # Root users
+  # Command: ss -tuln                                               # List listening ports
+  # Command: systemctl list-units --type=service --state=running    # Running services
+  # Command: systemctl list-timers                                  # List service timers
+  # Command: systemctl list-unit-files --type=service --state=enabled # Enabled services
+  # Command: cat /etc/crontab                                       # System cron jobs
+  # Command: cut -d: -f1,3 /etc/passwd | grep -v nobody | sort -t: -k2 -n # Users sorted by UID
+  # Command: cut -d: -f1 /etc/passwd | sort | uniq -c | sort -n     # User account count
+  # Command: lastb | head                                           # Last failed login attempts
+  # Command: w                                                      # Currently logged in users
+  # Command: who -a                                                 # Detailed user session info

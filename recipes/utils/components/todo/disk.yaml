@@ -1,0 +1,30 @@
+components:
+  # Disk and Device Management
+  # Command: mount                                                 # Show mounted filesystems
+  # Command: mount /dev/sda1 /mnt                                  # Mount device
+  # Command: mount -t nfs server:/dir /mnt                         # Mount NFS share
+  # Command: umount /mnt                                           # Unmount filesystem
+  # Command: umount -l /mnt                                        # Lazy unmount
+  # Command: fdisk -l                                              # List disk partitions
+  # Command: fdisk /dev/sda                                        # Start fdisk interactive mode
+  # Command: parted -l                                             # List disk partitions
+  # Command: parted /dev/sda print                                 # Show partition table
+  # Command: lsblk                                                 # List block devices
+  # Command: lsblk -f                                              # List with filesystem info
+  # Command: lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT                  # Custom format
+  # Command: blkid                                                 # Show block device attributes
+  # Command: blkid /dev/sda1                                       # Show info for specific device
+  # Command: dd if=/dev/zero of=file bs=1M count=10                # Create 10MB file
+  # Command: dd if=/dev/sda of=/dev/sdb bs=4M                      # Clone disk
+  # Command: dd if=/dev/sda of=disk.img bs=4M                      # Create disk image
+  # Command: dd if=disk.img of=/dev/sda bs=4M                      # Restore disk image
+  # Command: mkfs.ext4 /dev/sda1                                   # Create ext4 filesystem
+  # Command: mkfs.xfs /dev/sda1                                    # Create XFS filesystem
+  # Command: mkfs.vfat /dev/sda1                                   # Create FAT32 filesystem
+  # Command: mkswap /dev/sda1                                      # Create swap area
+  # Command: swapon /dev/sda1                                      # Enable swap
+  # Command: swapoff /dev/sda1                                     # Disable swap
+  # Command: sync                                                  # Flush file system buffers
+  # Command: hdparm -i /dev/sda                                    # Show device info
+  # Command: hdparm -tT /dev/sda                                   # Test device read speed
+  # Command: badblocks -v /dev/sda                                 # Check for bad blocks
