@@ -18,6 +18,9 @@ recipes:
           list_b: "{{ .unstaged }}"
         silent: true
 
+      - condition: .files == ""
+        exit: true
+
       - control_flow:
           type: "foreach"
           collection: "{{ .files }}"
