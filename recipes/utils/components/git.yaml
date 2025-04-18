@@ -8,7 +8,7 @@ components:
         condition: .dir == "false"
         silent: true
 
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "dir_to_check"
         with:
           path: "{{ .dir }}"

@@ -4,7 +4,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -20,7 +20,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -38,7 +38,7 @@ components:
       - id: "contents"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -57,7 +57,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -72,7 +72,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -87,7 +87,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -104,13 +104,13 @@ components:
       - id: "copy"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
         silent: true
 
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "copy"
         with:
           path: "{{ .copy }}"
@@ -127,13 +127,13 @@ components:
       - id: "new"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "old"
         with:
           path: "{{ .old }}"
         silent: true
 
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "new"
         with:
           path: "{{ .new }}"
@@ -149,7 +149,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -195,7 +195,7 @@ components:
       - id: "iterations"
         default: 10000
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -222,7 +222,7 @@ components:
       - id: "iterations"
         default: 10000
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -245,7 +245,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -261,7 +261,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -291,7 +291,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -321,7 +321,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -351,7 +351,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -381,7 +381,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -411,7 +411,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -441,7 +441,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -470,7 +470,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -484,7 +484,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
@@ -500,7 +500,7 @@ components:
       - id: "file"
         required: true
     operations:
-      - uses: "user.expand.path"
+      - uses: "user.path.expand"
         id: "file"
         with:
           path: "{{ .file }}"
