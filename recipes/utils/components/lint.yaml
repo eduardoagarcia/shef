@@ -107,7 +107,7 @@ components:
       - uses: "file.write"
         with:
           file: "{{ .file_to_convert }}"
-          contents: "{{ .converted }}"
+          contents: "{{ raw .converted }}"
 
       - cleanup:
           - "file_to_convert"

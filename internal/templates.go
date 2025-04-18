@@ -86,6 +86,7 @@ func stringFunctions(funcs template.FuncMap) {
 	funcs["exec"] = execCommand
 	funcs["count"] = count
 	funcs["list"] = createList
+	funcs["raw"] = encodeEscapes
 }
 
 // mathFunctions adds mathematical functions to the template function map
