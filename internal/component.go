@@ -221,9 +221,19 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 
 // applyOperationProperties applies specific properties from source operation to target operation
 func applyOperationProperties(target *Operation, source Operation) {
+	// When combining conditions, we need to ensure the parent (source) condition is evaluated first
 	if source.Condition != "" {
 		if target.Condition != "" {
-			target.Condition = "(" + target.Condition + ") && (" + source.Condition + ")"
+			// Log the condition combination for debugging
+			Log(CategoryComponent, fmt.Sprintf(
+				"Combining conditions: parent='%s', child='%s'",
+				source.Condition, target.Condition))
+
+			// Apply parent condition first, then child component condition
+			target.Condition = fmt.Sprintf("(%s) && (%s)", source.Condition, target.Condition)
+
+			Log(CategoryComponent, fmt.Sprintf(
+				"Combined condition result: '%s'", target.Condition))
 		} else {
 			target.Condition = source.Condition
 		}
