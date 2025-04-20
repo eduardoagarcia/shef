@@ -1,23 +1,69 @@
 recipes:
-  - name: "history"
-    description: "Get your ranked terminal command history"
+  - name: "usage"
+    description: "Get your ranked terminal command history usage"
     category: "terminal"
+    help: |
+      Displays your most frequently used terminal commands.
+
+      Usage:
+        shef terminal usage                # Show top 25 commands by usage count
     operations:
-      - uses: "get_complete_command_name_usage"
-        id: "history"
+      - uses: "user.history.usage"
+        id: "usage_history"
         silent: true
 
-      - name: "Format 25 Top Commands"
+      - command: echo "{{ .usage_history }}" | head -n 25 | awk '{print ""$1","$2""}'
         id: "top_25_commands"
-        command: echo '{{ .history }}' | head -n 25 | awk '{print ""$1","$2""}'
-        transform: '{{ (replace .output "\n" "\n,") }}'
         silent: true
 
-      - name: "table"
-        command: |
+      - command: |
           echo '{{ table
-            (list (style "bold" "Usage") (style "bold" "Command"))
+            (list "Usage" "Command")
             .top_25_commands
             "rounded"
             (list "right" "left")
           }}'
+
+  - name: "checkup"
+    description: "Run a terminal history health checkup"
+    category: "terminal"
+    help: |
+      Scans your terminal history for potential credential exposures.
+
+      Usage:
+        shef terminal checkup              # Scan for sensitive information in history
+    operations:
+      - uses: "user.history.checkup"
+
+  - name: "sterilize"
+    description: "Sterilize terminal history"
+    category: "terminal"
+    help: |
+      Removes credential exposures from your terminal history.
+
+      Usage:
+        shef terminal sterilize            # Remove sensitive information from history
+    operations:
+      - uses: "user.history.checkup"
+
+      - condition: .sensitive_commands == "false"
+        exit: true
+        cleanup:
+          - "sensitive_commands"
+
+      - prompts:
+        - type: "confirm"
+          id: "confirm"
+          message: "Sterilize your history?"
+          default: "true"
+          help_text: "This will permanently remove all the credential exposures from your history file"
+
+      - command: echo "{{ color "yellow" "Aborted!" }}"
+        condition: .confirm == "false"
+        exit: true
+
+      - uses: "user.history.sterilize"
+        condition: .confirm == "true"
+        silent: true
+
+      - uses: "user.history.checkup"

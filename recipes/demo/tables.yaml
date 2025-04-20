@@ -3,24 +3,12 @@ recipes:
     description: "A demo of rendering tables"
     category: "demo"
     help: |
-      This recipe demonstrates the table rendering feature in Shef.
+      Demonstrates table rendering with various styles and formatting options.
 
-      It shows how to:
-      - Create and render tables with clear syntax
-      - Apply different styles (rounded, light, double, ASCII)
-      - Format data in various ways
-      - Use JSON configuration for complex tables
+      Usage:
+        shef demo tables                    # View examples of different table styles
 
-      The table function accepts:
-      - headers: Array of column headers (use list function)
-      - rows: 2D array of row data (use list function)
-      - style: Table style (rounded, light, double, ascii)
-
-      The tableJSON function accepts a JSON string with:
-      - headers: Array of column headers
-      - rows: 2D array of row data
-      - style: Table style (rounded, light, double, ascii)
-      - footers: Optional array of footer values
+      Shows rounded, double, light, and ASCII styles, column alignment, and JSON configuration.
     operations:
       - name: "Basic Table"
         command: |

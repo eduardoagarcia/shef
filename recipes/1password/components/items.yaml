@@ -1,29 +1,34 @@
 components:
-  - id: "op_get_all_item_names"
+  - id: "op.get.item.names"
     inputs:
-      - id: "item_filter"
+      - id: "filter"
     operations:
       - command: op item list --format=json | jq -r '.[] | "\(.title)"' | sort -f
         silent: true
-        condition: .item_filter == "false"
+        condition: .filter == "false"
 
-      - command: op item list --format=json | jq -r '.[] | "\(.title)"' | sort -f | grep -i "{{ .item_filter }}"
+      - command: op item list --format=json | jq -r '.[] | "\(.title)"' | sort -f | grep -i "{{ .filter }}"
         silent: true
-        condition: .item_filter != "false"
+        condition: .filter != "false"
+        cleanup:
+          - "filter"
 
-  - id: "op_item_select"
+  - id: "op.item.select"
     inputs:
-      - id: "select_item_filter"
+      - id: "filter"
     operations:
-      - id: "op_item_names"
-        uses: "op_get_all_item_names"
+      - uses: "op.get.item.names"
         with:
-          item_filter: "{{ .select_item_filter }}"
+          filter: "{{ .filter }}"
+        id: "items"
 
-      - command: echo "{{ .op_item_name }}"
+      - unset:
+          - "filter"
+
+      - command: echo "{{ .item }}"
         silent: true
         prompts:
-          - id: "op_item_name"
+          - id: "item"
             type: "select"
             message: "Select a 1Password Item"
-            source_operation: "op_item_names"
+            source_operation: "items"

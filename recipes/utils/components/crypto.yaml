@@ -1,0 +1,87 @@
+components:
+  - id: "crypto.md5"
+    inputs:
+      - id: "data"
+    operations:
+      - command: printf "{{ .data }}" | md5
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "crypto.sha1"
+    inputs:
+      - id: "data"
+    operations:
+      - command: printf "{{ .data }}" | shasum -a 1 | cut -d ' ' -f 1
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "crypto.sha256"
+    inputs:
+      - id: "data"
+    operations:
+      - command: printf "{{ .data }}" | shasum -a 256 | cut -d ' ' -f 1
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "crypto.sha512"
+    inputs:
+      - id: "data"
+    operations:
+      - command: printf "{{ .data }}" | shasum -a 512 | cut -d ' ' -f 1
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "crypto.rot13"
+    inputs:
+      - id: "data"
+    operations:
+      - command: printf "{{ .data }}" | tr 'A-Za-z' 'N-ZA-Mn-za-m'
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "crypto.aes.encrypt"
+    inputs:
+      - id: "data"
+        required: true
+      - id: "passphrase"
+        required: true
+      - id: "iterations"
+        default: 10000
+    operations:
+      - command: |
+          set +H
+          openssl enc -aes-256-cbc -a -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" << 'EOF'
+          {{ .data }}
+          EOF
+          set -H
+        output_format: "trim"
+        cleanup:
+          - "data"
+          - "passphrase"
+          - "iterations"
+
+  - id: "crypto.aes.decrypt"
+    inputs:
+      - id: "data"
+        required: true
+      - id: "passphrase"
+        required: true
+      - id: "iterations"
+        default: 10000
+    operations:
+      - command: |
+          set +H
+          openssl enc -aes-256-cbc -a -d -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" << 'EOF'
+          {{ .data }}
+          EOF
+          set -H
+        output_format: "trim"
+        cleanup:
+          - "data"
+          - "passphrase"
+          - "iterations"

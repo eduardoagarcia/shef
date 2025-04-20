@@ -3,23 +3,12 @@ recipes:
     description: "A simple demo of colors and styles"
     category: "demo"
     help: |
-      This recipe demonstrates how to use colors and text styles in Shef recipes.
+      Demonstrates using colors and text styles in recipe outputs.
 
-      Color Functions:
-        {{ color "colorname" "text" }}  # Colorizes text
-        {{ style "stylename" "text" }}  # Applies style to text
+      Usage:
+        shef demo color                     # See examples of colors and styles
 
-      Available Colors:
-        - black, red, green, yellow, blue, magenta, cyan, white
-        - bg-black, bg-red, bg-green, bg-yellow, bg-blue, bg-magenta, bg-cyan, bg-white
-
-      Available Styles:
-        - bold, dim, italic, underline
-
-      Colors and styles can be combined:
-        {{ style "bold" (color "blue" "text") }}
-
-      The NO_COLOR environment variable disables all colors.
+      Shows text formatting with green, red, blue, bold, italic, underline, and more.
     operations:
       - name: "Basic color example"
         command: echo "{{ color "green" "This text is green" }} and {{ color "red" "this is red" }}"

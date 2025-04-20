@@ -3,25 +3,12 @@ recipes:
     description: "A simple demo showing the background execution of concurrent tasks"
     category: "demo"
     help: |
-      This recipe demonstrates how to run multiple tasks concurrently and monitor their status.
+      Demonstrates running multiple tasks in parallel with background execution mode.
 
-      The recipe:
-        1. Starts three background tasks with different execution durations
-        2. Monitors all tasks simultaneously with a status loop
-        3. Displays completion status and final output when all tasks are finished
+      Usage:
+        shef demo background-tasks         # Select fruit tasks to run concurrently
 
-      Background task features demonstrated:
-        - execution_mode: "background"  # Runs tasks asynchronously
-        - bgTaskComplete function       # Checks if a task has completed
-        - bgTaskStatus function         # Returns the current status of a task
-        - Accessing task output         # Access output after completion
-
-      This demo showcases:
-        - How to launch multiple operations concurrently without blocking
-        - How to monitor the status of background tasks
-        - How to create a waiting loop that checks for task completion
-        - How to access output from completed background tasks
-        - Real-time inline status updates using progress_mode: true
+      Shows real-time status monitoring and accessing results from background operations.
     operations:
       - name: "Choose Fruit"
         id: "fruit_choice"

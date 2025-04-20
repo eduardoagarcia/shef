@@ -297,7 +297,9 @@ func getPromptOptions(p Prompt, ctx *ExecutionContext) ([]string, map[string]str
 
 // getOptionsFromSourceOp extracts options from a source operation's output
 func getOptionsFromSourceOp(p Prompt, ctx *ExecutionContext) ([]string, map[string]string, error) {
+	ctx.OperationMutex.RLock()
 	output, exists := ctx.OperationOutputs[p.SourceOp]
+	ctx.OperationMutex.RUnlock()
 	if !exists {
 		return nil, nil, fmt.Errorf("source operation %s not found or has no output", p.SourceOp)
 	}

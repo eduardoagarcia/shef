@@ -3,29 +3,12 @@ recipes:
     description: "Easily list, save, apply, and drop git stashes"
     category: "git"
     help: |
-      This recipe helps manage Git stashes with an interactive interface.
+      Manages Git stashes with an interactive interface for listing, saving, applying, and dropping.
 
-      Available actions:
-        - List: View all existing stashes
-        - Save: Create a new stash with the current changes
-        - Apply: Apply a selected stash to your working directory
-        - Drop: Remove a selected stash
+      Usage:
+        shef git stash                     # Select from available actions (List, Save, Apply, Drop)
 
-      Save action features:
-        - Checks if there are changes to stash
-        - Shows git status before stashing
-        - Names stashes with the current branch name for easy identification
-
-      Apply/Drop action features:
-        - Lists all existing stashes
-        - Shows formatted stash messages for selection
-        - Confirmation prompt before dropping a stash
-
-      Requirements:
-        - Git must be installed
-        - You must be in a git repository
-
-      Note: Stash names are prefixed with the branch name for better organization.
+      Stash names are prefixed with the current branch name for better organization.
     operations:
       - name: "Stash Action"
         id: "action"

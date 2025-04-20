@@ -3,24 +3,12 @@ recipes:
     description: "A simple demo of reusable components"
     category: "demo"
     help: |
-      This recipe demonstrates how to use reusable components in Shef.
+      Demonstrates reusable components for modular recipe design.
 
-      The recipe will:
-        1. Use the "health-check" component to gather system information
-        2. Display the collected information in a formatted report
-        3. Show how components can be nested (health-check uses system-info)
+      Usage:
+        shef demo components                # Run a system health check using components
 
-      Components are reusable blocks of operations that can be shared across recipes:
-        - Components are defined with an "id" that you reference with "uses"
-        - Component operations with IDs become available as variables
-        - Components can use other components (nesting)
-        - Operations inside components work just like regular operations
-
-      Key concepts:
-        - Creating modular, reusable operation sets
-        - Breaking complex workflows into logical components
-        - Referencing component outputs by their operation IDs
-        - Building higher-level components from simpler ones
+      Shows nested components and how to reference component outputs.
     operations:
       - name: "Run System Checkup"
         uses: "health-check"

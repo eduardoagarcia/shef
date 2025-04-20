@@ -2,6 +2,11 @@ recipes:
   - name: "time"
     description: "A time utility displaying formatted time information"
     category: "utils"
+    help: |
+      Displays current local and UTC time in a formatted table.
+
+      Usage:
+        shef utils time                    # Show current time information
     operations:
       - name: "Get Local Time"
         id: "local"
@@ -16,9 +21,9 @@ recipes:
       - name: "Display times within a table"
         command: |
           echo '{{ table
-            (makeHeaders "Local Time" "UTC Time") 
+            (makeHeaders "Local Time" "UTC Time")
             (list
               (makeRow (color "green" .local) (color "yellow" .utc))
             )
-            "rounded" 
+            "rounded"
           }}'

@@ -1,0 +1,60 @@
+components:
+  - id: "data.base64.encode"
+    inputs:
+      - id: "data"
+        required: true
+    operations:
+      - command: printf "{{ .data }}" | base64
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "data.base64.decode"
+    inputs:
+      - id: "data"
+        required: true
+    operations:
+      - command: printf "{{ .data }}" | base64 -d
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "data.hex.encode"
+    inputs:
+      - id: "data"
+        required: true
+    operations:
+      - command: printf "{{ .data }}" | xxd -p -c 1000000
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "data.hex.decode"
+    inputs:
+      - id: "data"
+        required: true
+    operations:
+      - command: printf "{{ .data }}" | xxd -p -r
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "data.binary.encode"
+    inputs:
+      - id: "data"
+        required: true
+    operations:
+      - command: echo "{{ .data }}" | perl -ne 'print join("", map {sprintf("%08b", ord($_))} split("", $_))'
+        output_format: "trim"
+        cleanup:
+          - "data"
+
+  - id: "data.binary.decode"
+    inputs:
+      - id: "data"
+        required: true
+    operations:
+      - command: echo "{{ .data }}" | perl -ne 's/([01]{8})/chr(oct("0b$1"))/ge; print'
+        output_format: "trim"
+        cleanup:
+          - "data"

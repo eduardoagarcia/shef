@@ -1,0 +1,1600 @@
+components:
+  - id: "convert._internal"
+    inputs:
+      - id: "equation"
+    operations:
+      - command: |
+          echo "{{ .equation }}" | bc -l | awk '{
+            if ($1 == int($1)) {
+              printf "%.0f\n", $1
+            } else {
+              printf "%.2f\n", $1
+            }
+          }'
+        output_format: "trim"
+        cleanup:
+          - "equation"
+
+  - id: "convert.feet->meters"
+    inputs:
+      - id: "feet"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .feet }} * 0.3048"
+        cleanup:
+          - "feet"
+
+  - id: "convert.meters->feet"
+    inputs:
+      - id: "meters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .meters }} / 0.3048"
+        cleanup:
+          - "meters"
+
+  - id: "convert.inches->centimeters"
+    inputs:
+      - id: "inches"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .inches }} * 2.54"
+        cleanup:
+          - "inches"
+
+  - id: "convert.centimeters->inches"
+    inputs:
+      - id: "centimeters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .centimeters }} / 2.54"
+        cleanup:
+          - "centimeters"
+
+  - id: "convert.inches->millimeters"
+    inputs:
+      - id: "inches"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .inches }} * 25.4"
+        cleanup:
+          - "inches"
+
+  - id: "convert.millimeters->inches"
+    inputs:
+      - id: "millimeters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .millimeters }} / 25.4"
+        cleanup:
+          - "millimeters"
+
+  - id: "convert.yards->meters"
+    inputs:
+      - id: "yards"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .yards }} * 0.9144"
+        cleanup:
+          - "yards"
+
+  - id: "convert.meters->yards"
+    inputs:
+      - id: "meters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .meters }} / 0.9144"
+        cleanup:
+          - "meters"
+
+  - id: "convert.millimeters->centimeters"
+    inputs:
+      - id: "millimeters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .millimeters }} / 10"
+        cleanup:
+          - "millimeters"
+
+  - id: "convert.centimeters->millimeters"
+    inputs:
+      - id: "centimeters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .centimeters }} * 10"
+        cleanup:
+          - "centimeters"
+
+  - id: "convert.centimeters->meters"
+    inputs:
+      - id: "centimeters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .centimeters }} / 100"
+        cleanup:
+          - "centimeters"
+
+  - id: "convert.meters->centimeters"
+    inputs:
+      - id: "meters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .meters }} * 100"
+        cleanup:
+          - "meters"
+
+  - id: "convert.millimeters->meters"
+    inputs:
+      - id: "millimeters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .millimeters }} / 1000"
+        cleanup:
+          - "millimeters"
+
+  - id: "convert.meters->millimeters"
+    inputs:
+      - id: "meters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .meters }} * 1000"
+        cleanup:
+          - "meters"
+
+  - id: "convert.kilometers->miles"
+    inputs:
+      - id: "kilometers"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilometers }} / 1.60934"
+        cleanup:
+          - "kilometers"
+
+  - id: "convert.miles->kilometers"
+    inputs:
+      - id: "miles"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .miles }} * 1.60934"
+        cleanup:
+          - "miles"
+
+  - id: "convert.kilometers->meters"
+    inputs:
+      - id: "kilometers"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilometers }} * 1000"
+        cleanup:
+          - "kilometers"
+
+  - id: "convert.meters->kilometers"
+    inputs:
+      - id: "meters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .meters }} / 1000"
+        cleanup:
+          - "meters"
+
+  - id: "convert.miles->feet"
+    inputs:
+      - id: "miles"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .miles }} * 5280"
+        cleanup:
+          - "miles"
+
+  - id: "convert.feet->miles"
+    inputs:
+      - id: "feet"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .feet }} / 5280"
+        cleanup:
+          - "feet"
+
+  - id: "convert.nautical_miles->miles"
+    inputs:
+      - id: "nautical_miles"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .nautical_miles }} * 1.15078"
+        cleanup:
+          - "nautical_miles"
+
+  - id: "convert.miles->nautical_miles"
+    inputs:
+      - id: "miles"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .miles }} / 1.15078"
+        cleanup:
+          - "miles"
+
+  - id: "convert.nautical_miles->kilometers"
+    inputs:
+      - id: "nautical_miles"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .nautical_miles }} * 1.852"
+        cleanup:
+          - "nautical_miles"
+
+  - id: "convert.kilometers->nautical_miles"
+    inputs:
+      - id: "kilometers"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilometers }} / 1.852"
+        cleanup:
+          - "kilometers"
+
+  - id: "convert.square_feet->square_meters"
+    inputs:
+      - id: "square_feet"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .square_feet }} * 0.092903"
+        cleanup:
+          - "square_feet"
+
+  - id: "convert.square_meters->square_feet"
+    inputs:
+      - id: "square_meters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .square_meters }} / 0.092903"
+        cleanup:
+          - "square_meters"
+
+  - id: "convert.square_inches->square_centimeters"
+    inputs:
+      - id: "square_inches"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .square_inches }} * 6.4516"
+        cleanup:
+          - "square_inches"
+
+  - id: "convert.square_centimeters->square_inches"
+    inputs:
+      - id: "square_centimeters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .square_centimeters }} / 6.4516"
+        cleanup:
+          - "square_centimeters"
+
+  - id: "convert.acres->hectares"
+    inputs:
+      - id: "acres"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .acres }} * 0.404686"
+        cleanup:
+          - "acres"
+
+  - id: "convert.hectares->acres"
+    inputs:
+      - id: "hectares"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .hectares }} / 0.404686"
+        cleanup:
+          - "hectares"
+
+  - id: "convert.square_kilometers->square_miles"
+    inputs:
+      - id: "square_kilometers"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .square_kilometers }} * 0.386102"
+        cleanup:
+          - "square_kilometers"
+
+  - id: "convert.square_miles->square_kilometers"
+    inputs:
+      - id: "square_miles"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .square_miles }} / 0.386102"
+        cleanup:
+          - "square_miles"
+
+  - id: "convert.pounds->kilograms"
+    inputs:
+      - id: "pounds"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .pounds }} * 0.4536"
+        cleanup:
+          - "pounds"
+
+  - id: "convert.kilograms->pounds"
+    inputs:
+      - id: "kilograms"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilograms }} / 0.4536"
+        cleanup:
+          - "kilograms"
+
+  - id: "convert.ounces->grams"
+    inputs:
+      - id: "ounces"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .ounces }} * 28.3495"
+        cleanup:
+          - "ounces"
+
+  - id: "convert.grams->ounces"
+    inputs:
+      - id: "grams"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .grams }} / 28.3495"
+        cleanup:
+          - "grams"
+
+  - id: "convert.grams->kilograms"
+    inputs:
+      - id: "grams"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .grams }} / 1000"
+        cleanup:
+          - "grams"
+
+  - id: "convert.kilograms->grams"
+    inputs:
+      - id: "kilograms"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilograms }} * 1000"
+        cleanup:
+          - "kilograms"
+
+  - id: "convert.tons->kilograms"
+    inputs:
+      - id: "tons"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .tons }} * 907.185"
+        cleanup:
+          - "tons"
+
+  - id: "convert.kilograms->tons"
+    inputs:
+      - id: "kilograms"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilograms }} / 907.185"
+        cleanup:
+          - "kilograms"
+
+  - id: "convert.metric_tons->kilograms"
+    inputs:
+      - id: "metric_tons"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .metric_tons }} * 1000"
+        cleanup:
+          - "metric_tons"
+
+  - id: "convert.kilograms->metric_tons"
+    inputs:
+      - id: "kilograms"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilograms }} / 1000"
+        cleanup:
+          - "kilograms"
+
+  - id: "convert.fahrenheit->celsius"
+    inputs:
+      - id: "fahrenheit"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "({{ .fahrenheit }}-32)*(5/9)"
+        cleanup:
+          - "fahrenheit"
+
+  - id: "convert.celsius->fahrenheit"
+    inputs:
+      - id: "celsius"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .celsius }}*(9/5)+32"
+        cleanup:
+          - "celsius"
+
+  - id: "convert.celsius->kelvin"
+    inputs:
+      - id: "celsius"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .celsius }}+273.15"
+        cleanup:
+          - "celsius"
+
+  - id: "convert.kelvin->celsius"
+    inputs:
+      - id: "kelvin"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kelvin }}-273.15"
+        cleanup:
+          - "kelvin"
+
+  - id: "convert.fahrenheit->kelvin"
+    inputs:
+      - id: "fahrenheit"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "({{ .fahrenheit }}-32)*(5/9)+273.15"
+        cleanup:
+          - "fahrenheit"
+
+  - id: "convert.kelvin->fahrenheit"
+    inputs:
+      - id: "kelvin"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "({{ .kelvin }}-273.15)*(9/5)+32"
+        cleanup:
+          - "kelvin"
+
+  - id: "convert.gallons->liters"
+    inputs:
+      - id: "gallons"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .gallons }} * 3.78541"
+        cleanup:
+          - "gallons"
+
+  - id: "convert.liters->gallons"
+    inputs:
+      - id: "liters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .liters }} / 3.78541"
+        cleanup:
+          - "liters"
+
+  - id: "convert.fluidounces->milliliters"
+    inputs:
+      - id: "fluidounces"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .fluidounces }} * 29.5735"
+        cleanup:
+          - "fluidounces"
+
+  - id: "convert.milliliters->fluidounces"
+    inputs:
+      - id: "milliliters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .milliliters }} / 29.5735"
+        cleanup:
+          - "milliliters"
+
+  - id: "convert.cups->milliliters"
+    inputs:
+      - id: "cups"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .cups }} * 236.588"
+        cleanup:
+          - "cups"
+
+  - id: "convert.milliliters->cups"
+    inputs:
+      - id: "milliliters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .milliliters }} / 236.588"
+        cleanup:
+          - "milliliters"
+
+  - id: "convert.pints->liters"
+    inputs:
+      - id: "pints"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .pints }} * 0.473176"
+        cleanup:
+          - "pints"
+
+  - id: "convert.liters->pints"
+    inputs:
+      - id: "liters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .liters }} / 0.473176"
+        cleanup:
+          - "liters"
+
+  - id: "convert.quarts->liters"
+    inputs:
+      - id: "quarts"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .quarts }} * 0.946353"
+        cleanup:
+          - "quarts"
+
+  - id: "convert.liters->quarts"
+    inputs:
+      - id: "liters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .liters }} / 0.946353"
+        cleanup:
+          - "liters"
+
+  - id: "convert.milliliters->liters"
+    inputs:
+      - id: "milliliters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .milliliters }} / 1000"
+        cleanup:
+          - "milliliters"
+
+  - id: "convert.liters->milliliters"
+    inputs:
+      - id: "liters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .liters }} * 1000"
+        cleanup:
+          - "liters"
+
+  - id: "convert.cubicfeet->cubicmeters"
+    inputs:
+      - id: "cubicfeet"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .cubicfeet }} * 0.0283168"
+        cleanup:
+          - "cubicfeet"
+
+  - id: "convert.cubicmeters->cubicfeet"
+    inputs:
+      - id: "cubicmeters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .cubicmeters }} / 0.0283168"
+        cleanup:
+          - "cubicmeters"
+
+  - id: "convert.cubicinches->cubiccentimeters"
+    inputs:
+      - id: "cubicinches"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .cubicinches }} * 16.3871"
+        cleanup:
+          - "cubicinches"
+
+  - id: "convert.cubiccentimeters->cubicinches"
+    inputs:
+      - id: "cubiccentimeters"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .cubiccentimeters }} / 16.3871"
+        cleanup:
+          - "cubiccentimeters"
+
+  - id: "convert.kb->mb"
+    inputs:
+      - id: "kb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kb }} / 1024"
+        cleanup:
+          - "kb"
+
+  - id: "convert.kb->gb"
+    inputs:
+      - id: "kb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kb }} / 1024 / 1024"
+        cleanup:
+          - "kb"
+
+  - id: "convert.mb->kb"
+    inputs:
+      - id: "mb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mb }} * 1024"
+        cleanup:
+          - "mb"
+
+  - id: "convert.mb->gb"
+    inputs:
+      - id: "mb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mb }} / 1024"
+        cleanup:
+          - "mb"
+
+  - id: "convert.gb->kb"
+    inputs:
+      - id: "gb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .gb }} * 1024 * 1024"
+        cleanup:
+          - "gb"
+
+  - id: "convert.gb->mb"
+    inputs:
+      - id: "gb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .gb }} * 1024"
+        cleanup:
+          - "gb"
+
+  - id: "convert.gb->tb"
+    inputs:
+      - id: "gb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .gb }} / 1024"
+        cleanup:
+          - "gb"
+
+  - id: "convert.tb->gb"
+    inputs:
+      - id: "tb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .tb }} * 1024"
+        cleanup:
+          - "tb"
+
+  - id: "convert.tb->pb"
+    inputs:
+      - id: "tb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .tb }} / 1024"
+        cleanup:
+          - "tb"
+
+  - id: "convert.pb->tb"
+    inputs:
+      - id: "pb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .pb }} * 1024"
+        cleanup:
+          - "pb"
+
+  - id: "convert.bytes->kb"
+    inputs:
+      - id: "bytes"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .bytes }} / 1024"
+        cleanup:
+          - "bytes"
+
+  - id: "convert.kb->bytes"
+    inputs:
+      - id: "kb"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kb }} * 1024"
+        cleanup:
+          - "kb"
+
+  - id: "convert.kbps->mbps"
+    inputs:
+      - id: "kbps"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kbps }} / 1000"
+        cleanup:
+          - "kbps"
+
+  - id: "convert.mbps->kbps"
+    inputs:
+      - id: "mbps"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mbps }} * 1000"
+        cleanup:
+          - "mbps"
+
+  - id: "convert.mbps->gbps"
+    inputs:
+      - id: "mbps"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mbps }} / 1000"
+        cleanup:
+          - "mbps"
+
+  - id: "convert.gbps->mbps"
+    inputs:
+      - id: "gbps"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .gbps }} * 1000"
+        cleanup:
+          - "gbps"
+
+  - id: "convert.calories->joules"
+    inputs:
+      - id: "calories"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .calories }} * 4.184"
+        cleanup:
+          - "calories"
+
+  - id: "convert.joules->calories"
+    inputs:
+      - id: "joules"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .joules }} / 4.184"
+        cleanup:
+          - "joules"
+
+  - id: "convert.kilocalories->kilojoules"
+    inputs:
+      - id: "kilocalories"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilocalories }} * 4.184"
+        cleanup:
+          - "kilocalories"
+
+  - id: "convert.kilojoules->kilocalories"
+    inputs:
+      - id: "kilojoules"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilojoules }} / 4.184"
+        cleanup:
+          - "kilojoules"
+
+  - id: "convert.joules->kilojoules"
+    inputs:
+      - id: "joules"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .joules }} / 1000"
+        cleanup:
+          - "joules"
+
+  - id: "convert.kilojoules->joules"
+    inputs:
+      - id: "kilojoules"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilojoules }} * 1000"
+        cleanup:
+          - "kilojoules"
+
+  - id: "convert.kilowatt_hours->joules"
+    inputs:
+      - id: "kilowatt_hours"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilowatt_hours }} * 3600000"
+        cleanup:
+          - "kilowatt_hours"
+
+  - id: "convert.joules->kilowatt_hours"
+    inputs:
+      - id: "joules"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .joules }} / 3600000"
+        cleanup:
+          - "joules"
+
+  - id: "convert.electron_volts->joules"
+    inputs:
+      - id: "electron_volts"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .electron_volts }} * 1.602e-19"
+        cleanup:
+          - "electron_volts"
+
+  - id: "convert.joules->electron_volts"
+    inputs:
+      - id: "joules"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .joules }} / 1.602e-19"
+        cleanup:
+          - "joules"
+
+  - id: "convert.hertz->kilohertz"
+    inputs:
+      - id: "hertz"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .hertz }} / 1000"
+        cleanup:
+          - "hertz"
+
+  - id: "convert.kilohertz->hertz"
+    inputs:
+      - id: "kilohertz"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilohertz }} * 1000"
+        cleanup:
+          - "kilohertz"
+
+  - id: "convert.kilohertz->megahertz"
+    inputs:
+      - id: "kilohertz"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kilohertz }} / 1000"
+        cleanup:
+          - "kilohertz"
+
+  - id: "convert.megahertz->kilohertz"
+    inputs:
+      - id: "megahertz"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .megahertz }} * 1000"
+        cleanup:
+          - "megahertz"
+
+  - id: "convert.megahertz->gigahertz"
+    inputs:
+      - id: "megahertz"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .megahertz }} / 1000"
+        cleanup:
+          - "megahertz"
+
+  - id: "convert.gigahertz->megahertz"
+    inputs:
+      - id: "gigahertz"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .gigahertz }} * 1000"
+        cleanup:
+          - "gigahertz"
+
+  - id: "convert.mpg->kpl"
+    inputs:
+      - id: "mpg"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mpg }} * 0.425144"
+        cleanup:
+          - "mpg"
+
+  - id: "convert.kpl->mpg"
+    inputs:
+      - id: "kpl"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kpl }} / 0.425144"
+        cleanup:
+          - "kpl"
+
+  - id: "convert.mpg->lper100km"
+    inputs:
+      - id: "mpg"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "235.215 / {{ .mpg }}"
+        cleanup:
+          - "mpg"
+
+  - id: "convert.lper100km->mpg"
+    inputs:
+      - id: "lper100km"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "235.215 / {{ .lper100km }}"
+        cleanup:
+          - "lper100km"
+
+  - id: "convert.psi->kpa"
+    inputs:
+      - id: "psi"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .psi }} * 6.89476"
+        cleanup:
+          - "psi"
+
+  - id: "convert.kpa->psi"
+    inputs:
+      - id: "kpa"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kpa }} / 6.89476"
+        cleanup:
+          - "kpa"
+
+  - id: "convert.bar->psi"
+    inputs:
+      - id: "bar"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .bar }} * 14.5038"
+        cleanup:
+          - "bar"
+
+  - id: "convert.psi->bar"
+    inputs:
+      - id: "psi"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .psi }} / 14.5038"
+        cleanup:
+          - "psi"
+
+  - id: "convert.bar->kpa"
+    inputs:
+      - id: "bar"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .bar }} * 100"
+        cleanup:
+          - "bar"
+
+  - id: "convert.kpa->bar"
+    inputs:
+      - id: "kpa"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kpa }} / 100"
+        cleanup:
+          - "kpa"
+
+  - id: "convert.mmhg->kpa"
+    inputs:
+      - id: "mmhg"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mmhg }} * 0.133322"
+        cleanup:
+          - "mmhg"
+
+  - id: "convert.kpa->mmhg"
+    inputs:
+      - id: "kpa"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kpa }} / 0.133322"
+        cleanup:
+          - "kpa"
+
+  - id: "convert.atmosphere->kpa"
+    inputs:
+      - id: "atmosphere"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .atmosphere }} * 101.325"
+        cleanup:
+          - "atmosphere"
+
+  - id: "convert.kpa->atmosphere"
+    inputs:
+      - id: "kpa"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kpa }} / 101.325"
+        cleanup:
+          - "kpa"
+
+  - id: "convert.mph->kph"
+    inputs:
+      - id: "mph"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mph }} * 1.60934"
+        cleanup:
+          - "mph"
+
+  - id: "convert.kph->mph"
+    inputs:
+      - id: "kph"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kph }} / 1.60934"
+        cleanup:
+          - "kph"
+
+  - id: "convert.knots->mph"
+    inputs:
+      - id: "knots"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .knots }} * 1.15078"
+        cleanup:
+          - "knots"
+
+  - id: "convert.mph->knots"
+    inputs:
+      - id: "mph"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mph }} / 1.15078"
+        cleanup:
+          - "mph"
+
+  - id: "convert.knots->kph"
+    inputs:
+      - id: "knots"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .knots }} * 1.852"
+        cleanup:
+          - "knots"
+
+  - id: "convert.kph->knots"
+    inputs:
+      - id: "kph"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kph }} / 1.852"
+        cleanup:
+          - "kph"
+
+  - id: "convert.mps->kph"
+    inputs:
+      - id: "mps"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mps }} * 3.6"
+        cleanup:
+          - "mps"
+
+  - id: "convert.kph->mps"
+    inputs:
+      - id: "kph"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .kph }} / 3.6"
+        cleanup:
+          - "kph"
+
+  - id: "convert.mps->mph"
+    inputs:
+      - id: "mps"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mps }} * 2.23694"
+        cleanup:
+          - "mps"
+
+  - id: "convert.mph->mps"
+    inputs:
+      - id: "mph"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .mph }} / 2.23694"
+        cleanup:
+          - "mph"
+
+  - id: "convert.degrees->radians"
+    inputs:
+      - id: "degrees"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .degrees }} * 0.0174533"
+        cleanup:
+          - "degrees"
+
+  - id: "convert.radians->degrees"
+    inputs:
+      - id: "radians"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .radians }} / 0.0174533"
+        cleanup:
+          - "radians"
+
+  - id: "convert.degrees->gradians"
+    inputs:
+      - id: "degrees"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .degrees }} * 1.11111"
+        cleanup:
+          - "degrees"
+
+  - id: "convert.gradians->degrees"
+    inputs:
+      - id: "gradians"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .gradians }} / 1.11111"
+        cleanup:
+          - "gradians"
+
+  - id: "convert.hours->minutes"
+    inputs:
+      - id: "hours"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .hours }} * 60"
+        cleanup:
+          - "hours"
+
+  - id: "convert.hours->seconds"
+    inputs:
+      - id: "hours"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .hours }} * 3600"
+        cleanup:
+          - "hours"
+
+  - id: "convert.minutes->hours"
+    inputs:
+      - id: "minutes"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .minutes }} / 60"
+        cleanup:
+          - "minutes"
+
+  - id: "convert.minutes->seconds"
+    inputs:
+      - id: "minutes"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .minutes }} * 60"
+        cleanup:
+          - "minutes"
+
+  - id: "convert.seconds->minutes"
+    inputs:
+      - id: "seconds"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .seconds }} / 60"
+        cleanup:
+          - "seconds"
+
+  - id: "convert.seconds->hours"
+    inputs:
+      - id: "seconds"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .seconds }} / 3600"
+        cleanup:
+          - "seconds"
+
+  - id: "convert.days->hours"
+    inputs:
+      - id: "days"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .days }} * 24"
+        cleanup:
+          - "days"
+
+  - id: "convert.hours->days"
+    inputs:
+      - id: "hours"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .hours }} / 24"
+        cleanup:
+          - "hours"
+
+  - id: "convert.days->minutes"
+    inputs:
+      - id: "days"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .days }} * 24 * 60"
+        cleanup:
+          - "days"
+
+  - id: "convert.days->seconds"
+    inputs:
+      - id: "days"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .days }} * 24 * 3600"
+        cleanup:
+          - "days"
+
+  - id: "convert.weeks->days"
+    inputs:
+      - id: "weeks"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .weeks }} * 7"
+        cleanup:
+          - "weeks"
+
+  - id: "convert.days->weeks"
+    inputs:
+      - id: "days"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .days }} / 7"
+        cleanup:
+          - "days"
+
+  - id: "convert.years->days"
+    inputs:
+      - id: "years"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .years }} * 365.25"
+        cleanup:
+          - "years"
+
+  - id: "convert.days->years"
+    inputs:
+      - id: "days"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .days }} / 365.25"
+        cleanup:
+          - "days"
+
+  - id: "convert.milliseconds->seconds"
+    inputs:
+      - id: "milliseconds"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .milliseconds }} / 1000"
+        cleanup:
+          - "milliseconds"
+
+  - id: "convert.seconds->milliseconds"
+    inputs:
+      - id: "seconds"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .seconds }} * 1000"
+        cleanup:
+          - "seconds"
+
+  - id: "convert.microseconds->milliseconds"
+    inputs:
+      - id: "microseconds"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .microseconds }} / 1000"
+        cleanup:
+          - "microseconds"
+
+  - id: "convert.milliseconds->microseconds"
+    inputs:
+      - id: "milliseconds"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .milliseconds }} * 1000"
+        cleanup:
+          - "milliseconds"
+
+  - id: "convert.nanoseconds->microseconds"
+    inputs:
+      - id: "nanoseconds"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .nanoseconds }} / 1000"
+        cleanup:
+          - "nanoseconds"
+
+  - id: "convert.microseconds->nanoseconds"
+    inputs:
+      - id: "microseconds"
+        required: true
+    operations:
+      - uses: "convert._internal"
+        with:
+          "equation": "{{ .microseconds }} * 1000"
+        cleanup:
+          - "microseconds"

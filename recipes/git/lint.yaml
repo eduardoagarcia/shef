@@ -1,0 +1,35 @@
+recipes:
+  - name: "lint"
+    description: "Run basic lint for all staged and unstaged files"
+    category: "git"
+    help: |
+      Lints git staged and unstaged files for common issues.
+
+      Usage:
+        shef git lint                      # Check files for trailing whitespace and missing EOF newlines
+    operations:
+      - uses: "git.staged+unstaged"
+        id: "files"
+        silent: true
+
+      - command: echo "{{ color "yellow" "No files to lint" }}"
+        condition: .files == ""
+        exit: true
+
+      - control_flow:
+          type: "foreach"
+          collection: "{{ .files }}"
+          as: "file_to_lint"
+          progress_mode: true
+        operations:
+          - command: 'echo "Linting: {{ style "dim" .file_to_lint }}"'
+
+          - uses: "lint.trailing"
+            with:
+              file: "{{ .file_to_lint }}"
+
+          - uses: "lint.eof"
+            with:
+              file: "{{ .file_to_lint }}"
+
+      - command: echo "{{ color "green" "Complete!" }}"

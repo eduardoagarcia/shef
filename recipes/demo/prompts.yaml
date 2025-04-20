@@ -3,27 +3,13 @@ recipes:
     description: "A demo of all available prompt types and their options"
     category: "demo"
     help: |
-      This recipe demonstrates all available prompt types and options in Shef.
+      Demonstrates all available prompt types and their options.
 
-      Prompt types demonstrated:
-        - input: Basic text input
-        - select: Choose from a list of options
-        - confirm: Yes/No confirmation
-        - password: Masked password input
-        - multiselect: Select multiple options
-        - autocomplete: Filtered selection
-        - number: Numeric input with validation
-        - path: File path with validation
-        - editor: Multi-line text in your editor
-        - Dynamic options from operation output
+      Usage:
+        shef demo prompts                   # Try all prompt types
 
-      Each prompt demonstrates:
-        - Setting default values
-        - Help text
-        - Validation where applicable
-        - Formatting and displaying collected values
-
-      This is a comprehensive reference for all available prompt types in Shef.
+      Includes text input, select, confirm, password, multiselect, autocomplete, number,
+      path, editor, and dynamic options from operation output.
     operations:
       - name: "Basic Input Types Demo"
         id: "basic_inputs"
@@ -106,7 +92,7 @@ recipes:
         id: "number_input"
         command: |
           echo "Number input: {{ .number_value }}"
-          
+
           # Calculate simple arithmetic on the number
           RESULT=$(( {{ .number_value }} * 2 ))
           echo "Doubled value: $RESULT"
@@ -124,10 +110,10 @@ recipes:
         id: "file_path"
         command: |
           echo "Path input: {{ .file_path }}"
-          
+
           if [ -f "{{ .file_path }}" ]; then
             echo "File exists, displaying first 3 lines:"
-            head -n 3 "{{ .file_path }}" 
+            head -n 3 "{{ .file_path }}"
           else
             echo "Path doesn't exist or is not a file"
           fi
@@ -149,7 +135,7 @@ recipes:
           echo "-----------------"
           echo "{{ .editor_content }}"
           echo "-----------------"
-          
+
           LINE_COUNT=$(echo "{{ .editor_content }}" | wc -l)
           echo "Line count: $LINE_COUNT"
         prompts:

@@ -45,6 +45,8 @@ type Operation struct {
 	Prompts                    []Prompt               `yaml:"prompts,omitempty"`
 	Break                      bool                   `yaml:"break,omitempty"`
 	Exit                       bool                   `yaml:"exit,omitempty"`
+	Cleanup                    interface{}            `yaml:"cleanup,omitempty"`
+	Workdir                    string                 `yaml:"workdir,omitempty"`
 	ComponentInstanceID        string                 `yaml:"-"`
 	IsComponentOutputCollector bool                   `yaml:"-"`
 }
@@ -110,6 +112,7 @@ type ExecutionContext struct {
 	BackgroundTasks               map[string]*BackgroundTask
 	BackgroundMutex               sync.RWMutex
 	BackgroundWg                  sync.WaitGroup
+	OperationMutex                sync.RWMutex
 	LoopStack                     []*LoopContext
 	CurrentLoopIdx                int
 	ExecutedOperationsByComponent map[string][]string

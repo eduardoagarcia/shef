@@ -408,6 +408,64 @@ func processShortFlag(arg string, vars map[string]interface{}) {
 	}
 }
 
+// dispatchComponent handles execution of a component directly
+func dispatchComponent(componentID string, args []string) error {
+	loadComponents([]string{"local", "user", "public"})
+	component, exists := globalComponentRegistry.Get(componentID)
+	if !exists {
+		return fmt.Errorf("component not found: %s", componentID)
+	}
+	Log(CategoryComponent, fmt.Sprintf("Found component: %s - %s", component.Name, component.Description))
+
+	_, inputVars := processRemainingArgs(args)
+	Log(CategoryComponent, "Component inputs", map[string]interface{}{
+		"inputs": inputVars,
+	})
+	missingInputs := []string{}
+	for _, input := range component.Inputs {
+		if input.Required {
+			_, exists := inputVars[input.ID]
+			if !exists {
+				missingInputs = append(missingInputs, input.ID)
+			}
+		}
+	}
+	if len(missingInputs) > 0 {
+		errorMsg := "missing required inputs: " + strings.Join(missingInputs, ", ")
+		return fmt.Errorf(errorMsg)
+	}
+
+	recipe := Recipe{
+		Name:        fmt.Sprintf("Component: %s", component.Name),
+		Description: component.Description,
+		Operations: []Operation{
+			{
+				Name: fmt.Sprintf("Run Component: %s", component.Name),
+				Uses: componentID,
+				With: make(map[string]interface{}),
+			},
+		},
+	}
+
+	for _, input := range component.Inputs {
+		if value, exists := inputVars[input.ID]; exists {
+			recipe.Operations[0].With[input.ID] = value
+		} else if input.Default != nil {
+			recipe.Operations[0].With[input.ID] = input.Default
+		}
+	}
+
+	Log(CategoryComponent, "Running component with inputs", map[string]interface{}{
+		"with": recipe.Operations[0].With,
+	})
+
+	if err := evaluateRecipe(recipe, "", make(map[string]interface{})); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // handleCategorySelection prompts the user to select a recipe from a category
 func handleCategorySelection(categoryName string, sourcePriority []string) (*Recipe, error) {
 	recipes := collectRecipesInCategory(categoryName, sourcePriority)

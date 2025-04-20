@@ -3,31 +3,22 @@ recipes:
     description: "Select a GCP project"
     category: "gcp"
     help: |
-      This recipe helps you select a Google Cloud Platform (GCP) project.
+      Selects or displays the current Google Cloud Platform project.
 
-      The recipe will:
-        1. List all available GCP projects (excluding system projects)
-        2. Prompt you to select a project
-        3. Set the selected project as active in your gcloud config
-        4. Display the selected project
-
-      Requirements:
-        - Google Cloud SDK (gcloud) must be installed
-        - You must be authenticated with gcloud
-
-      Options:
-        -w, --which  Show the currently selected project without changing it
+      Usage:
+        shef gcp project                    # Select a GCP project
+        shef gcp project -w                 # Show current project without changing
     operations:
       - name: "GCP Project Select"
         id: "project"
-        uses: "gcp_project_select"
+        uses: "gcp.project.select"
         condition: .w != "true" && .which != "true"
         silent: true
         on_success: "exit"
 
       - name: "GCP Current Project"
         id: "project"
-        uses: "gcp_current_project"
+        uses: "gcp.project.current"
         condition: .w == "true" || .which == "true"
         silent: true
         on_success: "exit"

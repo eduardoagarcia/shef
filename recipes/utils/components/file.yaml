@@ -1,0 +1,510 @@
+components:
+  - id: "file.exists"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: '[ -f {{ .file }} ] && echo "true" || echo "false"'
+        output_format: "trim"
+        cleanup:
+          - "file"
+
+  - id: "file.read"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: cat "{{ .file }}"
+        output_format: "trim"
+        cleanup:
+          - "file"
+
+  - id: "file.write"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "contents"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: |
+          cat > {{ .file }} << 'EOF'
+          {{ .contents }}
+          EOF
+        cleanup:
+          - "file"
+          - "contents"
+
+  - id: "file.create"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: touch {{ .file }}
+        cleanup:
+          - "file"
+
+  - id: "file.delete"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: rm "{{ .file }}"
+        cleanup:
+          - "file"
+
+  - id: "file.empty"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: "> {{ .file }}"
+        cleanup:
+          - "file"
+
+  - id: "file.copy"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "copy"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "user.path.expand"
+        id: "copy"
+        with:
+          path: "{{ .copy }}"
+
+      - command: cp {{ .file }} {{ .copy }}
+        cleanup:
+          - "file"
+          - "copy"
+
+  - id: "file.rename"
+    inputs:
+      - id: "old"
+        required: true
+      - id: "new"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "old"
+        with:
+          path: "{{ .old }}"
+        silent: true
+
+      - uses: "user.path.expand"
+        id: "new"
+        with:
+          path: "{{ .new }}"
+        silent: true
+
+      - command: mv {{ .old }} {{ .new }}
+        cleanup:
+          - "old"
+          - "new"
+
+  - id: "file.backup"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "file.parts"
+        with:
+          file: "{{ .file }}"
+
+      - id: "backup_filename"
+        command: echo "{{ .file_parts_path }}/{{ .file_parts_filename }}_bak_$(date +%Y%m%d_%H%M%S).{{ .file_parts_extension }}"
+        silent: true
+
+      - command: cp {{ .file }} {{ .backup_filename }}
+
+      - command: echo "{{ .backup_filename }}"
+        cleanup:
+          - "file"
+          - "backup_filename"
+          - "file_parts_path"
+          - "file_parts_filename"
+          - "file_parts_extension"
+
+  - id: "file.temp"
+    inputs:
+      - id: "contents"
+        required: true
+    operations:
+      - command: |
+          tempfile=$(mktemp) && cat << 'EOF' > "$tempfile" && echo "$tempfile"
+          {{ .contents }}
+          EOF
+        output_format: "trim"
+        cleanup:
+          - "contents"
+
+  - id: "file.encrypt"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "passphrase"
+        required: true
+      - id: "iterations"
+        default: 10000
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: openssl enc -aes-256-cbc -a -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" -in {{ .file }} -out {{ .file }}.enc
+
+      - uses: "file.rename"
+        with:
+          old: "{{ .file }}.enc"
+          new: "{{ .file }}"
+
+      - cleanup:
+          - "file"
+          - "passphrase"
+          - "iterations"
+
+  - id: "file.decrypt"
+    inputs:
+      - id: "file"
+        required: true
+      - id: "passphrase"
+        required: true
+      - id: "iterations"
+        default: 10000
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: openssl enc -aes-256-cbc -a -d -salt -pbkdf2 -iter {{ .iterations }} -pass pass:"{{ .passphrase }}" -in {{ .file }} -out {{ .file }}.dec
+
+      - uses: "file.rename"
+        with:
+          old: "{{ .file }}.dec"
+          new: "{{ .file }}"
+
+      - cleanup:
+          - "file"
+          - "passphrase"
+          - "iterations"
+
+  - id: "file.fullpath"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: readlink -f {{ .file }}
+        output_format: "trim"
+        cleanup:
+          - "file"
+
+  - id: "file.lower"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "file.parts"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+      - uses: "string.lower"
+        id: "filename"
+        with:
+          string: "{{ .file_parts_filename }}.{{ .file_parts_extension }}"
+        silent: true
+
+      - command: echo "{{ .file_parts_path }}/{{ .filename }}"
+        cleanup:
+          - "file"
+          - "filename"
+          - "file_parts_path"
+          - "file_parts_filename"
+          - "file_parts_extension"
+
+  - id: "file.lower.filename"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "file.parts"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+      - uses: "string.lower"
+        id: "filename"
+        with:
+          string: "{{ .file_parts_filename }}"
+        silent: true
+
+      - command: echo "{{ .file_parts_path }}/{{ .filename }}.{{ .file_parts_extension }}"
+        cleanup:
+          - "file"
+          - "filename"
+          - "file_parts_path"
+          - "file_parts_filename"
+          - "file_parts_extension"
+
+  - id: "file.lower.extension"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "file.parts"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+      - uses: "string.lower"
+        id: "extension"
+        with:
+          string: "{{ .file_parts_extension }}"
+        silent: true
+
+      - command: echo "{{ .file_parts_path }}/{{ .file_parts_filename }}.{{ .extension }}"
+        cleanup:
+          - "file"
+          - "extension"
+          - "file_parts_path"
+          - "file_parts_filename"
+          - "file_parts_extension"
+
+  - id: "file.upper"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "file.parts"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+      - uses: "string.upper"
+        id: "filename"
+        with:
+          string: "{{ .file_parts_filename }}.{{ .file_parts_extension }}"
+        silent: true
+
+      - command: echo "{{ .file_parts_path }}/{{ .filename }}"
+        cleanup:
+          - "file"
+          - "filename"
+          - "file_parts_path"
+          - "file_parts_filename"
+          - "file_parts_extension"
+
+  - id: "file.upper.filename"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "file.parts"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+      - uses: "string.upper"
+        id: "filename"
+        with:
+          string: "{{ .file_parts_filename }}"
+        silent: true
+
+      - command: echo "{{ .file_parts_path }}/{{ .filename }}.{{ .file_parts_extension }}"
+        cleanup:
+          - "file"
+          - "filename"
+          - "file_parts_path"
+          - "file_parts_filename"
+          - "file_parts_extension"
+
+  - id: "file.upper.extension"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "file.parts"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+      - uses: "string.upper"
+        id: "extension"
+        with:
+          string: "{{ .file_parts_extension }}"
+        silent: true
+
+      - command: echo "{{ .file_parts_path }}/{{ .file_parts_filename }}.{{ .extension }}"
+        cleanup:
+          - "file"
+          - "extension"
+          - "file_parts_path"
+          - "file_parts_filename"
+          - "file_parts_extension"
+
+  - id: "file.parts"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - uses: "file.filename"
+        id: "file_parts_filename"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+      - uses: "file.extension"
+        id: "file_parts_extension"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+      - uses: "file.path"
+        id: "file_parts_path"
+        with:
+          file: "{{ .file }}"
+        silent: true
+
+  - id: "file.filename"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: echo "$(basename {{ .file }} | sed 's/\.[^.]*$//')"
+        output_format: "trim"
+
+  - id: "file.extension"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: |
+          filepath="{{ .file }}"
+          echo "${filepath##*.}"
+        output_format: "trim"
+
+  - id: "file.path"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: echo $(dirname "{{ .file }}")
+        output_format: "trim"

@@ -3,27 +3,12 @@ recipes:
     description: "A simple demo to show progress bars, variables, and workdir"
     category: "demo"
     help: |
-      This recipe demonstrates how to use progress bars, pre-defined variables, and working directories.
+      Demonstrates progress bars, variables, and working directories.
 
-      The recipe will:
-        1. Prompt for confirmation before creating temporary files
-        2. Create a set number of temporary files with a progress bar
-        3. Count and display the number of files created
-        4. Delete each file with a customized progress bar
-        5. Clean up the working directory
+      Usage:
+        shef demo progress                  # See progress bars during file operations
 
-      Key features demonstrated:
-        - Pre-defined variables using the `vars` section
-        - Setting a working directory with `workdir`
-        - Using the `count` function to count items
-        - Progress bars with different configurations and themes
-        - For loops with progress tracking
-        - ForEach loops with progress tracking
-        - Color-coded output for better readability
-
-      This recipe is useful for:
-        - Understanding how to use the vars, workdir, and count features
-        - Seeing how progress bars can be customized
+      Shows customizable progress bars, different themes, and using workdir.
     vars:
       "tmp_dir": "/tmp"
       "shef_dir": "shef_progress_demo"

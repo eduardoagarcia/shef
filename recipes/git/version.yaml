@@ -3,25 +3,12 @@ recipes:
     description: "Create and push version tags to Git"
     category: "git"
     help: |
-      This recipe helps create and push version tags to Git.
+      Creates and pushes version tags to Git using semantic versioning (MAJOR.MINOR.PATCH).
 
-      The recipe will:
-        1. Check the current Git branch and fetch all tags
-        2. Find the latest version tag (follows v0.0.0 format)
-        3. Show the current version if it exists
-        4. Let you choose the type of version increment:
-           - major: Increment first number (v1.0.0 → v2.0.0)
-           - minor: Increment second number (v1.0.0 → v1.1.0)
-           - patch: Increment third number (v1.0.0 → v1.0.1)
-        5. Create a new version tag with an optional message
-        6. Optionally push the tag to the remote repository
+      Usage:
+        shef git version                    # Create and optionally push a new version tag
 
-      Requirements:
-        - Git must be installed
-        - You must be in a git repository
-        - You must have permission to create and push tags
-
-      This recipe follows semantic versioning principles (MAJOR.MINOR.PATCH).
+      Allows major (1.0.0 → 2.0.0), minor (1.0.0 → 1.1.0), or patch (1.0.0 → 1.0.1) increments.
     operations:
       - name: "Check Current Branch"
         id: "branch"
@@ -87,7 +74,7 @@ recipes:
             VERSION="${TAG#v}"
             # Split into parts
             IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          
+
             if [[ "{{ .version }}" == "custom" ]]; then
               printf "{{ .custom_version }}"
             elif [[ "{{ .version }}" == "major" ]]; then

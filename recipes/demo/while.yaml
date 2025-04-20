@@ -3,22 +3,10 @@ recipes:
     description: "A simple demo of the while loop control flow"
     category: "demo"
     help: |
-      This recipe demonstrates the 'while' loop control flow in Shef.
+      Demonstrates the 'while' loop control flow with a time-based condition.
 
-      The recipe simulates:
-        1. A service performing work
-        2. Checking the status on each iteration
-        3. Completing when the status changes (after 3 seconds)
-
-      While loop parameters:
-        - type: "while"       # Specifies the while loop control flow
-        - condition: expr     # Expression that must be true for the loop to continue
-        - progres_mode: true  # Update output inline to show progress
-
-      This shows:
-        - How to define a while loop with a condition
-        - How to access the current duration (seconds and millisecond format)
-        - How to change the condition to exit the loop
+      Usage:
+        shef demo while                     # Run a loop that continues for 3 seconds
     operations:
       - name: "Loop While Status is Running"
         control_flow:
