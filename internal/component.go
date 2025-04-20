@@ -223,7 +223,12 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 func applyOperationProperties(target *Operation, source Operation) {
 	if source.Condition != "" {
 		if target.Condition != "" {
-			target.Condition = "(" + target.Condition + ") && (" + source.Condition + ")"
+			Log(CategoryComponent, fmt.Sprintf(
+				"Combining conditions: parent='%s', child='%s'",
+				source.Condition, target.Condition))
+			target.Condition = fmt.Sprintf("(%s) && (%s)", source.Condition, target.Condition)
+			Log(CategoryComponent, fmt.Sprintf(
+				"Combined condition result: '%s'", target.Condition))
 		} else {
 			target.Condition = source.Condition
 		}

@@ -20,7 +20,10 @@ func evaluateConditionWrapper(condition string, ctx *ExecutionContext) (bool, er
 		return true, nil
 	}
 
+	Log(CategoryCondition, fmt.Sprintf("Evaluating raw condition: '%s'", condition))
+
 	if isTemplateCondition(condition) {
+		Log(CategoryCondition, "Detected template condition")
 		return evaluateTemplateCondition(condition, ctx)
 	}
 
@@ -34,28 +37,42 @@ func evaluateConditionWrapper(condition string, ctx *ExecutionContext) (bool, er
 		return false, nil
 	}
 
-	// Handle logical operators
+	if strings.HasPrefix(condition, "(") && strings.HasSuffix(condition, ")") {
+		innerCondition := condition[1 : len(condition)-1]
+		if !strings.Contains(innerCondition, "&&") && !strings.Contains(innerCondition, "||") {
+			Log(CategoryCondition, fmt.Sprintf("Evaluating inner condition: '%s'", innerCondition))
+			return evaluateCondition(innerCondition, ctx)
+		}
+	}
+
 	if strings.Contains(condition, "&&") {
+		Log(CategoryCondition, "Detected AND condition")
 		return evaluateAndCondition(condition, ctx)
 	}
 	if strings.Contains(condition, "||") {
+		Log(CategoryCondition, "Detected OR condition")
 		return evaluateOrCondition(condition, ctx)
 	}
 	if strings.HasPrefix(condition, "!") {
+		Log(CategoryCondition, "Detected NOT condition")
 		return evaluateNotCondition(condition, ctx)
 	}
 
 	// Handle various comparison types
 	if result, err := evaluateNumericComparison(condition, ctx); err == nil {
+		Log(CategoryCondition, "Evaluated as numeric comparison")
 		return result, nil
 	}
 	if isOperationResultCondition(condition) {
+		Log(CategoryCondition, "Detected operation result condition")
 		return evaluateOperationResult(condition, ctx)
 	}
 	if isVariableComparison(condition) {
+		Log(CategoryCondition, "Detected variable comparison")
 		return evaluateVariableComparison(condition, ctx)
 	}
 
+	Log(CategoryCondition, fmt.Sprintf("Unsupported condition format: '%s'", condition))
 	return false, fmt.Errorf("unsupported condition format: %s", condition)
 }
 
@@ -78,7 +95,12 @@ func evaluateTemplateCondition(condition string, ctx *ExecutionContext) (bool, e
 func evaluateAndCondition(condition string, ctx *ExecutionContext) (bool, error) {
 	parts := strings.Split(condition, "&&")
 	for _, part := range parts {
-		result, err := evaluateCondition(part, ctx)
+		trimmedPart := strings.TrimSpace(part)
+		if strings.HasPrefix(trimmedPart, "(") && strings.HasSuffix(trimmedPart, ")") {
+			trimmedPart = trimmedPart[1 : len(trimmedPart)-1]
+		}
+
+		result, err := evaluateCondition(trimmedPart, ctx)
 		if err != nil {
 			return false, err
 		}
@@ -93,7 +115,12 @@ func evaluateAndCondition(condition string, ctx *ExecutionContext) (bool, error)
 func evaluateOrCondition(condition string, ctx *ExecutionContext) (bool, error) {
 	parts := strings.Split(condition, "||")
 	for _, part := range parts {
-		result, err := evaluateCondition(part, ctx)
+		trimmedPart := strings.TrimSpace(part)
+		if strings.HasPrefix(trimmedPart, "(") && strings.HasSuffix(trimmedPart, ")") {
+			trimmedPart = trimmedPart[1 : len(trimmedPart)-1]
+		}
+
+		result, err := evaluateCondition(trimmedPart, ctx)
 		if err != nil {
 			return false, err
 		}
@@ -268,8 +295,12 @@ func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, 
 		return false, err
 	}
 
+	leftPart = strings.TrimSpace(leftPart)
+	rightPart = strings.TrimSpace(rightPart)
 	rightPart = strings.Trim(rightPart, "\"'")
 	actualValue := resolveVariableValue(leftPart, ctx)
+
+	Log(CategoryCondition, fmt.Sprintf("Comparing: '%s' %s '%s'", actualValue, operator, rightPart))
 
 	if operator == "==" {
 		return actualValue == rightPart, nil
