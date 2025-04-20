@@ -3,23 +3,12 @@ recipes:
     description: "A simple demo to show progress mode in control flows"
     category: "demo"
     help: |
-      This recipe demonstrates the 'progress_mode' feature in different control flows.
+      Demonstrates progress_mode for in-place updates during loop execution.
 
-      Progress mode allows operations within loops to update in-place on a single line,
-      making it perfect for displaying progress indicators, counters, or status updates
-      without cluttering your terminal with multiple lines of output.
+      Usage:
+        shef demo progress-mode             # See different loop types with inline progress updates
 
-      The recipe shows progress_mode in three different control flow types:
-        - for loop: Counts through iterations with a numeric counter
-        - foreach loop: Processes items from a collection with updated status
-        - while loop: Shows a running timer that updates in real-time
-
-      Usage in control_flow:
-        progress_mode: true  # Enables inline updates for all operations in the loop
-
-      Each loop's output replaces the previous output on the same line rather than
-      printing on new lines, creating a cleaner, more dynamic display of progress
-      information.
+      Shows for, foreach, and while loops with dynamic in-place status updates.
     operations:
       - name: "For Progress Mode"
         control_flow:

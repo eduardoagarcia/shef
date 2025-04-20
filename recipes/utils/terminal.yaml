@@ -2,6 +2,11 @@ recipes:
   - name: "usage"
     description: "Get your ranked terminal command history usage"
     category: "terminal"
+    help: |
+      Displays your most frequently used terminal commands.
+
+      Usage:
+        shef terminal usage                # Show top 25 commands by usage count
     operations:
       - uses: "user.history.usage"
         id: "usage_history"
@@ -22,12 +27,22 @@ recipes:
   - name: "checkup"
     description: "Run a terminal history health checkup"
     category: "terminal"
+    help: |
+      Scans your terminal history for potential credential exposures.
+
+      Usage:
+        shef terminal checkup              # Scan for sensitive information in history
     operations:
       - uses: "user.history.checkup"
 
   - name: "sterilize"
     description: "Sterilize terminal history"
     category: "terminal"
+    help: |
+      Removes credential exposures from your terminal history.
+
+      Usage:
+        shef terminal sterilize            # Remove sensitive information from history
     operations:
       - uses: "user.history.checkup"
 

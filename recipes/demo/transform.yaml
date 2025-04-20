@@ -3,21 +3,10 @@ recipes:
     description: "A simple demo of data transformation and pipeline flow"
     category: "demo"
     help: |
-      This recipe demonstrates data transformation and pipeline flow in Shef.
+      Demonstrates data transformation and pipeline flow between operations.
 
-      The recipe:
-        1. Generates a list of items
-        2. Filters the list for items containing "a"
-        3. Displays filtered results in green
-        4. Filters the list for items containing "her"
-        5. Displays filtered results in yellow
-
-      This showcases:
-        - Passing data between operations
-        - Using the filter template function
-        - Accessing output from previous operations
-        - Formatting output with colors
-        - Silent operations for intermediate processing
+      Usage:
+        shef demo transform                 # See data filtering and formatting in action
     operations:
       - name: "Generate a Simple List"
         id: "generate"

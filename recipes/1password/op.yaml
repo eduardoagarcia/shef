@@ -2,6 +2,11 @@ recipes:
   - name: "open"
     description: "Open 1Password"
     category: "op"
+    help: |
+      Opens the 1Password application.
+
+      Usage:
+        shef op open                       # Launch 1Password
     operations:
       - uses: "os.apps.filtered"
         with:
@@ -15,5 +20,10 @@ recipes:
   - name: "lock"
     description: "Lock 1Password"
     category: "op"
+    help: |
+      Locks the 1Password application.
+
+      Usage:
+        shef op lock                       # Lock 1Password
     operations:
       - uses: "op.lock"

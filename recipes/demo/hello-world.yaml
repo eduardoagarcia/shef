@@ -3,19 +3,12 @@ recipes:
     description: "A simple hello world recipe"
     category: "demo"
     help: |
-      This is a simple introductory recipe to demonstrate the basics of Shef.
+      A simple introductory recipe demonstrating the basics of Shef.
 
-      The recipe will:
-        1. Prompt you for your name (or use "World" as default)
-        2. Greet you with a personalized message
-        3. Show the current time
-        4. Welcome you to Shef
+      Usage:
+        shef demo hello-world               # Get a personalized greeting
 
-      This demonstrates:
-        - Basic prompts for user input
-        - Using variables in commands
-        - Colorizing output
-        - Multi-line commands
+      Shows basic prompts, variable usage, and colorized output.
     operations:
       - name: "Greet User"
         command: |

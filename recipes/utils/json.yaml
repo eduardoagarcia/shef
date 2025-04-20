@@ -2,6 +2,15 @@ recipes:
   - name: "json"
     description: "A json utility to easily validate and format json"
     category: "utils"
+    help: |
+      Validates and formats JSON data with optional JQ filtering.
+
+      Usage:
+        shef utils json                    # Enter JSON in editor
+        shef utils json --file=PATH        # Format JSON from file
+        shef utils json [FILTER]           # Apply JQ filter (default: ".")
+
+      Invalid JSON will display error messages in red.
     vars:
       filter: "."
       options: "-C"

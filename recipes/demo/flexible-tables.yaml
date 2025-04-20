@@ -3,20 +3,12 @@ recipes:
     description: "A demo of flexible table input formats"
     category: "demo"
     help: |
-      This recipe demonstrates the flexible table input formats in Shef.
+      Demonstrates flexible ways to format input for tables.
 
-      It shows how to:
-      - Use newline-separated headers
-      - Create tables with comma-separated row strings
-      - Build tables with array-style input
-      - Mix different input formats
-      - Generate and use dynamic data in tables
+      Usage:
+        shef demo tables-flexible           # View examples of different table input formats
 
-      The table function accepts different input formats:
-      - Headers as a newline or comma-separated string
-      - Rows as comma-separated strings
-      - Array syntax for both headers and rows
-      - Dynamic data from command outputs
+      Shows newline-separated headers, comma-separated rows, array input, and dynamic data.
     operations:
       - name: "Newline-Separated Headers"
         command: |

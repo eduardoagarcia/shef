@@ -3,22 +3,12 @@ recipes:
     description: "Shell into a Docker container"
     category: "docker"
     help: |
-      This recipe opens an interactive shell into a Docker container.
+      Opens an interactive shell session into a running Docker container.
 
-      The recipe will:
-        1. List all running Docker containers
-        2. Prompt you to select a container
-        3. Open an interactive shell session in the selected container
+      Usage:
+        shef docker shell                   # Select container and open interactive shell
 
-      Requirements:
-        - Docker must be installed and running
-        - You must have permissions to access Docker
-        - The container must have bash installed
-
-      Special features:
-        - Uses the interactive execution mode for shell access
-        - Automatically retrieves container names from docker ps
-        - Exit the shell (usually with 'exit' command)
+      Exit the shell session with the 'exit' command.
     operations:
       - uses: "docker.container.select"
         id: "docker_container"

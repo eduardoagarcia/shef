@@ -2,6 +2,12 @@ recipes:
   - name: "open"
     description: "Open an application"
     category: "os"
+    help: |
+      Opens a selected application from the system.
+
+      Usage:
+        shef os open                       # Select from all applications
+        shef os open [FILTER]              # Filter application list by name
     operations:
       - uses: "os.app.select"
         with:

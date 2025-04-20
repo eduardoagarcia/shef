@@ -3,27 +3,13 @@ recipes:
     description: "Prune unused Docker resources"
     category: "docker"
     help: |
-      This recipe helps prune unused Docker resources to free up disk space.
+      Cleans up unused Docker resources to free disk space.
 
-      The recipe will:
-        1. Show the initial disk usage
-        2. Prompt you to select which Docker resources to prune
-        3. Prune the selected resources
-        4. Show the final disk usage and space saved
+      Usage:
+        shef docker prune                   # Select resources to prune
 
-      Resources that can be pruned:
-        - Dangling images (untagged images)
-        - All unused images (not used by containers)
-        - Stopped containers
-        - Unused volumes (not used by containers)
-        - Unused networks (not connected to containers)
-        - Build cache
-
-      Requirements:
-        - Docker must be installed and running
-        - You must have permissions to access Docker
-
-      Note: Use caution when pruning volumes as this will permanently delete data.
+      Options include dangling/unused images, stopped containers, volumes, networks, and build cache.
+      Use caution when pruning volumes as this permanently deletes data.
     vars:
       "initial_usage": ""
       "final_usage": ""

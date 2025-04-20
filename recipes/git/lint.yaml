@@ -2,6 +2,11 @@ recipes:
   - name: "lint"
     description: "Run basic lint for all staged and unstaged files"
     category: "git"
+    help: |
+      Lints git staged and unstaged files for common issues.
+
+      Usage:
+        shef git lint                      # Check files for trailing whitespace and missing EOF newlines
     operations:
       - uses: "git.staged+unstaged"
         id: "files"

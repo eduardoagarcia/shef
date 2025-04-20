@@ -3,22 +3,13 @@ recipes:
     description: "A simple demo using arguments and flags"
     category: "demo"
     help: |
-      This recipe demonstrates how to use command-line arguments and flags with Shef.
+      Demonstrates how to use command-line arguments and flags in recipes.
 
-      Arguments can be passed to the recipe in two ways:
-        - Positional argument: The first argument after the recipe name becomes the "input" variable
-        - Named flags: Arguments starting with - or -- become variables
-
-      Example flags:
-        -f              Sets the variable "f" to true
-        --name=value    Sets the variable "name" to "value"
-
-      Examples:
-        shef arguments hello              # Sets input to "hello"
-        shef arguments -f                 # Sets f flag to true
-        shef arguments --name=John        # Sets name to "John"
-        shef arguments hello -f           # Sets input to "hello" and f flag to true
-        shef arguments hello --name=John  # Sets input to "hello" and name to "John"
+      Usage:
+        shef demo arguments [INPUT]        # Pass a positional argument
+        shef demo arguments -f             # Use a flag (sets f to true)
+        shef demo arguments --name=VALUE   # Set a named variable
+        shef demo arguments [INPUT] -f     # Combine positional and flag arguments
     operations:
       - name: "Display Arguments"
         command: |
