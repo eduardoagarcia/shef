@@ -240,6 +240,27 @@ components:
           - "passphrase"
           - "iterations"
 
+  - id: "file.encrypted"
+    inputs:
+      - id: "file"
+        required: true
+    operations:
+      - uses: "user.path.expand"
+        id: "file"
+        with:
+          path: "{{ .file }}"
+        silent: true
+
+      - command: |
+          if openssl enc -d -aes-256-cbc -a -salt -pbkdf2 -iter 10000 -pass pass:"dummy" -in {{ .file }} 2>&1 | grep -q "bad decrypt"; then
+            echo "true"
+          else
+            echo "false"
+          fi
+        output_format: "trim"
+        cleanup:
+          - "file"
+
   - id: "file.fullpath"
     inputs:
       - id: "file"
