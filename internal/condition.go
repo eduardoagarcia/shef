@@ -20,7 +20,6 @@ func evaluateConditionWrapper(condition string, ctx *ExecutionContext) (bool, er
 		return true, nil
 	}
 
-	// Log the condition we're about to evaluate
 	Log(CategoryCondition, fmt.Sprintf("Evaluating raw condition: '%s'", condition))
 
 	if isTemplateCondition(condition) {
@@ -38,9 +37,7 @@ func evaluateConditionWrapper(condition string, ctx *ExecutionContext) (bool, er
 		return false, nil
 	}
 
-	// Special case for complex parenthesized conditions
 	if strings.HasPrefix(condition, "(") && strings.HasSuffix(condition, ")") {
-		// First check if this is a single parenthesized condition with no operators
 		innerCondition := condition[1 : len(condition)-1]
 		if !strings.Contains(innerCondition, "&&") && !strings.Contains(innerCondition, "||") {
 			Log(CategoryCondition, fmt.Sprintf("Evaluating inner condition: '%s'", innerCondition))
@@ -48,7 +45,6 @@ func evaluateConditionWrapper(condition string, ctx *ExecutionContext) (bool, er
 		}
 	}
 
-	// Handle logical operators with proper parentheses handling
 	if strings.Contains(condition, "&&") {
 		Log(CategoryCondition, "Detected AND condition")
 		return evaluateAndCondition(condition, ctx)
@@ -97,10 +93,8 @@ func evaluateTemplateCondition(condition string, ctx *ExecutionContext) (bool, e
 
 // evaluateAndCondition evaluates a condition with AND operators (&&)
 func evaluateAndCondition(condition string, ctx *ExecutionContext) (bool, error) {
-	// Use regular expression to properly handle parentheses and AND conditions
 	parts := strings.Split(condition, "&&")
 	for _, part := range parts {
-		// Trim spaces and remove surrounding parentheses if present
 		trimmedPart := strings.TrimSpace(part)
 		if strings.HasPrefix(trimmedPart, "(") && strings.HasSuffix(trimmedPart, ")") {
 			trimmedPart = trimmedPart[1 : len(trimmedPart)-1]
@@ -121,7 +115,6 @@ func evaluateAndCondition(condition string, ctx *ExecutionContext) (bool, error)
 func evaluateOrCondition(condition string, ctx *ExecutionContext) (bool, error) {
 	parts := strings.Split(condition, "||")
 	for _, part := range parts {
-		// Trim spaces and remove surrounding parentheses if present
 		trimmedPart := strings.TrimSpace(part)
 		if strings.HasPrefix(trimmedPart, "(") && strings.HasSuffix(trimmedPart, ")") {
 			trimmedPart = trimmedPart[1 : len(trimmedPart)-1]
@@ -302,17 +295,11 @@ func evaluateVariableComparison(condition string, ctx *ExecutionContext) (bool, 
 		return false, err
 	}
 
-	// Trim spaces around the parts
 	leftPart = strings.TrimSpace(leftPart)
 	rightPart = strings.TrimSpace(rightPart)
-
-	// Remove quotes from right part (literal string)
 	rightPart = strings.Trim(rightPart, "\"'")
-
-	// Resolve the actual value from context
 	actualValue := resolveVariableValue(leftPart, ctx)
 
-	// Log comparison for debugging
 	Log(CategoryCondition, fmt.Sprintf("Comparing: '%s' %s '%s'", actualValue, operator, rightPart))
 
 	if operator == "==" {
