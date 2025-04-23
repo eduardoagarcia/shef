@@ -191,6 +191,7 @@ func ExpandComponentReferences(operations []Operation, opMap map[string]Operatio
 					Silent:                     true,
 					IsComponentOutputCollector: true,
 					ComponentInstanceID:        instanceID,
+					Condition:                  op.Condition,
 				}
 				for i := range componentOps {
 					if componentOps[i].ID == "" {
