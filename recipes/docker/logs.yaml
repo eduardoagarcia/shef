@@ -13,7 +13,7 @@ recipes:
 
       Press Ctrl+C to stop log streaming.
     vars:
-      "filter": ""
+      "filter_string": ""
       "filter_base": "2>&1 | grep --color=always -i"
       "filter_lines": 5
       "since": ""
@@ -35,17 +35,17 @@ recipes:
         silent: true
 
       - name: "Filter"
-        id: "filter"
+        id: "filter_string"
         command: echo '{{ .filter_base }} -B{{ .filter_lines }} -A{{ .filter_lines }} "{{ .input }}"'
         condition: .f == "true" && .input != "false"
         silent: true
 
       - name: "Highlight"
-        id: "filter"
+        id: "filter_string"
         command: echo '{{ .filter_base }} -E "{{ .input }}|$"'
         condition: .f != "true" && .input != "false"
         silent: true
 
       - name: "Stream Logs"
-        command: docker logs --follow {{ .since }} {{ .container }} {{ .filter }}
+        command: docker logs --follow {{ .since }} {{ .container }} {{ .filter_string }}
         execution_mode: "stream"

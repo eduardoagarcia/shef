@@ -3,6 +3,7 @@ components:
     inputs:
       - id: "filter"
         description: "Filter the container results. Must be a string list: 'container-1,container-2,container-3'"
+        default: "false"
     operations:
       - id: "docker_list_containers"
         command: docker ps --format "{{ `{{ .Names }}` }}"
@@ -13,22 +14,23 @@ components:
         with:
           "list_a": "{{ .docker_list_containers }}"
           "list_b": "{{ .filter }}"
-        condition: .filter != "false" && .filter != "[]" && .filter != ""
+        condition: .filter != "false"
         silent: true
         cleanup:
           - "filter"
 
+      - command: echo "{{ .docker_list_containers }}"
+
   - id: "docker.container.select"
     inputs:
       - id: "filter"
+        default: "false"
     operations:
       - uses: "docker.container.list"
         id: "containers"
         with:
           filter: "{{ .filter }}"
         silent: true
-
-      - command: 'echo "containers: {{ .containers }}"'
 
       - id: "docker_selected_container"
         command: echo "{{ .docker_container }}"
@@ -42,6 +44,7 @@ components:
   - id: "docker.container.multiselect"
     inputs:
       - id: "filter"
+        default: "false"
     operations:
       - uses: "docker.container.list"
         id: "containers"
